@@ -76,18 +76,6 @@ typedef unsigned short word;
 void setup_graphics_mode6(void);
 
 /*
-  Setup color palette for the game
-  
-  Sets the 5 color registers:
-  - Background: Black
-  - PF0: Brown (walls, boxes)
-  - PF1: Green (player)
-  - PF2: Yellow (goals)
-  - PF3: Red (boxes on goals)
-*/
-void setup_colors_mode6(void);
-
-/*
   Animate the player character
   
   Cycles through animation frames:

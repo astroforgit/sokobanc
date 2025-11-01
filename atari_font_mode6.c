@@ -44,15 +44,6 @@ static unsigned char custom_graphics_mode6[] = {
     0x18, 0x3C, 0x18, 0x7E, 0x18, 0x24, 0x42, 0x81
 };
 
-void setup_colors_mode6(void) {
-    // Set color registers using OS shadow registers
-    OS.color0 = MODE6_COLOR_BLACK;      // Background: Black
-    OS.color1 = MODE6_COLOR_BROWN;      // PF0: Brown (walls, boxes)
-    OS.color2 = MODE6_COLOR_GREEN;      // PF1: Green (player)
-    OS.color3 = MODE6_COLOR_YELLOW;     // PF2: Yellow (goals)
-    OS.color4 = MODE6_COLOR_RED;        // PF3: Red (boxes on goals)
-}
-
 void setup_graphics_mode6(void) {
     // Install display list
     memcpy((void*)DLIST_MEM_MODE6, display_list_mode6, sizeof(display_list_mode6));
@@ -61,40 +52,30 @@ void setup_graphics_mode6(void) {
     OS.sdlstl = (unsigned char)(DLIST_MEM_MODE6 & 0xFF);
     OS.sdlsth = (unsigned char)(DLIST_MEM_MODE6 >> 8);
 
-    // Setup colors
-    setup_colors_mode6();
+    // Setup colors directly
+    OS.color0 = MODE6_COLOR_BLACK;
+    OS.color1 = MODE6_COLOR_BROWN;
+    OS.color2 = MODE6_COLOR_GREEN;
+    OS.color3 = MODE6_COLOR_YELLOW;
+    OS.color4 = MODE6_COLOR_RED;
 
-    // Optional: Install custom character set
-    // Copy ROM character set first
+    // Copy ROM character set
     memcpy((void*)CHARSET_MEM_MODE6, (void*)0xE000, 1024);
 
-    // Install custom graphics for characters 0x40-0x43
-    memcpy((void*)(CHARSET_MEM_MODE6 + 0x40 * 8), custom_graphics_mode6, 4 * 8);
-
-    // Install custom graphics for characters 0xC0-0xC1 (128 + 0x40, 128 + 0x41)
-    // In Mode 6, upper 128 characters use same shapes but different color
-    memcpy((void*)(CHARSET_MEM_MODE6 + 0xC0 * 8), custom_graphics_mode6 + 4 * 8, 2 * 8);
+    // Install custom graphics
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0x40 * 8), custom_graphics_mode6, 48);
 
     // Point character base to our custom character set
     OS.chbas = (unsigned char)(CHARSET_MEM_MODE6 >> 8);
 
     // Clear screen
-    memset((void*)SCREEN_MEM_MODE6, 0, CHAR_COLS_MODE6 * CHAR_ROWS_MODE6);
+    memset((void*)SCREEN_MEM_MODE6, 0, 480);
 }
 
 void animate_player_mode6(void) {
-    // Simple animation: just update based on state
-    // In Mode 6, we can't easily modify character graphics on the fly
-    // So animation is limited or requires character swapping
-    
-    // For now, just track animation state
-    if (anim_state_mode6 == 1) {
-        // Walking animation - could swap character codes
-        if (frame_counter_mode6 > 30) {
-            anim_state_mode6 = 0;
-        }
+    if (anim_state_mode6 == 1 && frame_counter_mode6 > 30) {
+        anim_state_mode6 = 0;
     } else if (frame_counter_mode6 > 120) {
-        // Blinking animation every 2 seconds
         frame_counter_mode6 = 0;
     }
 }
