@@ -1,18 +1,21 @@
 // Link the libraries
 //#link "atari_conio.c"
+//#link "duplicator_game.c"
 
 /*
-  Duplicator Font Test
-  Displays all converted fonts from the Duplicator game
+  Duplicator Game - Playable Version
+  Based on the PuzzleScript game by competor
 */
 
 #include "duplicator_font.h"
+#include "duplicator_game.h"
 #include "atari_conio.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <peekpoke.h>
 #include <conio.h>
+#include <joystick.h>
 
 // Data types for clarity
 typedef unsigned char byte;
@@ -23,6 +26,23 @@ typedef unsigned short word;
 #define DLIST_MEM   ((byte*)0x8000)
 #define SCREEN_MEM  ((byte*)0x9000)
 #define ROM_CHARSET_ADDRESS 0xE000
+
+// Level data - First level from duplicator.txt
+const char* level_1[] = {
+    "########:########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "#######...#...###",
+    "#######.@.#.e.###",
+    "#######...#...###",
+    "############.####",
+    "############.####"
+};
+
+#define LEVEL_ROWS 11
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
@@ -62,49 +82,49 @@ void setup_duplicator_graphics(void) {
     // Note: my_cputsxy converts ASCII to ATASCII:
     //   - chars 0x20-0x5F: subtract 0x20
     //   - chars 0x60-0x7F: subtract 0x60 (lowercase letters)
-
+    
     // Player '@' (0x40) -> screen code 0x20 (0x40 - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_PLAYER - 0x20) * 8), &duplicator_graphics[0], 8);
-
+    
     // Wall '#' (0x23) -> screen code 0x03 (0x23 - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_WALL - 0x20) * 8), &duplicator_graphics[8], 8);
-
+    
     // Crate '*' (0x2A) -> screen code 0x0A (0x2A - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_CRATE - 0x20) * 8), &duplicator_graphics[16], 8);
-
+    
     // Key 'k' (0x6B) -> screen code 0x0B (0x6B - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_KEY - 0x60) * 8), &duplicator_graphics[24], 8);
-
+    
     // Door 'd' (0x64) -> screen code 0x04 (0x64 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_DOOR - 0x60) * 8), &duplicator_graphics[32], 8);
-
+    
     // Enemy 'e' (0x65) -> screen code 0x05 (0x65 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_ENEMY - 0x60) * 8), &duplicator_graphics[40], 8);
-
+    
     // Hole A '?' (0x3F) -> screen code 0x1F (0x3F - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_HOLE_A - 0x20) * 8), &duplicator_graphics[48], 8);
-
+    
     // Hole B '!' (0x21) -> screen code 0x01 (0x21 - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_HOLE_B - 0x20) * 8), &duplicator_graphics[56], 8);
-
+    
     // Plate A 'b' (0x62) -> screen code 0x02 (0x62 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_PLATE_A - 0x60) * 8), &duplicator_graphics[64], 8);
-
+    
     // Plate B 'c' (0x63) -> screen code 0x03 (0x63 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_PLATE_B - 0x60) * 8), &duplicator_graphics[72], 8);
-
+    
     // Gate A 'g' (0x67) -> screen code 0x07 (0x67 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_GATE_A - 0x60) * 8), &duplicator_graphics[80], 8);
-
+    
     // Gate B 'h' (0x68) -> screen code 0x08 (0x68 - 0x60)
     memcpy(CHARSET_MEM + ((CHAR_GATE_B - 0x60) * 8), &duplicator_graphics[88], 8);
-
+    
     // Exit A ':' (0x3A) -> screen code 0x1A (0x3A - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_EXIT_A - 0x20) * 8), &duplicator_graphics[96], 8);
-
+    
     // Exit B ';' (0x3B) -> screen code 0x1B (0x3B - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_EXIT_B - 0x20) * 8), &duplicator_graphics[104], 8);
-
+    
     // Floor '.' (0x2E) -> screen code 0x0E (0x2E - 0x20)
     memcpy(CHARSET_MEM + ((CHAR_FLOOR - 0x20) * 8), &duplicator_graphics[112], 8);
     
@@ -121,50 +141,85 @@ void setup_duplicator_graphics(void) {
 
 // Main function
 void main(void) {
+    byte joy, last_joy = 0;
+    GameState* state;
+    
+    // Initialize joystick
+    joy_install(joy_static_stddrv);
+    
     // Initialize graphics
     setup_duplicator_graphics();
-
+    
     // Clear screen
     my_clrscr();
     
+    // Load and draw level
+    load_level(level_1, LEVEL_ROWS);
+    draw_level();
+    
     // Display title
-    my_cputsxy(5, 0, "DUPLICATOR FONT TEST");
-    my_cputsxy(5, 1, "====================");
+    my_cputsxy(0, 0, "DUPLICATOR - LEVEL 1");
     
-    // Display all characters with labels
-    my_cputsxy(2, 3, "@ PLAYER");
-    my_cputsxy(2, 4, "# WALL");
-    my_cputsxy(2, 5, "* CRATE");
-    my_cputsxy(2, 6, "k KEY");
-    my_cputsxy(2, 7, "d DOOR");
-    my_cputsxy(2, 8, "e ENEMY");
-    
-    my_cputsxy(2, 10, "? HOLE A");
-    my_cputsxy(2, 11, "! HOLE B");
-    my_cputsxy(2, 12, "b PLATE A");
-    my_cputsxy(2, 13, "c PLATE B");
-    
-    my_cputsxy(2, 15, "g GATE A");
-    my_cputsxy(2, 16, "h GATE B");
-    my_cputsxy(2, 17, ": EXIT A");
-    my_cputsxy(2, 18, "; EXIT B");
-    my_cputsxy(2, 19, ". FLOOR");
-    
-    // Display sample level from duplicator
-    my_cputsxy(20, 3, "SAMPLE LEVEL:");
-    my_cputsxy(20, 5, "########:########");
-    my_cputsxy(20, 6, "########.########");
-    my_cputsxy(20, 7, "#######...#...###");
-    my_cputsxy(20, 8, "#######.@.#.e.###");
-    my_cputsxy(20, 9, "#######...#...###");
-    my_cputsxy(20, 10, "############.####");
-    
-    my_cputsxy(2, 21, "PRESS ANY KEY TO EXIT");
-    
-    // Wait for key press
-    while (!kbhit()) {
+    // Main game loop
+    while (1) {
+        // Read joystick
+        joy = joy_read(0);
+        
+        // Handle joystick input (with debouncing)
+        if (joy && !last_joy) {
+            if (JOY_UP(joy)) {
+                try_move_player(0, -1);
+            } else if (JOY_DOWN(joy)) {
+                try_move_player(0, 1);
+            } else if (JOY_LEFT(joy)) {
+                try_move_player(-1, 0);
+            } else if (JOY_RIGHT(joy)) {
+                try_move_player(1, 0);
+            }
+        }
+        last_joy = joy;
+        
+        // Also check keyboard
+        if (kbhit()) {
+            byte key = cgetc();
+            if (key == CH_CURS_UP || key == 'w' || key == 'W') {
+                try_move_player(0, -1);
+            } else if (key == CH_CURS_DOWN || key == 's' || key == 'S') {
+                try_move_player(0, 1);
+            } else if (key == CH_CURS_LEFT || key == 'a' || key == 'A') {
+                try_move_player(-1, 0);
+            } else if (key == CH_CURS_RIGHT || key == 'd' || key == 'D') {
+                try_move_player(1, 0);
+            } else if (key == CH_ESC) {
+                break;  // Exit game
+            }
+        }
+        
+        // Display move counter
+        state = get_game_state();
+        my_cputsxy(0, 23, "MOVES: ");
+        // Simple number display (only works for < 100)
+        if (state->moves < 10) {
+            my_cputcxy(7, 23, " ");
+            my_cputcxy(8, 23, "0" + state->moves);
+        } else {
+            my_cputcxy(7, 23, "0" + (state->moves / 10));
+            my_cputcxy(8, 23, "0" + (state->moves % 10));
+        }
+        
+        // Check win condition
+        if (is_level_complete()) {
+            my_cputsxy(10, 12, "YOU WIN!");
+            my_cputsxy(8, 13, "PRESS ANY KEY");
+            
+            // Wait for key press
+            while (!kbhit()) {
+                wait_vblank();
+            }
+            break;
+        }
+        
         wait_vblank();
     }
-    cgetc();
 }
 
