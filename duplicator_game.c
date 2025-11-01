@@ -34,10 +34,14 @@ void load_level(const char* level_data[], byte num_rows) {
         while (row[x] != '\0' && x < MAX_LEVEL_WIDTH) {
             level_map[y][x] = row[x];
             
-            // Find player starting position
-            if (row[x] == TILE_PLAYER) {
+            // Find player starting position (can be '@' or 'p')
+            if (row[x] == TILE_PLAYER || row[x] == 'p') {
                 game_state.player_x = x;
                 game_state.player_y = y;
+                // Replace 'p' with '@' for display
+                if (row[x] == 'p') {
+                    level_map[y][x] = TILE_PLAYER;
+                }
             }
             
             x++;

@@ -48,14 +48,14 @@ const char* level_2[] = {
     "#################",
     "#################",
     "###...#...#...###",
-    "###.!.#.?...b.###",
-    "###...#...#...###",
-    "####.############",
-    "####.##...#######",
-    "####........g...:",
+    "###.!2%2?...b.###",
+    "###...#...#.1.###",
+    "####.#######$####",
+    "####.##...##$####",
+    "####........g...@",
     "#######...#######",
     "########.########",
-    "########@########"
+    "########p########"
 };
 
 // Level definitions
@@ -122,6 +122,18 @@ void setup_duplicator_graphics(void) {
     memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[96], 8);  // Exit A
     memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[104], 8); // Exit B
     memcpy(CHARSET_MEM + ('.' * 8), &duplicator_graphics[112], 8); // Floor
+    memcpy(CHARSET_MEM + ('$' * 8), &duplicator_graphics[120], 8); // Wall Line A
+    memcpy(CHARSET_MEM + ('%' * 8), &duplicator_graphics[128], 8); // Wall Line B
+    memcpy(CHARSET_MEM + ('&' * 8), &duplicator_graphics[136], 8); // Wall Line G
+    memcpy(CHARSET_MEM + ('1' * 8), &duplicator_graphics[144], 8); // Line A
+    memcpy(CHARSET_MEM + ('2' * 8), &duplicator_graphics[152], 8); // Line B
+    memcpy(CHARSET_MEM + ('3' * 8), &duplicator_graphics[160], 8); // Line C
+    memcpy(CHARSET_MEM + ('4' * 8), &duplicator_graphics[168], 8); // Line D
+    memcpy(CHARSET_MEM + ('5' * 8), &duplicator_graphics[176], 8); // Line E
+    memcpy(CHARSET_MEM + ('6' * 8), &duplicator_graphics[184], 8); // Line F
+    memcpy(CHARSET_MEM + ('7' * 8), &duplicator_graphics[192], 8); // Line G
+    memcpy(CHARSET_MEM + ('8' * 8), &duplicator_graphics[200], 8); // Line H
+    memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player (p same as @)
     
     // Set colors
     POKE(709, 0);   // Background color (black)
