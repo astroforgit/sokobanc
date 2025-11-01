@@ -5,6 +5,10 @@
 
 #include "atari_font_mode6.h"
 
+// Animation state
+static byte anim_state_mode6 = 0;
+static byte frame_counter_mode6 = 0;
+
 // Display list for ANTIC Mode 6 (Graphics 1)
 // 20 columns x 24 rows, 5 colors
 static unsigned char display_list_mode6[] = {

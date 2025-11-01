@@ -65,10 +65,6 @@ typedef unsigned short word;
 #define CHAR_PLAYER_CUSTOM     (128 + 0x40)
 #define CHAR_PLAYERGOAL_CUSTOM (128 + 0x41)
 
-// Animation state
-static byte anim_state_mode6 = 0;
-static byte frame_counter_mode6 = 0;
-
 /*
   Setup ANTIC Mode 6 graphics and colors
   
