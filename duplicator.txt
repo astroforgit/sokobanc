@@ -1,0 +1,910 @@
+title Duplicators
+author competor
+homepage competor.itch.io
+
+background_color #eeeeee
+text_color #1F1F1F
+again_interval 0.08
+
+norepeat_action
+noaction
+
+========
+OBJECTS
+========
+Background  (special, automatically placed in its own layer)
+#eeeeee
+
+
+Player    (Required by game)
+#242424 #757575
+.000.
+.000.
+00000
+.000.
+.0.0.
+
+anim_player_1
+blue
+.....
+.....
+.....
+.....
+.0.0.
+
+anim_player_2
+blue
+.....
+.....
+.....
+.000.
+.0.0.
+
+anim_player_3
+blue
+.....
+.....
+00000
+.000.
+.0.0.
+
+anim_player_4
+blue
+.....
+.000.
+00000
+.000.
+.0.0.
+
+anim_disappear_1
+red
+00000
+00000
+00000
+00000
+00000
+
+anim_disappear_2
+red
+.....
+00000
+00000
+00000
+00000
+
+anim_disappear_3
+red
+.....
+.....
+00000
+00000
+00000
+
+anim_disappear_4
+red
+.....
+.....
+.....
+00000
+00000
+
+anim_disappear_5
+red
+.....
+.....
+.....
+.....
+00000
+
+holeA
+#33B07E #DBDBDB
+11111
+10101
+11111
+10101
+11111
+
+holeA_
+#00B06B
+
+
+holeB
+#33B07E #DBDBDB
+11111
+10101
+11111
+10101
+11111
+
+holeB_
+#00B06B
+
+floor_gray
+#DBDBDB
+
+wall
+#1F1F1F
+
+Crate
+#967E36
+.....
+.000.
+.0.0.
+.000.
+.....
+
+anim_crate_1
+blue
+.....
+.....
+.....
+.....
+.....
+
+anim_crate_2
+blue
+.....
+.....
+.....
+.000.
+.....
+
+anim_crate_3
+blue
+.....
+.....
+.0.0.
+.000.
+.....
+
+anim_crate_4
+blue
+.....
+.000.
+.0.0.
+.000.
+.....
+
+key
+#CFCF53
+.....
+000.0
+0.000
+000..
+.....
+
+anim_key_1
+blue
+.....
+.....
+.....
+.....
+.....
+
+anim_key_2
+blue
+.....
+.....
+.....
+000..
+.....
+
+anim_key_3
+blue
+.....
+.....
+0.000
+000..
+.....
+anim_key_4
+blue
+.....
+000.0
+0.000
+000..
+.....
+
+door
+#1F1F1F #CFCF53
+.101.
+.101.
+.101.
+.101.
+.101.
+
+door_
+#1F1F1F #CFCF53
+..1..
+..1..
+..1..
+..1..
+..1..
+
+enemy
+#CF5353
+.....
+.0.0.
+.000.
+00000
+.0.0.
+
+anim_enemy_1
+#CF5353
+.....
+.....
+.....
+.....
+.0.0.
+
+anim_enemy_2
+#CF5353
+.....
+.....
+.....
+00000
+.0.0.
+
+anim_enemy_3
+#CF5353
+.....
+.....
+.000.
+00000
+.0.0.
+
+anim_enemy_4
+#CF5353
+.....
+.0.0.
+.000.
+00000
+.0.0.
+
+plateA
+#7077FF #DBDBDB
+11111
+11011
+10001
+11011
+11111
+
+plateB
+#C47C41 #DBDBDB
+11111
+11011
+10001
+11011
+11111
+
+
+gateA_closed
+#7077FF #1F1F1F
+01010
+11111
+01110
+11111
+01010
+
+gateA_open
+#7077FF #1F1F1F
+0...0
+.....
+.....
+.....
+0...0
+
+
+
+gateB_closed
+#C47C41 #1F1F1F
+01010
+11111
+01110
+11111
+01010
+
+gateB_open
+#C47C41 #1F1F1F
+0...0
+.....
+.....
+.....
+0...0
+
+line_A
+#DBDBDB
+..0..
+..0..
+..0..
+..0..
+..0..
+
+line_B
+#DBDBDB
+.....
+.....
+00000
+.....
+.....
+
+line_C
+#DBDBDB
+.....
+.....
+000..
+..0..
+..0..
+
+line_D
+#DBDBDB
+..0..
+..0..
+000..
+.....
+.....
+
+line_E
+#DBDBDB
+..0..
+..0..
+..000
+.....
+.....
+
+line_F
+#DBDBDB
+.....
+.....
+..000
+..0..
+..0..
+
+line_G
+#DBDBDB
+..0..
+..0..
+00000
+..0..
+..0..
+
+line_H
+#DBDBDB
+.....
+.....
+00000
+..0..
+..0..
+
+
+wall_lineA
+#1F1F1F #474747
+00100
+00100
+00100
+00100
+00100
+
+wall_lineB
+#1F1F1F #474747
+00000
+00000
+11111
+00000
+00000
+
+wall_lineG
+#1F1F1F #474747
+00100
+00100
+11111
+00100
+00100
+
+exitA
+#00B06B
+.....
+0..0.
+.0..0
+0..0.
+.....
+
+exitB
+#00B06B
+..0..
+.0.0.
+.....
+..0..
+.0.0.
+
+exitC
+#00B06B
+.....
+.0..0
+0..0.
+.0..0
+.....
+
+SeenV
+transparent
+SeenH
+transparent
+
+=======
+LEGEND
+=======
+. = Background
+# = wall
+$ = wall_lineA
+% = wall_lineB
+& = wall_lineG
+? = holeA
+! = holeB
+P = player
+@ = exitA
+: = exitB
+; = exitC
+* = Crate
+k = key
+d = door
+e = enemy
+b = plateA
+c = plateB
+g = gateA_closed
+h = gateB_closed
+1 = line_A
+2 = line_B
+3 = line_C
+4 = line_D
+5 = line_E
+6 = line_F
+7 = line_G
+8 = line_H
+y = holeB_ and enemy
+z = holeA and Player
+
+Seen = SeenV or SeenH
+walls = wall or wall_lineA or wall_lineB or wall_lineG
+soundobject = Crate or key or enemy
+enemySeen = enemy or walls or door or gateA_closed or gateB_closed
+enemystopper = crate or key or enemy or walls or door or gateA_closed or gateB_closed
+object = Player or crate or key or enemy
+animations = anim_player_1 or anim_player_2 or anim_player_3 or anim_player_4 or anim_disappear_1 or anim_disappear_2 or anim_disappear_3 or anim_disappear_4 or anim_disappear_5 or anim_crate_1 or anim_crate_2 or anim_crate_3 or anim_crate_4 or anim_key_1 or anim_key_2 or anim_key_3 or anim_key_4 or anim_enemy_1 or anim_enemy_2 or anim_enemy_3 or anim_enemy_4
+lines = line_A or line_B or line_C or line_D or line_E or line_F or line_G or line_H
+exits = exitA or exitB or exitC
+=========
+SOUNDS
+=========
+restart 53933706
+soundobject move 209907
+(endlevel 7121610)
+EndGame 45539704
+sfx0 21775906
+sfx1 80891906
+sfx2 11775906
+sfx3 45772902
+sfx4 11033709
+sfx5 40827500
+sfx6 45539704
+sfx7 44990904
+================
+COLLISIONLAYERS
+================
+
+Background
+holeA, holeB, holeA_, holeB_, floor_gray
+exits
+plateA, plateB,lines,
+Player,  walls, Crate , key, door, door_, enemy, gateA_closed,gateB_closed
+gateA_open,gateB_open
+animations
+seenV
+SeenH
+
+======
+RULES
+======
+
+
+(input)
+[> object | object ] -> [> object | > object ]
+
+(gate)
+late [ plateA no object][gateA_open no object] -> [plateA][gateA_closed] sfx2
+late [ plateA object][gateA_closed] -> [plateA object][gateA_open] sfx0
+
+late [ plateB no object][gateB_open no object] -> [plateB][gateB_closed] sfx2
+late [ plateB object][gateB_closed] -> [plateB object][gateB_open] sfx0
+
+(key)
+late [ door_ | door] -> [ door_ | door_] again
+[ > key | door ] -> [ | door_ ] again sfx5
+late [ door_ ] -> []
+
+(enemy)
+vertical   [ enemy | SeenV no enemystopper ] -> [ > enemy | ] again sfx7
+horizontal [ enemy | SeenH no enemystopper ] -> [ > enemy | ] again sfx7
+[ > enemy | Player ] -> [ | enemy] sfx6  again
+late [ Seen ] -> [ ]
+late [ Player ] -> [ Player SeenH SeenV ]
+late vertical   [ SeenV | no enemySeen ] -> [ SeenV | SeenV ]
+late horizontal [ SeenH | no enemySeen ] -> [ SeenH | SeenH ]
+
+late vertical   [ enemy | SeenV ] -> [ enemy | SeenV ] again
+late horizontal [ enemy | SeenH ] -> [ enemy | SeenH ] again
+
+(
+[enemy | no enemystopper | ... | Player] -> [ > enemy | | ... | Player] again sfx7
+[enemy | Player ] -> [ > enemy | ] sfx6  again
+late [ enemy | no enemystopper | ... | Player] -> [  enemy | | ... | Player]  again
+late [ enemy | Player ] -> [ enemy | Player ] again
+)
+
+(duplicate)
+[anim_player_4] -> [Player] again
+[anim_player_3] -> [anim_player_4] again
+[anim_player_2] -> [anim_player_3] again
+[anim_player_1] -> [anim_player_2] again
+late [ holeA Player ][ holeB no object ] -> [ holeA_ Player ][ holeB_ anim_player_1 ] again sfx0 sfx4
+late [ holeB Player ][ holeA no object ] -> [ holeB_ Player ][ holeA_ anim_player_1 ] again sfx0 sfx4
+
+[anim_crate_4] -> [crate] again
+[anim_crate_3] -> [anim_crate_4] again
+[anim_crate_2] -> [anim_crate_3] again
+[anim_crate_1] -> [anim_crate_2] again
+late [ holeA crate ][ holeB no object ] -> [ holeA_ crate ][ holeB_ anim_crate_1 ] again sfx0 sfx4
+late [ holeB crate ][ holeA no object ] -> [ holeB_ crate ][ holeA_ anim_crate_1 ] again sfx0 sfx4
+
+[anim_key_4] -> [key] again
+[anim_key_3] -> [anim_key_4] again
+[anim_key_2] -> [anim_key_3] again
+[anim_key_1] -> [anim_key_2] again
+late [ holeA key ][ holeB no object ] -> [ holeA_ key ][ holeB_ anim_key_1 ] again sfx0 sfx4
+late [ holeB key ][ holeA no object ] -> [ holeB_ key ][ holeA_ anim_key_1 ] again sfx0 sfx4
+
+[anim_enemy_4] -> [enemy] again
+[anim_enemy_3] -> [anim_enemy_4] again
+[anim_enemy_2] -> [anim_enemy_3] again
+[anim_enemy_1] -> [anim_enemy_2] again
+late [ holeA enemy ][ holeB no object ] -> [ holeA_ enemy ][ holeB_ anim_enemy_1 ] again sfx0 sfx4
+late [ holeB enemy ][ holeA no object ] -> [ holeB_ enemy ][ holeA_ anim_enemy_1 ] again sfx0 sfx4
+
+(disappear)
+[anim_disappear_5] -> [] again
+[anim_disappear_4] -> [anim_disappear_5] again
+[anim_disappear_3] -> [anim_disappear_4] again
+[anim_disappear_2] -> [anim_disappear_3] again
+[anim_disappear_1] -> [anim_disappear_2] again
+late [holeA  Player][holeB Player] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  Crate][holeB Crate] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  key][holeB key] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  enemy][holeB enemy] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+
+(reset temp hole)
+late [holeA_ no object no animations] -> [holeA] sfx2
+late [holeB_ no object no animations] -> [holeB] sfx2
+
+
+
+==============
+WINCONDITIONS
+==============
+some Player on exits
+
+=======
+LEVELS
+=======
+
+########:########
+########.########
+########.########
+########.########
+########.########
+########.########
+#######...#...###
+#######.z.#.y.###
+#######...#...###
+############.####
+############.####
+
+#################
+#################
+###...#...#...###
+###.!2%2?...b.###
+###...#...#.1.###
+####.#######$####
+####.##...##$####
+####........g...@
+#######...#######
+########.########
+########p########
+
+#################
+#################
+###...#...#...###
+###.!2%2?...b.###
+###...#...#.1.###
+####.#######$####
+###.......##$####
+p.......c2h.g...@
+###.......#######
+#################
+#################
+
+############.####
+############.####
+###...#...#...###
+###.!2%2?.#......
+###...#...#...###
+####.###.########
+###...#...d.d.###
+p.....#.k.d.d...@
+###...#...d.d.###
+#################
+#################
+
+#################
+##.............##
+#####.#####.#####
+.................
+#################
+##.....?d......##
+#######5%3#######
+p.k.k.d.d1..d...@
+#####.#.#!#.#####
+##......#......##
+#################
+
+########:########
+########.########
+##6222cg2%%%223##
+##1....g.###..1##
+##1..#######..1##
+##1?2%%%%%%%2!1##
+##1..#######..1##
+p.1..#######..1##
+##1....h......1##
+##52222hb222224##
+#################
+
+########:########
+########g########
+###622%24.#...###
+###1..#.......###
+###1..#...#...###
+###$!%%%2%%%?####
+###1..#...#...###
+###5b.#...#.*.###
+###...#...#...###
+########.########
+########p########
+
+###:#############
+###.#############
+###.d...d..*!k.##
+###.d...d6224..##
+#########$####.##
+###......?.*.#.##
+###............##
+###............##
+###............##
+########.########
+########p########
+
+#################
+##...##...##...##
+##.!....k......##
+##.1.##...##...##
+###$####.####.###
+###$####.####.###
+##.1.##...##...##
+##.?.##.e......d@
+##...##...##...##
+###.#############
+###p#############
+
+#################
+##.....###.....##
+##......*...e..##
+##.....###.....##
+##......*...e..##
+##.....###.....##
+##......*...e..##
+p......###......@
+#################
+#################
+#################
+
+#################
+#######...h2223.@
+#######.!.####$##
+#######.1.####$##
+########$#####$##
+#####...1....e5c#
+#####.##$##.#####
+p..bg...?...#####
+#################
+#################
+#################
+
+########:########
+p..hh23..########
+#..###$##########
+#..?2%&!.########
+#....#$..########
+######c..########
+#################
+.................
+#################
+.................
+#################
+
+#################
+#################
+#####......######
+##..g....*6?...b#
+##*##.....1####h#
+##*#######$####1@
+##*##622227%%%%h#
+##.ch4...*5!....#
+##.##......######
+##.##############
+##p##############
+
+
+#############:###
+####e.....###.###
+####.###..###.###
+#b..!222362g..###
+#$##.###11#######
+p5222%%%74#######
+##.*....?...#####
+##...############
+##.*.############
+##...############
+#################
+
+#################
+#.........#######
+#eke......#######
+#.........#######
+#...###...#######
+#...###...#######
+#...###....bg.d.#
+#.........###.#.#
+#.......!2%%?.#.#
+#.........###.#.@
+#############p###
+
+#################
+#.....!.?...ed.d#
+#.....524....d.d#
+#............d.d#
+#............d.d#
+#.e..........d.d#
+#............d.d@
+#............d.d#
+######.k.########
+p...ch...########
+#################
+
+#################
+############..d.@
+############..d##
+###6222%223##g###
+###1...#.#!##g%b#
+###1...#.#....#.#
+p..1...h........#
+###?.c2h.....k..#
+###############.#
+###############e#
+#################
+
+#################
+p.ch....?...62g.@
+####6%%%7%%%4####
+####1###53#######
+####1#...1##.####
+####1...e522!####
+####1##....#.####
+####$##.*###.####
+####1###*###.####
+#b224........####
+#################
+
+#############:###
+p.ch.....?236g###
+#####****.*11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......57!###
+#####eeeee..5b###
+#################
+
+#################
+#################
+#################
+#################
+#################
+#################
+#################
+;....g.....!hc###
+#####$#######.###
+;....gb....?#.###
+#############p###
+
+########.########
+...hh23..########
+#..###$##########
+#..?2%&!.########
+#....#$..########
+######c..########
+#################
+;...............p
+#################
+;...............p
+#################
+
+#################
+####........#####
+####........#####
+;.##........#####
+#.##....##.*#####
+#.......##..#####
+####.ee.##..#####
+##########......p
+##########..#####
+##########......p
+#################
+
+#################
+##.............##
+#####.#####.#####
+;...............p
+#################
+##.....?d......##
+#######5%3#######
+..k.k.d.d1..d....
+#####.#.#!#.#####
+##......#......##
+#################
+
+############:####
+############.####
+###...#...#...###
+###.!2%2?.#.....p
+###...#...#...###
+####.###.########
+###...#...d.d.###
+......#.k.d.d....
+###...#...d.d.###
+#################
+#################
+
+############:####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############p####
+
+########:########
+########.########
+########.########
+########.########
+########.########
+########.########
+#######...#...###
+#######.?.#.!e###
+#######...#...###
+############.####
+############p####
+
+message end.
