@@ -46,23 +46,9 @@ static unsigned char custom_graphics_mode6[] = {
 };
 
 void setup_graphics_mode6(void) {
-    // Install display list
-    memcpy((void*)DLIST_MEM_MODE6, display_list_mode6, sizeof(display_list_mode6));
+    word charset_addr = (word)CHARSET_MEM_MODE6;
 
-    // Point display list pointer to our custom display list
-    OS.sdlstl = (unsigned char)(DLIST_MEM_MODE6 & 0xFF);
-    OS.sdlsth = (unsigned char)(DLIST_MEM_MODE6 >> 8);
-
-    // Setup colors for ANTIC Mode 6
-    // In Mode 6, characters use different PF colors based on their value:
-    // 0-63: PF0, 64-127: PF2, 128-191: PF1, 192-255: PF3
-    OS.color0 = MODE6_COLOR_BLACK;   // Background
-    OS.color1 = MODE6_COLOR_BROWN;   // PF0 - walls, boxes
-    OS.color2 = MODE6_COLOR_GREEN;   // PF1 - player
-    OS.color3 = MODE6_COLOR_YELLOW;  // PF2 - goals
-    OS.color4 = MODE6_COLOR_RED;     // PF3 - boxes on goals
-
-    // Copy ROM character set to RAM
+    // Copy ROM character set to RAM first
     memcpy((void*)CHARSET_MEM_MODE6, (void*)0xE000, 1024);
 
     // Install custom graphics at specific positions:
@@ -72,14 +58,29 @@ void setup_graphics_mode6(void) {
     // Character 66 (0x42): Goal (PF2 yellow)
     memcpy((void*)(CHARSET_MEM_MODE6 + 0x42 * 8), custom_graphics_mode6 + 16, 8);
 
-    // Character 67 (0x43): Box on goal (PF3 red) - but we'll use char 195 instead
+    // Character 195 (0xC3): Box on goal (PF3 red)
     memcpy((void*)(CHARSET_MEM_MODE6 + (192 + 3) * 8), custom_graphics_mode6 + 24, 8);
 
     // Characters 128-129 (0x80-0x81): Player (PF1 green)
     memcpy((void*)(CHARSET_MEM_MODE6 + 0x80 * 8), custom_graphics_mode6 + 32, 16);
 
-    // Point character base to our custom character set
-    OS.chbas = (unsigned char)(CHARSET_MEM_MODE6 >> 8);
+    // Set character set pointer using POKE (location 756 = CHBAS)
+    POKE(756, (byte)(charset_addr >> 8));
+
+    // Install display list
+    memcpy((void*)DLIST_MEM_MODE6, display_list_mode6, sizeof(display_list_mode6));
+
+    // Point display list pointer to our custom display list
+    POKEW(560, DLIST_MEM_MODE6);  // SDLSTL/SDLSTH at 560/561
+
+    // Setup colors for ANTIC Mode 6
+    // In Mode 6, characters use different PF colors based on their value:
+    // 0-63: PF0, 64-127: PF2, 128-191: PF1, 192-255: PF3
+    POKE(712, MODE6_COLOR_BLACK);   // Background (location 712 = COLOR0)
+    POKE(708, MODE6_COLOR_BROWN);   // PF0 - walls, boxes (location 708 = COLOR1)
+    POKE(709, MODE6_COLOR_GREEN);   // PF1 - player (location 709 = COLOR2)
+    POKE(710, MODE6_COLOR_YELLOW);  // PF2 - goals (location 710 = COLOR3)
+    POKE(711, MODE6_COLOR_RED);     // PF3 - boxes on goals (location 711 = COLOR4)
 
     // Clear screen
     memset((void*)SCREEN_MEM_MODE6, 0, 480);
