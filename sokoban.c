@@ -5,21 +5,49 @@
   - atari_font: Custom graphics and character set
   - sokoban_game: Game logic
 
-  TILE SIZE SWITCH:
+  DISPLAY MODE SWITCHES:
   - Uncomment USE_BIG_TILES to use 16x16 pixel tiles (2x2 character cells)
-  - Comment it out to use standard 8x8 pixel tiles (1 character cell)
+  - Uncomment USE_MODE6_COLOR to use ANTIC Mode 6 with 5 colors (20x24 grid)
+  - Comment both out to use standard 8x8 monochrome mode (40x24 grid)
+
+  NOTE: Only enable ONE mode at a time!
 */
 
 // ============================================================
-// TILE SIZE CONFIGURATION
+// DISPLAY MODE CONFIGURATION
 // ============================================================
-// Uncomment the next line to use 16x16 tiles instead of 8x8
-//#define USE_BIG_TILES
+// Uncomment ONE of the following lines:
+
+//#define USE_BIG_TILES      // 16x16 tiles (20x12 grid, monochrome)
+//#define USE_MODE6_COLOR    // ANTIC Mode 6 (20x24 grid, 5 colors)
+// Default: 8x8 tiles (40x24 grid, monochrome)
 
 // ============================================================
-// CONDITIONAL INCLUDES BASED ON TILE SIZE
+// CONDITIONAL INCLUDES BASED ON DISPLAY MODE
 // ============================================================
-#ifdef USE_BIG_TILES
+#ifdef USE_MODE6_COLOR
+    // ANTIC Mode 6 - 5 color mode
+    //#link "atari_conio_mode6.c"
+    //#link "atari_font_mode6.c"
+    //#link "sokoban_game_mode6.c"
+
+    #include "atari_conio_mode6.h"
+    #include "atari_font_mode6.h"
+    #include "sokoban_game_mode6.h"
+
+    // Create aliases for easier code
+    #define setup_graphics      setup_graphics_mode6
+    #define load_level          load_level_mode6
+    #define draw_level          draw_level_mode6
+    #define update_status       update_status_mode6
+    #define try_move_player     try_move_player_mode6
+    #define is_level_complete   is_level_complete_mode6
+    #define animate_player      animate_player_mode6
+    #define wait_vblank         wait_vblank_mode6
+    #define increment_frame_counter increment_frame_counter_mode6
+    #define my_cputsxy          my_cputsxy_mode6
+
+#elif defined(USE_BIG_TILES)
     // 16x16 tile mode
     //#link "atari_conio_16x16.c"
     //#link "atari_font_16x16.c"
@@ -40,6 +68,7 @@
     #define wait_vblank         wait_vblank_16x16
     #define increment_frame_counter increment_frame_counter_16x16
     #define my_cputsxy          my_cputsxy_16x16
+
 #else
     // 8x8 tile mode (standard)
     //#link "atari_conio.c"
@@ -59,8 +88,24 @@
 typedef unsigned char byte;
 
 // Level data
-// This level works for both 8x8 (40x24) and 16x16 (20x12) tile modes
-#ifdef USE_BIG_TILES
+// Different levels for different display modes
+#ifdef USE_MODE6_COLOR
+// Level for ANTIC Mode 6 (20x24 grid with colors)
+const char* level_1[] = {
+    "    ######          ",
+    "    #    #          ",
+    "    # $  #          ",
+    "  ### $  ##         ",
+    "  #  $ $  #         ",
+    "  # # ##  #         ",
+    "  # # ##  #         ",
+    "  #  $  ..#         ",
+    "  #### #@.#         ",
+    "     #   .#         ",
+    "     ######         "
+};
+
+#elif defined(USE_BIG_TILES)
 // Smaller level for 16x16 tiles (20x12 grid)
 const char* level_1[] = {
     "  ######  ",
@@ -75,6 +120,7 @@ const char* level_1[] = {
     "  #    ## ",
     "  ###### "
 };
+
 #else
 // Original level for 8x8 tiles (40x24 grid)
 const char* level_1[] = {
