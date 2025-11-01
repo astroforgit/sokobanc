@@ -7,9 +7,9 @@
 */
 
 // Link the 16x16 mode libraries
-#link "atari_conio_16x16.c"
-#link "atari_font_16x16.c"
-#link "sokoban_game_16x16.c"
+//#link "atari_conio_16x16.c"
+//#link "atari_font_16x16.c"
+//#link "sokoban_game_16x16.c"
 
 #include "atari_conio_16x16.h"
 #include "atari_font_16x16.h"

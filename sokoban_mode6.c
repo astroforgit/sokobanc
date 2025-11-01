@@ -13,9 +13,9 @@
 */
 
 // Link the Mode 6 libraries
-#link "atari_conio_mode6.c"
-#link "atari_font_mode6.c"
-#link "sokoban_game_mode6.c"
+//#link "atari_conio_mode6.c"
+//#link "atari_font_mode6.c"
+//#link "sokoban_game_mode6.c"
 
 #include "atari_conio_mode6.h"
 #include "atari_font_mode6.h"

@@ -7,9 +7,9 @@
 */
 
 // Link the 8x8 mode libraries
-#link "atari_conio.c"
-#link "atari_font.c"
-#link "sokoban_game.c"
+//#link "atari_conio.c"
+//#link "atari_font.c"
+//#link "sokoban_game.c"
 
 #include "atari_conio.h"
 #include "atari_font.h"
