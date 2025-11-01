@@ -22,25 +22,26 @@ static unsigned char display_list_mode6[] = {
     0x41, 0x00, 0x80                     // JVB - Jump and wait for VBlank
 };
 
-// Custom character set data (optional - can use ROM charset)
-// In Mode 6, characters are 8x8 pixels, 1 bit per pixel (2 colors per char)
+// Custom character set data
+// In Mode 6, characters are 8x8 pixels, 1 bit per pixel
+// We'll define custom graphics for game elements
 static unsigned char custom_graphics_mode6[] = {
-    // Custom wall character (0x40) - Brick pattern
+    // Wall character (0x40 = 64, PF0 brown) - Brick pattern
     0xFF, 0xFF, 0xC3, 0xC3, 0xFF, 0xFF, 0x3C, 0x3C,
-    
-    // Custom box character (0x41) - Crate
+
+    // Box character (0x41 = 65, PF0 brown) - Crate
     0xFF, 0x81, 0xBD, 0xBD, 0xBD, 0xBD, 0x81, 0xFF,
-    
-    // Custom goal character (0x42) - Circle
+
+    // Goal character (0x42 = 66, PF2 yellow) - Circle/target
     0x00, 0x3C, 0x7E, 0x7E, 0x7E, 0x7E, 0x3C, 0x00,
-    
-    // Custom box on goal (0x43) - Box + circle
+
+    // Box on goal (0x43 = 67, PF3 red) - Box + circle
     0xFF, 0xC3, 0xBD, 0xBD, 0xBD, 0xBD, 0xC3, 0xFF,
-    
-    // Custom player character (0x40 in upper 128) - Stick figure
+
+    // Player character (0x80 = 128, PF1 green) - Stick figure
     0x18, 0x3C, 0x18, 0x7E, 0x18, 0x24, 0x42, 0x81,
-    
-    // Custom player on goal (0x41 in upper 128)
+
+    // Player on goal (0x81 = 129, PF1 green) - Stick figure
     0x18, 0x3C, 0x18, 0x7E, 0x18, 0x24, 0x42, 0x81
 };
 
@@ -52,18 +53,30 @@ void setup_graphics_mode6(void) {
     OS.sdlstl = (unsigned char)(DLIST_MEM_MODE6 & 0xFF);
     OS.sdlsth = (unsigned char)(DLIST_MEM_MODE6 >> 8);
 
-    // Setup colors directly
-    OS.color0 = MODE6_COLOR_BLACK;
-    OS.color1 = MODE6_COLOR_BROWN;
-    OS.color2 = MODE6_COLOR_GREEN;
-    OS.color3 = MODE6_COLOR_YELLOW;
-    OS.color4 = MODE6_COLOR_RED;
+    // Setup colors for ANTIC Mode 6
+    // In Mode 6, characters use different PF colors based on their value:
+    // 0-63: PF0, 64-127: PF2, 128-191: PF1, 192-255: PF3
+    OS.color0 = MODE6_COLOR_BLACK;   // Background
+    OS.color1 = MODE6_COLOR_BROWN;   // PF0 - walls, boxes
+    OS.color2 = MODE6_COLOR_GREEN;   // PF1 - player
+    OS.color3 = MODE6_COLOR_YELLOW;  // PF2 - goals
+    OS.color4 = MODE6_COLOR_RED;     // PF3 - boxes on goals
 
-    // Copy ROM character set
+    // Copy ROM character set to RAM
     memcpy((void*)CHARSET_MEM_MODE6, (void*)0xE000, 1024);
 
-    // Install custom graphics
-    memcpy((void*)(CHARSET_MEM_MODE6 + 0x40 * 8), custom_graphics_mode6, 48);
+    // Install custom graphics at specific positions:
+    // Characters 64-65 (0x40-0x41): Wall and Box (PF0 brown)
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0x40 * 8), custom_graphics_mode6, 16);
+
+    // Character 66 (0x42): Goal (PF2 yellow)
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0x42 * 8), custom_graphics_mode6 + 16, 8);
+
+    // Character 67 (0x43): Box on goal (PF3 red) - but we'll use char 195 instead
+    memcpy((void*)(CHARSET_MEM_MODE6 + (192 + 3) * 8), custom_graphics_mode6 + 24, 8);
+
+    // Characters 128-129 (0x80-0x81): Player (PF1 green)
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0x80 * 8), custom_graphics_mode6 + 32, 16);
 
     // Point character base to our custom character set
     OS.chbas = (unsigned char)(CHARSET_MEM_MODE6 >> 8);

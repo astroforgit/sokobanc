@@ -47,23 +47,19 @@ typedef unsigned short word;
 #define MODE6_COLOR_BLUE      0x96    // Blue alternative
 
 // Character definitions for game elements
-// Using PF0 color (brown) - characters 0-127
-#define CHAR_WALL       '#'
-#define CHAR_BOX        '$'
-#define CHAR_GOAL       '.'
-#define CHAR_BOXGOAL    '*'
-
-// Using PF1 color (green) - characters 128-255
-#define CHAR_PLAYER     (128 + '@')
-#define CHAR_PLAYERGOAL (128 + '+')
+// ANTIC Mode 6 color mapping:
+// Characters 0-63:    Use PF0 color (brown) - walls, boxes
+// Characters 64-127:  Use PF2 color (yellow) - goals
+// Characters 128-191: Use PF1 color (green) - player
+// Characters 192-255: Use PF3 color (red) - boxes on goals
 
 // Custom character codes for special graphics
-#define CHAR_WALL_CUSTOM       0x40
-#define CHAR_BOX_CUSTOM        0x41
-#define CHAR_GOAL_CUSTOM       0x42
-#define CHAR_BOXGOAL_CUSTOM    0x43
-#define CHAR_PLAYER_CUSTOM     (128 + 0x40)
-#define CHAR_PLAYERGOAL_CUSTOM (128 + 0x41)
+#define CHAR_WALL_CUSTOM       0x40    // PF0 (brown) - character 64
+#define CHAR_BOX_CUSTOM        0x41    // PF0 (brown) - character 65
+#define CHAR_GOAL_CUSTOM       (64 + 0x02)  // PF2 (yellow) - character 66
+#define CHAR_BOXGOAL_CUSTOM    (192 + 0x03) // PF3 (red) - character 195
+#define CHAR_PLAYER_CUSTOM     (128 + 0x00) // PF1 (green) - character 128
+#define CHAR_PLAYERGOAL_CUSTOM (128 + 0x01) // PF1 (green) - character 129
 
 /*
   Setup ANTIC Mode 6 graphics and colors
