@@ -59,54 +59,22 @@ void setup_duplicator_graphics(void) {
     memcpy(CHARSET_MEM, (void*)ROM_CHARSET_ADDRESS, 1024);
     
     // Install custom graphics for duplicator game tiles
-    // Note: my_cputsxy converts ASCII to ATASCII:
-    //   - chars 0x20-0x5F: subtract 0x20
-    //   - chars 0x60-0x7F: subtract 0x60 (lowercase letters)
-
-    // Player '@' (0x40) -> screen code 0x20 (0x40 - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_PLAYER - 0x20) * 8), &duplicator_graphics[0], 8);
-
-    // Wall '#' (0x23) -> screen code 0x03 (0x23 - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_WALL - 0x20) * 8), &duplicator_graphics[8], 8);
-
-    // Crate '*' (0x2A) -> screen code 0x0A (0x2A - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_CRATE - 0x20) * 8), &duplicator_graphics[16], 8);
-
-    // Key 'k' (0x6B) -> screen code 0x0B (0x6B - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_KEY - 0x60) * 8), &duplicator_graphics[24], 8);
-
-    // Door 'd' (0x64) -> screen code 0x04 (0x64 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_DOOR - 0x60) * 8), &duplicator_graphics[32], 8);
-
-    // Enemy 'e' (0x65) -> screen code 0x05 (0x65 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_ENEMY - 0x60) * 8), &duplicator_graphics[40], 8);
-
-    // Hole A '?' (0x3F) -> screen code 0x1F (0x3F - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_HOLE_A - 0x20) * 8), &duplicator_graphics[48], 8);
-
-    // Hole B '!' (0x21) -> screen code 0x01 (0x21 - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_HOLE_B - 0x20) * 8), &duplicator_graphics[56], 8);
-
-    // Plate A 'b' (0x62) -> screen code 0x02 (0x62 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_PLATE_A - 0x60) * 8), &duplicator_graphics[64], 8);
-
-    // Plate B 'c' (0x63) -> screen code 0x03 (0x63 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_PLATE_B - 0x60) * 8), &duplicator_graphics[72], 8);
-
-    // Gate A 'g' (0x67) -> screen code 0x07 (0x67 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_GATE_A - 0x60) * 8), &duplicator_graphics[80], 8);
-
-    // Gate B 'h' (0x68) -> screen code 0x08 (0x68 - 0x60)
-    memcpy(CHARSET_MEM + ((CHAR_GATE_B - 0x60) * 8), &duplicator_graphics[88], 8);
-
-    // Exit A ':' (0x3A) -> screen code 0x1A (0x3A - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_EXIT_A - 0x20) * 8), &duplicator_graphics[96], 8);
-
-    // Exit B ';' (0x3B) -> screen code 0x1B (0x3B - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_EXIT_B - 0x20) * 8), &duplicator_graphics[104], 8);
-
-    // Floor '.' (0x2E) -> screen code 0x0E (0x2E - 0x20)
-    memcpy(CHARSET_MEM + ((CHAR_FLOOR - 0x20) * 8), &duplicator_graphics[112], 8);
+    // Use direct character multiplication like sokoban does
+    memcpy(CHARSET_MEM + ('@' * 8), &duplicator_graphics[0], 8);   // Player
+    memcpy(CHARSET_MEM + ('#' * 8), &duplicator_graphics[8], 8);   // Wall
+    memcpy(CHARSET_MEM + ('*' * 8), &duplicator_graphics[16], 8);  // Crate
+    memcpy(CHARSET_MEM + ('k' * 8), &duplicator_graphics[24], 8);  // Key
+    memcpy(CHARSET_MEM + ('d' * 8), &duplicator_graphics[32], 8);  // Door
+    memcpy(CHARSET_MEM + ('e' * 8), &duplicator_graphics[40], 8);  // Enemy
+    memcpy(CHARSET_MEM + ('?' * 8), &duplicator_graphics[48], 8);  // Hole A
+    memcpy(CHARSET_MEM + ('!' * 8), &duplicator_graphics[56], 8);  // Hole B
+    memcpy(CHARSET_MEM + ('b' * 8), &duplicator_graphics[64], 8);  // Plate A
+    memcpy(CHARSET_MEM + ('c' * 8), &duplicator_graphics[72], 8);  // Plate B
+    memcpy(CHARSET_MEM + ('g' * 8), &duplicator_graphics[80], 8);  // Gate A
+    memcpy(CHARSET_MEM + ('h' * 8), &duplicator_graphics[88], 8);  // Gate B
+    memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[96], 8);  // Exit A
+    memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[104], 8); // Exit B
+    memcpy(CHARSET_MEM + ('.' * 8), &duplicator_graphics[112], 8); // Floor
     
     // Set colors
     POKE(709, 0);   // Background color (black)
