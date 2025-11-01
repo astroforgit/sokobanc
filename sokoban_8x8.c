@@ -1,15 +1,15 @@
-/*
-  Sokoban - 8x8 Standard Mode
-  40x24 character grid, monochrome
-  
-  This is the main file for the standard 8x8 tile mode.
-  Open THIS file in 8bitworkshop to play in standard mode.
-*/
-
 // Link the 8x8 mode libraries
 //#link "atari_conio.c"
 //#link "atari_font.c"
 //#link "sokoban_game.c"
+
+/*
+  Sokoban - 8x8 Standard Mode
+  40x24 character grid, monochrome
+
+  This is the main file for the standard 8x8 tile mode.
+  Open THIS file in 8bitworkshop to play in standard mode.
+*/
 
 #include "atari_conio.h"
 #include "atari_font.h"
@@ -42,8 +42,11 @@ const char* level_1[] = {
 
 // Main game function
 void main(void) {
-    byte joy;
-    
+    byte joy, last_joy = 0;
+
+    // Initialize joystick
+    joy_install(joy_static_stddrv);
+
     // Initialize graphics and load level
     setup_graphics();
     load_level(level_1, LEVEL_ROWS);
@@ -57,21 +60,20 @@ void main(void) {
     while (1) {
         // Read joystick
         joy = joy_read(0);
-        
-        // Handle input
-        if (JOY_UP(joy)) {
-            try_move_player(0, -1);
-            wait_vblank();
-        } else if (JOY_DOWN(joy)) {
-            try_move_player(0, 1);
-            wait_vblank();
-        } else if (JOY_LEFT(joy)) {
-            try_move_player(-1, 0);
-            wait_vblank();
-        } else if (JOY_RIGHT(joy)) {
-            try_move_player(1, 0);
-            wait_vblank();
+
+        // Handle joystick input (with debouncing)
+        if (joy && !last_joy) {
+            if (JOY_UP(joy)) {
+                try_move_player(0, -1);
+            } else if (JOY_DOWN(joy)) {
+                try_move_player(0, 1);
+            } else if (JOY_LEFT(joy)) {
+                try_move_player(-1, 0);
+            } else if (JOY_RIGHT(joy)) {
+                try_move_player(1, 0);
+            }
         }
+        last_joy = joy;
         
         // Also check keyboard
         if (kbhit()) {

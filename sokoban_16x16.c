@@ -1,15 +1,15 @@
-/*
-  Sokoban - 16x16 Big Tile Mode
-  20x12 tile grid, monochrome, detailed graphics
-  
-  This is the main file for the 16x16 tile mode.
-  Open THIS file in 8bitworkshop to play with big tiles.
-*/
-
 // Link the 16x16 mode libraries
 //#link "atari_conio_16x16.c"
 //#link "atari_font_16x16.c"
 //#link "sokoban_game_16x16.c"
+
+/*
+  Sokoban - 16x16 Big Tile Mode
+  20x12 tile grid, monochrome, detailed graphics
+
+  This is the main file for the 16x16 tile mode.
+  Open THIS file in 8bitworkshop to play with big tiles.
+*/
 
 #include "atari_conio_16x16.h"
 #include "atari_font_16x16.h"
@@ -42,8 +42,11 @@ const char* level_1[] = {
 
 // Main game function
 void main(void) {
-    byte joy;
-    
+    byte joy, last_joy = 0;
+
+    // Initialize joystick
+    joy_install(joy_static_stddrv);
+
     // Initialize graphics and load level
     setup_graphics_16x16();
     load_level_16x16(level_1, LEVEL_ROWS);
@@ -57,21 +60,20 @@ void main(void) {
     while (1) {
         // Read joystick
         joy = joy_read(0);
-        
-        // Handle input
-        if (JOY_UP(joy)) {
-            try_move_player_16x16(0, -1);
-            wait_vblank_16x16();
-        } else if (JOY_DOWN(joy)) {
-            try_move_player_16x16(0, 1);
-            wait_vblank_16x16();
-        } else if (JOY_LEFT(joy)) {
-            try_move_player_16x16(-1, 0);
-            wait_vblank_16x16();
-        } else if (JOY_RIGHT(joy)) {
-            try_move_player_16x16(1, 0);
-            wait_vblank_16x16();
+
+        // Handle joystick input (with debouncing)
+        if (joy && !last_joy) {
+            if (JOY_UP(joy)) {
+                try_move_player_16x16(0, -1);
+            } else if (JOY_DOWN(joy)) {
+                try_move_player_16x16(0, 1);
+            } else if (JOY_LEFT(joy)) {
+                try_move_player_16x16(-1, 0);
+            } else if (JOY_RIGHT(joy)) {
+                try_move_player_16x16(1, 0);
+            }
         }
+        last_joy = joy;
         
         // Also check keyboard
         if (kbhit()) {

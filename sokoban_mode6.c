@@ -1,21 +1,21 @@
+// Link the Mode 6 libraries
+//#link "atari_conio_mode6.c"
+//#link "atari_font_mode6.c"
+//#link "sokoban_game_mode6.c"
+
 /*
   Sokoban - ANTIC Mode 6 Color
   20x24 character grid, 5 colors!
-  
+
   This is the main file for the ANTIC Mode 6 color mode.
   Open THIS file in 8bitworkshop to play in glorious color!
-  
+
   Colors:
   - Brown: Walls and boxes
   - Green: Player
   - Yellow: Goals
   - Red: Boxes on goals
 */
-
-// Link the Mode 6 libraries
-//#link "atari_conio_mode6.c"
-//#link "atari_font_mode6.c"
-//#link "sokoban_game_mode6.c"
 
 #include "atari_conio_mode6.h"
 #include "atari_font_mode6.h"
@@ -48,8 +48,11 @@ const char* level_1[] = {
 
 // Main game function
 void main(void) {
-    byte joy;
-    
+    byte joy, last_joy = 0;
+
+    // Initialize joystick
+    joy_install(joy_static_stddrv);
+
     // Initialize graphics and load level
     setup_graphics_mode6();
     load_level_mode6(level_1, LEVEL_ROWS);
@@ -63,21 +66,20 @@ void main(void) {
     while (1) {
         // Read joystick
         joy = joy_read(0);
-        
-        // Handle input
-        if (JOY_UP(joy)) {
-            try_move_player_mode6(0, -1);
-            wait_vblank_mode6();
-        } else if (JOY_DOWN(joy)) {
-            try_move_player_mode6(0, 1);
-            wait_vblank_mode6();
-        } else if (JOY_LEFT(joy)) {
-            try_move_player_mode6(-1, 0);
-            wait_vblank_mode6();
-        } else if (JOY_RIGHT(joy)) {
-            try_move_player_mode6(1, 0);
-            wait_vblank_mode6();
+
+        // Handle joystick input (with debouncing)
+        if (joy && !last_joy) {
+            if (JOY_UP(joy)) {
+                try_move_player_mode6(0, -1);
+            } else if (JOY_DOWN(joy)) {
+                try_move_player_mode6(0, 1);
+            } else if (JOY_LEFT(joy)) {
+                try_move_player_mode6(-1, 0);
+            } else if (JOY_RIGHT(joy)) {
+                try_move_player_mode6(1, 0);
+            }
         }
+        last_joy = joy;
         
         // Also check keyboard
         if (kbhit()) {
