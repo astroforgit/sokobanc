@@ -14,18 +14,26 @@ void my_put_tile_16x16(byte tx, byte ty, byte tile_tl) {
     // Convert tile coordinates to character coordinates
     byte char_x = tx * 2;
     byte char_y = ty * 2;
-    
+
     // Calculate screen memory offsets for all 4 character cells
     word offset_tl = (word)char_y * CHAR_COLS + char_x;           // Top-left
     word offset_tr = (word)char_y * CHAR_COLS + char_x + 1;       // Top-right
     word offset_bl = (word)(char_y + 1) * CHAR_COLS + char_x;     // Bottom-left
     word offset_br = (word)(char_y + 1) * CHAR_COLS + char_x + 1; // Bottom-right
-    
-    // Write all 4 characters that make up the tile
-    SCREEN_MEM[offset_tl] = tile_tl;      // Top-left
-    SCREEN_MEM[offset_tr] = tile_tl + 1;  // Top-right
-    SCREEN_MEM[offset_bl] = tile_tl + 2;  // Bottom-left
-    SCREEN_MEM[offset_br] = tile_tl + 3;  // Bottom-right
+
+    // If tile_tl is 0, draw empty space (all spaces)
+    if (tile_tl == 0) {
+        SCREEN_MEM[offset_tl] = 0;  // Space
+        SCREEN_MEM[offset_tr] = 0;  // Space
+        SCREEN_MEM[offset_bl] = 0;  // Space
+        SCREEN_MEM[offset_br] = 0;  // Space
+    } else {
+        // Write all 4 characters that make up the tile
+        SCREEN_MEM[offset_tl] = tile_tl;      // Top-left
+        SCREEN_MEM[offset_tr] = tile_tl + 1;  // Top-right
+        SCREEN_MEM[offset_bl] = tile_tl + 2;  // Bottom-left
+        SCREEN_MEM[offset_br] = tile_tl + 3;  // Bottom-right
+    }
 }
 
 void my_cputsxy_16x16(byte x, byte y, const char* str) {
