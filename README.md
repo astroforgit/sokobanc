@@ -2,8 +2,6 @@
 
 A colorful Sokoban puzzle game for the Atari 8-bit computer family, featuring **three display modes** including a new **5-color ANTIC Mode 6**!
 
-**[▶️ Open this project in 8bitworkshop](http://8bitworkshop.com/redir.html?platform=atari8-800&githubURL=https%3A%2F%2Fgithub.com%2Fastroforgit%2Fsokobanc&file=sokoban.c)**
-
 ---
 
 ## ✨ NEW: ANTIC Mode 6 Color Support!
@@ -16,28 +14,33 @@ The game now supports **5 vibrant colors** using ANTIC Mode 6:
 - 🔴 **Red**: Boxes on goals
 - ⚫ **Black**: Background
 
-**Enable color mode** by editing `sokoban.c` line 19:
-```c
-#define USE_MODE6_COLOR    // 5-color mode! ✨
-```
-
 ---
 
-## 🎨 Three Display Modes
+## 🎨 Three Display Modes - Three Files!
 
-| Mode | Grid | Colors | Description |
-|------|------|--------|-------------|
-| **8×8** | 40×24 | 1+BG | Classic monochrome (default) |
-| **16×16** | 20×12 | 1+BG | Big detailed tiles |
-| **Mode 6** ✨ | 20×24 | **5** | **Colorful graphics!** |
+Each display mode has its own main file. Just open the file you want in 8bitworkshop:
+
+| Mode | File | Grid | Colors | Description |
+|------|------|------|--------|-------------|
+| **8×8** | `sokoban_8x8.c` | 40×24 | 1+BG | Classic monochrome |
+| **16×16** | `sokoban_16x16.c` | 20×12 | 1+BG | Big detailed tiles |
+| **Mode 6** ✨ | `sokoban_mode6.c` | 20×24 | **5** | **Colorful!** |
 
 ---
 
 ## 🚀 Quick Start
 
-1. **[Open in 8bitworkshop](http://8bitworkshop.com/redir.html?platform=atari8-800&githubURL=https%3A%2F%2Fgithub.com%2Fastroforgit%2Fsokobanc&file=sokoban.c)**
-2. Edit `sokoban.c` to choose display mode (line 19)
-3. Play with arrow keys or joystick!
+### Play in 8bitworkshop IDE
+
+**Choose your mode:**
+
+1. **[▶️ 8×8 Standard Mode](http://8bitworkshop.com/redir.html?platform=atari8-800&githubURL=https%3A%2F%2Fgithub.com%2Fastroforgit%2Fsokobanc&file=sokoban_8x8.c)** - Classic
+2. **[▶️ 16×16 Big Tiles](http://8bitworkshop.com/redir.html?platform=atari8-800&githubURL=https%3A%2F%2Fgithub.com%2Fastroforgit%2Fsokobanc&file=sokoban_16x16.c)** - Detailed
+3. **[▶️ Mode 6 Color](http://8bitworkshop.com/redir.html?platform=atari8-800&githubURL=https%3A%2F%2Fgithub.com%2Fastroforgit%2Fsokobanc&file=sokoban_mode6.c)** - Colorful! ✨
+
+**Controls:**
+- Arrow keys or joystick to move
+- ESC to quit
 
 **Goal:** Push all boxes ($) onto goal targets (.)
 
