@@ -45,6 +45,7 @@ typedef struct {
     byte level_height;
     byte moves;
     byte level_complete;
+    byte current_level;
 } GameState;
 
 /*

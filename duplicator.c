@@ -13,6 +13,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <peekpoke.h>
 #include <conio.h>
 #include <joystick.h>
@@ -27,7 +28,8 @@ typedef unsigned short word;
 #define SCREEN_MEM  ((byte*)0x9000)
 #define ROM_CHARSET_ADDRESS 0xE000
 
-// Level data - First level from duplicator.txt
+// Level data from duplicator.txt
+// Note: 'z' = holeA and Player, 'y' = holeB and enemy, 'p' = Player
 const char* level_1[] = {
     "########:########",
     "########.########",
@@ -42,7 +44,32 @@ const char* level_1[] = {
     "############.####"
 };
 
-#define LEVEL_ROWS 11
+const char* level_2[] = {
+    "#################",
+    "#################",
+    "###...#...#...###",
+    "###.!.#.?...b.###",
+    "###...#...#...###",
+    "####.############",
+    "####.##...#######",
+    "####........g...:",
+    "#######...#######",
+    "########.########",
+    "########@########"
+};
+
+// Level definitions
+typedef struct {
+    const char** data;
+    byte rows;
+} LevelDef;
+
+const LevelDef levels[] = {
+    { level_1, 11 },
+    { level_2, 11 }
+};
+
+#define NUM_LEVELS 2
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
@@ -111,22 +138,28 @@ void setup_duplicator_graphics(void) {
 void main(void) {
     byte joy, last_joy = 0;
     GameState* state;
-    
+    byte current_level = 0;
+    char title_buf[25];
+
     // Initialize joystick
     joy_install(joy_static_stddrv);
-    
+
     // Initialize graphics
     setup_duplicator_graphics();
-    
+
+start_level:
     // Clear screen
     my_clrscr();
-    
-    // Load and draw level
-    load_level(level_1, LEVEL_ROWS);
+
+    // Load and draw current level
+    load_level(levels[current_level].data, levels[current_level].rows);
+    state = get_game_state();
+    state->current_level = current_level;
     draw_level();
-    
-    // Display title
-    my_cputsxy(0, 0, "DUPLICATOR - LEVEL 1");
+
+    // Display title with level number
+    sprintf(title_buf, "DUPLICATOR - LEVEL %d", current_level + 1);
+    my_cputsxy(0, 0, title_buf);
     
     // Main game loop
     while (1) {
@@ -177,16 +210,33 @@ void main(void) {
         
         // Check win condition
         if (is_level_complete()) {
-            my_cputsxy(10, 12, "YOU WIN!");
-            my_cputsxy(8, 13, "PRESS ANY KEY");
-            
-            // Wait for key press
-            while (!kbhit()) {
-                wait_vblank();
+            // Check if there are more levels
+            if (current_level < NUM_LEVELS - 1) {
+                // Go to next level
+                my_cputsxy(8, 12, "LEVEL COMPLETE!");
+                my_cputsxy(8, 13, "PRESS ANY KEY");
+
+                // Wait for key press
+                while (!kbhit()) {
+                    wait_vblank();
+                }
+                cgetc();  // Clear the key
+
+                current_level++;
+                goto start_level;
+            } else {
+                // All levels complete
+                my_cputsxy(7, 12, "ALL LEVELS DONE!");
+                my_cputsxy(8, 13, "PRESS ANY KEY");
+
+                // Wait for key press
+                while (!kbhit()) {
+                    wait_vblank();
+                }
+                break;
             }
-            break;
         }
-        
+
         wait_vblank();
     }
 }
