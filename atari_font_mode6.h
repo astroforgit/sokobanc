@@ -37,14 +37,14 @@ typedef unsigned short word;
 #define CHAR_COLS_MODE6 20
 #define CHAR_ROWS_MODE6 24
 
-// Atari color values (hue + luminance)
-#define COLOR_BLACK     0x00
-#define COLOR_BROWN     0x14    // Brown for walls/boxes
-#define COLOR_GREEN     0xC4    // Green for player
-#define COLOR_YELLOW    0xE8    // Yellow for goals
-#define COLOR_RED       0x32    // Red for boxes on goals
-#define COLOR_ORANGE    0x28    // Orange alternative
-#define COLOR_BLUE      0x96    // Blue alternative
+// Atari color values (hue + luminance) for Mode 6
+#define MODE6_COLOR_BLACK     0x00
+#define MODE6_COLOR_BROWN     0x14    // Brown for walls/boxes
+#define MODE6_COLOR_GREEN     0xC4    // Green for player
+#define MODE6_COLOR_YELLOW    0xE8    // Yellow for goals
+#define MODE6_COLOR_RED       0x32    // Red for boxes on goals
+#define MODE6_COLOR_ORANGE    0x28    // Orange alternative
+#define MODE6_COLOR_BLUE      0x96    // Blue alternative
 
 // Character definitions for game elements
 // Using PF0 color (brown) - characters 0-127

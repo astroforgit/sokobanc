@@ -42,11 +42,11 @@ static unsigned char custom_graphics_mode6[] = {
 
 void setup_colors_mode6(void) {
     // Set color registers using OS shadow registers
-    OS.color0 = COLOR_BLACK;      // Background: Black
-    OS.color1 = COLOR_BROWN;      // PF0: Brown (walls, boxes)
-    OS.color2 = COLOR_GREEN;      // PF1: Green (player)
-    OS.color3 = COLOR_YELLOW;     // PF2: Yellow (goals)
-    OS.color4 = COLOR_RED;        // PF3: Red (boxes on goals)
+    OS.color0 = MODE6_COLOR_BLACK;      // Background: Black
+    OS.color1 = MODE6_COLOR_BROWN;      // PF0: Brown (walls, boxes)
+    OS.color2 = MODE6_COLOR_GREEN;      // PF1: Green (player)
+    OS.color3 = MODE6_COLOR_YELLOW;     // PF2: Yellow (goals)
+    OS.color4 = MODE6_COLOR_RED;        // PF3: Red (boxes on goals)
 }
 
 void setup_graphics_mode6(void) {
