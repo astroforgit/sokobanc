@@ -1,5 +1,103 @@
 # Changelog
 
+## Version 3.0 - ANTIC Mode 6 Color Support (2025-11-01)
+
+### Major Features
+
+#### 🎨 5-Color Display Mode
+- Added complete **ANTIC Mode 6** (Graphics 1) support
+- **5 colors**: Black background + 4 playfield colors
+- **20×24 character grid** - perfect for colorful Sokoban!
+- Authentic Atari 8-bit color graphics
+
+#### 🌈 Color Scheme
+- **Brown** (PF0): Walls and boxes
+- **Green** (PF1): Player character
+- **Yellow** (PF2): Goal targets
+- **Red** (PF3): Boxes on goals
+- **Black**: Background
+
+#### 🔄 Triple Display Mode System
+- Single `#define` switch to select display mode:
+  - **8×8 monochrome** (default) - 40×24 grid
+  - **16×16 monochrome** - 20×12 grid, big tiles
+  - **Mode 6 color** (NEW!) - 20×24 grid, 5 colors
+
+### New Files
+
+#### Mode 6 Color Libraries
+- `atari_font_mode6.h` / `atari_font_mode6.c` - Mode 6 graphics & colors
+- `atari_conio_mode6.h` / `atari_conio_mode6.c` - Mode 6 console I/O
+- `sokoban_game_mode6.h` / `sokoban_game_mode6.c` - Mode 6 game logic
+
+#### Documentation
+- `MODE6_COLOR_GUIDE.md` - Complete Mode 6 guide
+- `COLOR_TEXT_MODES.md` - Atari display modes reference
+- `QUICK_START.md` - Quick start for all modes
+
+### Technical Implementation
+
+#### Display List
+- ANTIC Mode 6 (0x06) display list
+- Custom display list at $8000
+- Screen memory at $9000
+- Character set at $7000
+
+#### Color Registers
+```c
+COLBK  ($D01A) = 0x00  // Black background
+COLPF0 ($D016) = 0x14  // Brown (walls, boxes)
+COLPF1 ($D017) = 0xC4  // Green (player)
+COLPF2 ($D018) = 0xE8  // Yellow (goals)
+COLPF3 ($D019) = 0x32  // Red (boxes on goals)
+```
+
+#### Character Color Control
+- Characters 0-127: Use PF0 color (brown)
+- Characters 128-255: Use PF1 color (green)
+- Custom characters for PF2/PF3 colors
+
+### API Changes
+
+#### New Functions (Mode 6)
+```c
+// Graphics
+void setup_graphics_mode6(void);
+void setup_colors_mode6(void);
+void animate_player_mode6(void);
+
+// Console I/O
+void my_clrscr_mode6(void);
+void my_cputcxy_mode6(byte x, byte y, byte character);
+void my_cputsxy_mode6(byte x, byte y, const char* str);
+void my_cputsxy_color_mode6(byte x, byte y, const char* str, byte use_pf1);
+void my_cprintf_status_mode6(byte b, byte t, byte m);
+void wait_vblank_mode6(void);
+
+// Game Logic
+void load_level_mode6(const char** d, byte r_num);
+void draw_level_mode6(void);
+void update_status_mode6(void);
+void try_move_player_mode6(signed char dx, signed char dy);
+byte is_level_complete_mode6(void);
+```
+
+### How to Enable
+
+Edit `sokoban.c` line 19:
+```c
+#define USE_MODE6_COLOR    // Enable 5-color mode!
+```
+
+### Code Metrics
+
+- **10 files changed**: 1,922 insertions
+- **New code**: ~600 lines (Mode 6 libraries)
+- **Documentation**: ~1,300 lines
+- **Total project**: ~3,500 lines
+
+---
+
 ## Version 2.0 - 16x16 Tile System (2025-11-01)
 
 ### Major Features
