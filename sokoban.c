@@ -6,6 +6,10 @@
   - sokoban_game: Game logic
 */
 
+//#link "atari_conio.c"
+//#link "atari_font.c"
+//#link "sokoban_game.c"
+
 #include <stdlib.h>
 #include <joystick.h>
 #include <conio.h>
