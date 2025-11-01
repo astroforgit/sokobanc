@@ -27,9 +27,9 @@
 // ============================================================
 #ifdef USE_MODE6_COLOR
     // ANTIC Mode 6 - 5 color mode
-    //#link "atari_conio_mode6.c"
-    //#link "atari_font_mode6.c"
-    //#link "sokoban_game_mode6.c"
+#link "atari_conio_mode6.c"
+#link "atari_font_mode6.c"
+#link "sokoban_game_mode6.c"
 
     #include "atari_conio_mode6.h"
     #include "atari_font_mode6.h"
@@ -49,9 +49,9 @@
 
 #elif defined(USE_BIG_TILES)
     // 16x16 tile mode
-    //#link "atari_conio_16x16.c"
-    //#link "atari_font_16x16.c"
-    //#link "sokoban_game_16x16.c"
+#link "atari_conio_16x16.c"
+#link "atari_font_16x16.c"
+#link "sokoban_game_16x16.c"
 
     #include "atari_conio_16x16.h"
     #include "atari_font_16x16.h"
@@ -71,9 +71,9 @@
 
 #else
     // 8x8 tile mode (standard)
-    //#link "atari_conio.c"
-    //#link "atari_font.c"
-    //#link "sokoban_game.c"
+#link "atari_conio.c"
+#link "atari_font.c"
+#link "sokoban_game.c"
 
     #include "atari_conio.h"
     #include "atari_font.h"
