@@ -23,14 +23,31 @@
 // Default: 8x8 tiles (40x24 grid, monochrome)
 
 // ============================================================
+// CONDITIONAL LINK DIRECTIVES - CHOOSE ONE MODE
+// ============================================================
+// NOTE: Uncomment ONLY the set of #link directives for the mode you want!
+// The 8bitworkshop IDE processes ALL //#link comments, so we must
+// manually comment/uncomment the correct set.
+
+// MODE 6 COLOR - Uncomment these 3 lines for 5-color mode:
+//#link "atari_conio_mode6.c"
+//#link "atari_font_mode6.c"
+//#link "sokoban_game_mode6.c"
+
+// 16x16 TILES - Uncomment these 3 lines for big tile mode:
+//#link "atari_conio_16x16.c"
+//#link "atari_font_16x16.c"
+//#link "sokoban_game_16x16.c"
+
+// 8x8 DEFAULT - Uncomment these 3 lines for standard mode:
+#link "atari_conio.c"
+#link "atari_font.c"
+#link "sokoban_game.c"
+
+// ============================================================
 // CONDITIONAL INCLUDES BASED ON DISPLAY MODE
 // ============================================================
 #ifdef USE_MODE6_COLOR
-    // ANTIC Mode 6 - 5 color mode
-#link "atari_conio_mode6.c"
-#link "atari_font_mode6.c"
-#link "sokoban_game_mode6.c"
-
     #include "atari_conio_mode6.h"
     #include "atari_font_mode6.h"
     #include "sokoban_game_mode6.h"
@@ -48,11 +65,6 @@
     #define my_cputsxy          my_cputsxy_mode6
 
 #elif defined(USE_BIG_TILES)
-    // 16x16 tile mode
-#link "atari_conio_16x16.c"
-#link "atari_font_16x16.c"
-#link "sokoban_game_16x16.c"
-
     #include "atari_conio_16x16.h"
     #include "atari_font_16x16.h"
     #include "sokoban_game_16x16.h"
@@ -70,11 +82,6 @@
     #define my_cputsxy          my_cputsxy_16x16
 
 #else
-    // 8x8 tile mode (standard)
-#link "atari_conio.c"
-#link "atari_font.c"
-#link "sokoban_game.c"
-
     #include "atari_conio.h"
     #include "atari_font.h"
     #include "sokoban_game.h"
