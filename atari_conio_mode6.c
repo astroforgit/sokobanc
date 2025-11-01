@@ -7,47 +7,47 @@
 
 void my_clrscr_mode6(void) {
     // Clear entire screen memory
-    memset((void*)SCREEN_MEM, 0, CHAR_COLS * CHAR_ROWS);
+    memset((void*)SCREEN_MEM_MODE6, 0, CHAR_COLS_MODE6 * CHAR_ROWS_MODE6);
 }
 
 void my_cputcxy_mode6(byte x, byte y, byte character) {
     word offset;
-    
+
     // Bounds checking
-    if (x >= CHAR_COLS || y >= CHAR_ROWS) {
+    if (x >= CHAR_COLS_MODE6 || y >= CHAR_ROWS_MODE6) {
         return;
     }
-    
+
     // Calculate screen memory offset
-    offset = (word)y * CHAR_COLS + x;
-    
+    offset = (word)y * CHAR_COLS_MODE6 + x;
+
     // Write character to screen memory
-    POKE(SCREEN_MEM + offset, character);
+    POKE(SCREEN_MEM_MODE6 + offset, character);
 }
 
 void my_cputsxy_mode6(byte x, byte y, const char* str) {
     word offset;
     byte v;
-    
+
     // Bounds checking
-    if (x >= CHAR_COLS || y >= CHAR_ROWS) {
+    if (x >= CHAR_COLS_MODE6 || y >= CHAR_ROWS_MODE6) {
         return;
     }
-    
-    offset = (word)y * CHAR_COLS + x;
-    
-    while (*str && x < CHAR_COLS) {
+
+    offset = (word)y * CHAR_COLS_MODE6 + x;
+
+    while (*str && x < CHAR_COLS_MODE6) {
         v = *str++;
-        
+
         // Convert ASCII to ATASCII (Atari internal screen codes)
         if (v >= 0x20 && v <= 0x5f) {
-            POKE(SCREEN_MEM + offset, v - 0x20);
+            POKE(SCREEN_MEM_MODE6 + offset, v - 0x20);
         } else if (v >= 0x60 && v <= 0x7f) {
-            POKE(SCREEN_MEM + offset, v - 0x60);
+            POKE(SCREEN_MEM_MODE6 + offset, v - 0x60);
         } else {
-            POKE(SCREEN_MEM + offset, v);
+            POKE(SCREEN_MEM_MODE6 + offset, v);
         }
-        
+
         offset++;
         x++;
     }
@@ -56,31 +56,31 @@ void my_cputsxy_mode6(byte x, byte y, const char* str) {
 void my_cputsxy_color_mode6(byte x, byte y, const char* str, byte use_pf1) {
     word offset;
     byte v;
-    
+
     // Bounds checking
-    if (x >= CHAR_COLS || y >= CHAR_ROWS) {
+    if (x >= CHAR_COLS_MODE6 || y >= CHAR_ROWS_MODE6) {
         return;
     }
-    
-    offset = (word)y * CHAR_COLS + x;
-    
-    while (*str && x < CHAR_COLS) {
+
+    offset = (word)y * CHAR_COLS_MODE6 + x;
+
+    while (*str && x < CHAR_COLS_MODE6) {
         v = *str++;
-        
+
         // Convert ASCII to ATASCII (Atari internal screen codes)
         if (v >= 0x20 && v <= 0x5f) {
             v = v - 0x20;
         } else if (v >= 0x60 && v <= 0x7f) {
             v = v - 0x60;
         }
-        
+
         // Add 128 to use PF1 color (green) instead of PF0 (brown)
         if (use_pf1) {
             v |= 0x80;
         }
-        
-        POKE(SCREEN_MEM + offset, v);
-        
+
+        POKE(SCREEN_MEM_MODE6 + offset, v);
+
         offset++;
         x++;
     }

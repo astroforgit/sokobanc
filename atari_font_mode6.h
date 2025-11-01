@@ -22,29 +22,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <peekpoke.h>
+#include <atari.h>
 
 // Data types for clarity
 typedef unsigned char byte;
 typedef unsigned short word;
 
 // Memory locations
-#define CHARSET_MEM 0x7000      // Custom character set location
-#define DLIST_MEM   0x8000      // Display list location
-#define SCREEN_MEM  0x9000      // Screen memory location
-
-// Hardware registers
-#define SDLSTL  0x0230          // Shadow display list pointer (low)
-#define SDLSTH  0x0231          // Shadow display list pointer (high)
-#define CHBAS   0x02F4          // Character base register (shadow)
-#define COLOR0  0x02C4          // Shadow color register 0 (background)
-#define COLOR1  0x02C5          // Shadow color register 1 (PF0)
-#define COLOR2  0x02C6          // Shadow color register 2 (PF1)
-#define COLOR3  0x02C7          // Shadow color register 3 (PF2)
-#define COLOR4  0x02C8          // Shadow color register 4 (PF3)
+#define CHARSET_MEM_MODE6 0x7000      // Custom character set location
+#define DLIST_MEM_MODE6   0x8000      // Display list location
+#define SCREEN_MEM_MODE6  0x9000      // Screen memory location
 
 // Screen dimensions for ANTIC Mode 6
-#define CHAR_COLS 20
-#define CHAR_ROWS 24
+#define CHAR_COLS_MODE6 20
+#define CHAR_ROWS_MODE6 24
 
 // Atari color values (hue + luminance)
 #define COLOR_BLACK     0x00

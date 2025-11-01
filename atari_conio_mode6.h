@@ -15,17 +15,18 @@
 #include <string.h>
 #include <stdio.h>
 #include <peekpoke.h>
+#include <atari.h>
 
 // Data types for clarity
 typedef unsigned char byte;
 typedef unsigned short word;
 
 // Memory locations
-#define SCREEN_MEM 0x9000       // Screen memory location
+#define SCREEN_MEM_MODE6 0x9000       // Screen memory location
 
 // Screen dimensions for ANTIC Mode 6
-#define CHAR_COLS 20
-#define CHAR_ROWS 24
+#define CHAR_COLS_MODE6 20
+#define CHAR_ROWS_MODE6 24
 
 /*
   Clear the screen

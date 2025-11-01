@@ -8,7 +8,7 @@
 #include "atari_font_mode6.h"
 
 // Game State & Data
-static char level[CHAR_ROWS][CHAR_COLS];
+static char level[CHAR_ROWS_MODE6][CHAR_COLS_MODE6];
 static byte player_x, player_y;
 static byte total_boxes = 0;
 static byte boxes_on_goals = 0;
@@ -17,23 +17,23 @@ static byte moves = 0;
 void load_level_mode6(const char** d, byte r_num) {
     byte r, c;
     char t;
-    
+
     // Reset game state
     total_boxes = 0;
     boxes_on_goals = 0;
     moves = 0;
-    
+
     // Clear the level array
-    for (r = 0; r < CHAR_ROWS; ++r) {
-        for (c = 0; c < CHAR_COLS; ++c) {
+    for (r = 0; r < CHAR_ROWS_MODE6; ++r) {
+        for (c = 0; c < CHAR_COLS_MODE6; ++c) {
             level[r][c] = TILE_EMPTY;
         }
     }
-    
+
     // Load level data from string array
-    for (r = 0; r < r_num && r < CHAR_ROWS; ++r) {
+    for (r = 0; r < r_num && r < CHAR_ROWS_MODE6; ++r) {
         c = 0;
-        while (d[r][c] && c < CHAR_COLS) {
+        while (d[r][c] && c < CHAR_COLS_MODE6) {
             t = d[r][c];
             if (t == ' ') {
                 level[r][c] = TILE_EMPTY;
@@ -64,12 +64,12 @@ void draw_level_mode6(void) {
     byte r, c;
     char t;
     byte screen_char;
-    
+
     my_clrscr_mode6();
-    
+
     // Draw all tiles with appropriate colors
-    for (r = 0; r < CHAR_ROWS; ++r) {
-        for (c = 0; c < CHAR_COLS; ++c) {
+    for (r = 0; r < CHAR_ROWS_MODE6; ++r) {
+        for (c = 0; c < CHAR_COLS_MODE6; ++c) {
             t = level[r][c];
             
             // Map game tiles to colored characters
@@ -114,13 +114,13 @@ void update_status_mode6(void) {
 void try_move_player_mode6(signed char dx, signed char dy) {
     byte tx, ty, bx, by;
     char tt, bt;
-    
+
     // Calculate target position
     tx = player_x + dx;
     ty = player_y + dy;
-    
+
     // Bounds checking
-    if (tx >= CHAR_COLS || ty >= CHAR_ROWS) {
+    if (tx >= CHAR_COLS_MODE6 || ty >= CHAR_ROWS_MODE6) {
         return;
     }
     
@@ -136,9 +136,9 @@ void try_move_player_mode6(signed char dx, signed char dy) {
         // Calculate box's target position
         bx = tx + dx;
         by = ty + dy;
-        
+
         // Bounds checking for box
-        if (bx >= CHAR_COLS || by >= CHAR_ROWS) {
+        if (bx >= CHAR_COLS_MODE6 || by >= CHAR_ROWS_MODE6) {
             return;
         }
         

@@ -41,43 +41,41 @@ static unsigned char custom_graphics_mode6[] = {
 };
 
 void setup_colors_mode6(void) {
-    // Set color registers
-    POKE(COLOR0, COLOR_BLACK);      // Background: Black
-    POKE(COLOR1, COLOR_BROWN);      // PF0: Brown (walls, boxes)
-    POKE(COLOR2, COLOR_GREEN);      // PF1: Green (player)
-    POKE(COLOR3, COLOR_YELLOW);     // PF2: Yellow (goals)
-    POKE(COLOR4, COLOR_RED);        // PF3: Red (boxes on goals)
+    // Set color registers using OS shadow registers
+    OS.color0 = COLOR_BLACK;      // Background: Black
+    OS.color1 = COLOR_BROWN;      // PF0: Brown (walls, boxes)
+    OS.color2 = COLOR_GREEN;      // PF1: Green (player)
+    OS.color3 = COLOR_YELLOW;     // PF2: Yellow (goals)
+    OS.color4 = COLOR_RED;        // PF3: Red (boxes on goals)
 }
 
 void setup_graphics_mode6(void) {
-    byte i;
-    
     // Install display list
-    memcpy((void*)DLIST_MEM, display_list_mode6, sizeof(display_list_mode6));
-    
+    memcpy((void*)DLIST_MEM_MODE6, display_list_mode6, sizeof(display_list_mode6));
+
     // Point display list pointer to our custom display list
-    POKE(SDLSTL, DLIST_MEM & 0xFF);
-    POKE(SDLSTH, DLIST_MEM >> 8);
-    
+    OS.sdlstl = (unsigned char)(DLIST_MEM_MODE6 & 0xFF);
+    OS.sdlsth = (unsigned char)(DLIST_MEM_MODE6 >> 8);
+
     // Setup colors
     setup_colors_mode6();
-    
+
     // Optional: Install custom character set
     // Copy ROM character set first
-    memcpy((void*)CHARSET_MEM, (void*)0xE000, 1024);
-    
+    memcpy((void*)CHARSET_MEM_MODE6, (void*)0xE000, 1024);
+
     // Install custom graphics for characters 0x40-0x43
-    memcpy((void*)(CHARSET_MEM + 0x40 * 8), custom_graphics_mode6, 4 * 8);
-    
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0x40 * 8), custom_graphics_mode6, 4 * 8);
+
     // Install custom graphics for characters 0xC0-0xC1 (128 + 0x40, 128 + 0x41)
     // In Mode 6, upper 128 characters use same shapes but different color
-    memcpy((void*)(CHARSET_MEM + 0xC0 * 8), custom_graphics_mode6 + 4 * 8, 2 * 8);
-    
+    memcpy((void*)(CHARSET_MEM_MODE6 + 0xC0 * 8), custom_graphics_mode6 + 4 * 8, 2 * 8);
+
     // Point character base to our custom character set
-    POKE(CHBAS, CHARSET_MEM >> 8);
-    
+    OS.chbas = (unsigned char)(CHARSET_MEM_MODE6 >> 8);
+
     // Clear screen
-    memset((void*)SCREEN_MEM, 0, CHAR_COLS * CHAR_ROWS);
+    memset((void*)SCREEN_MEM_MODE6, 0, CHAR_COLS_MODE6 * CHAR_ROWS_MODE6);
 }
 
 void animate_player_mode6(void) {
