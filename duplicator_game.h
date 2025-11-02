@@ -53,6 +53,7 @@ typedef unsigned short word;
 typedef struct {
     byte player_x;
     byte player_y;
+    char player_under_tile;  // What tile is underneath the player
     byte level_width;
     byte level_height;
     byte moves;
@@ -179,6 +180,17 @@ void remove_open_doors(void);
   @param door_y - Y coordinate of door
 */
 void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y);
+
+/*
+  Update gate states based on plate activation
+
+  Checks all plates and opens/closes corresponding gates:
+  - plateA with object -> gateA opens
+  - plateA without object -> gateA closes
+  - plateB with object -> gateB opens
+  - plateB without object -> gateB closes
+*/
+void update_gates(void);
 
 #endif // DUPLICATOR_GAME_H
 

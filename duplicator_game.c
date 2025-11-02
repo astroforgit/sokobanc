@@ -32,6 +32,7 @@ void load_level(const char* level_data[], byte num_rows) {
     // Reset game state
     game_state.player_x = 0;
     game_state.player_y = 0;
+    game_state.player_under_tile = TILE_FLOOR;  // Default: player on floor
     game_state.level_width = 0;
     game_state.level_height = num_rows;
     game_state.moves = 0;
@@ -48,8 +49,16 @@ void load_level(const char* level_data[], byte num_rows) {
             if (row[x] == 'p' || row[x] == 'P') {
                 game_state.player_x = x;
                 game_state.player_y = y;
+                game_state.player_under_tile = TILE_FLOOR;  // Player starts on floor
                 // Normalize to lowercase 'p'
                 level_map[y][x] = TILE_PLAYER;
+            }
+            // Check for 'z' = player on holeA
+            else if (row[x] == 'z') {
+                game_state.player_x = x;
+                game_state.player_y = y;
+                game_state.player_under_tile = TILE_HOLE_A;  // Player starts on holeA
+                level_map[y][x] = TILE_PLAYER;  // Display player, remember hole underneath
             }
             
             x++;
@@ -256,6 +265,72 @@ void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
     remove_open_doors();
 }
 
+void update_gates(void) {
+    byte x, y;
+    char tile;
+    byte plateA_has_object = 0;
+    byte plateB_has_object = 0;
+
+    // Scan the level to check if plates have objects on them
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = get_tile(x, y);
+
+            // Check if player is on a plate
+            if (tile == TILE_PLAYER) {
+                if (game_state.player_under_tile == TILE_PLATE_A) {
+                    plateA_has_object = 1;
+                } else if (game_state.player_under_tile == TILE_PLATE_B) {
+                    plateB_has_object = 1;
+                }
+            }
+            // TODO: Check if crate, key, or enemy is on a plate
+            // (will implement when we add object tracking)
+        }
+    }
+
+    // Update gates based on plate states
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = get_tile(x, y);
+
+            // Update gateA
+            if (tile == TILE_GATE_A || tile == 'G') {
+                if (plateA_has_object) {
+                    // Open gate
+                    if (tile != 'G') {
+                        set_tile(x, y, 'G');
+                        my_cputcxy(x, y + 2, 'G');
+                    }
+                } else {
+                    // Close gate
+                    if (tile != TILE_GATE_A) {
+                        set_tile(x, y, TILE_GATE_A);
+                        my_cputcxy(x, y + 2, TILE_GATE_A);
+                    }
+                }
+            }
+
+            // Update gateB
+            if (tile == TILE_GATE_B || tile == 'H') {
+                if (plateB_has_object) {
+                    // Open gate
+                    if (tile != 'H') {
+                        set_tile(x, y, 'H');
+                        my_cputcxy(x, y + 2, 'H');
+                    }
+                } else {
+                    // Close gate
+                    if (tile != TILE_GATE_B) {
+                        set_tile(x, y, TILE_GATE_B);
+                        my_cputcxy(x, y + 2, TILE_GATE_B);
+                    }
+                }
+            }
+        }
+    }
+}
+
 byte try_push(byte x, byte y, char dx, char dy) {
     char object_tile;
     char behind_tile;
@@ -322,17 +397,16 @@ byte try_move_player(char dx, char dy) {
 
     // Check if target is passable
     if (is_passable(target_tile)) {
-        // Remember what was at old position (might be on a plate, hole, etc.)
-        old_tile = get_tile(game_state.player_x, game_state.player_y);
-
-        // Clear old player position (restore floor or keep special tile)
-        if (old_tile == TILE_PLAYER) {
-            set_tile(game_state.player_x, game_state.player_y, TILE_FLOOR);
-        }
+        // Restore the tile that was underneath the player at old position
+        set_tile(game_state.player_x, game_state.player_y, game_state.player_under_tile);
+        my_cputcxy(game_state.player_x, game_state.player_y + 2, game_state.player_under_tile);
 
         // Move player to new position
         game_state.player_x = new_x;
         game_state.player_y = new_y;
+
+        // Remember what's underneath the player at new position
+        game_state.player_under_tile = target_tile;
 
         // Check if player reached exit
         if (is_exit(target_tile)) {
@@ -346,8 +420,10 @@ byte try_move_player(char dx, char dy) {
         game_state.moves++;
 
         // Redraw the affected tiles
-        my_cputcxy(game_state.player_x - dx, game_state.player_y - dy + 2, TILE_FLOOR);
         my_cputcxy(game_state.player_x, game_state.player_y + 2, TILE_PLAYER);
+
+        // Update gates based on plate activation
+        update_gates();
 
         return 1;  // Move successful
     }
@@ -357,24 +433,29 @@ byte try_move_player(char dx, char dy) {
         // Try to push the object
         if (try_push(new_x, new_y, dx, dy)) {
             // Push successful, now move player into the vacated space
-            old_tile = get_tile(game_state.player_x, game_state.player_y);
 
-            // Clear old player position
-            if (old_tile == TILE_PLAYER) {
-                set_tile(game_state.player_x, game_state.player_y, TILE_FLOOR);
-            }
+            // Restore the tile that was underneath the player at old position
+            set_tile(game_state.player_x, game_state.player_y, game_state.player_under_tile);
+            my_cputcxy(game_state.player_x, game_state.player_y + 2, game_state.player_under_tile);
 
             // Move player to where the object was
             game_state.player_x = new_x;
             game_state.player_y = new_y;
+
+            // The object was pushed away, so underneath is now floor
+            // (objects don't leave special tiles behind when pushed)
+            game_state.player_under_tile = TILE_FLOOR;
+
             set_tile(new_x, new_y, TILE_PLAYER);
 
             // Increment move counter
             game_state.moves++;
 
             // Redraw the affected tiles
-            my_cputcxy(game_state.player_x - dx, game_state.player_y - dy + 2, TILE_FLOOR);
             my_cputcxy(game_state.player_x, game_state.player_y + 2, TILE_PLAYER);
+
+            // Update gates based on plate activation
+            update_gates();
 
             return 1;  // Move and push successful
         } else {
