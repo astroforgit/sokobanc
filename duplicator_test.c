@@ -87,6 +87,12 @@ void setup_duplicator_graphics(void) {
     memcpy(CHARSET_MEM + ('7' * 8), &duplicator_graphics[192], 8); // Line G
     memcpy(CHARSET_MEM + ('8' * 8), &duplicator_graphics[200], 8); // Line H
     memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player (p same as @)
+    memcpy(CHARSET_MEM + ('<' * 8), &duplicator_graphics[208], 8); // Exit C
+    memcpy(CHARSET_MEM + ('G' * 8), &duplicator_graphics[216], 8); // Gate A Open
+    memcpy(CHARSET_MEM + ('H' * 8), &duplicator_graphics[224], 8); // Gate B Open
+    memcpy(CHARSET_MEM + ('D' * 8), &duplicator_graphics[232], 8); // Door Open
+    memcpy(CHARSET_MEM + ('[' * 8), &duplicator_graphics[240], 8); // Hole A Filled
+    memcpy(CHARSET_MEM + (']' * 8), &duplicator_graphics[248], 8); // Hole B Filled
     
     // Set colors
     POKE(709, 0);   // Background color (black)

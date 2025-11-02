@@ -26,6 +26,7 @@ typedef unsigned short word;
 #define TILE_CRATE      '*'
 #define TILE_KEY        'k'
 #define TILE_DOOR       'd'
+#define TILE_DOOR_OPEN  'D'
 #define TILE_ENEMY      'e'
 #define TILE_HOLE_A     '?'
 #define TILE_HOLE_B     '!'
@@ -35,7 +36,17 @@ typedef unsigned short word;
 #define TILE_GATE_B     'h'
 #define TILE_EXIT_A     ':'
 #define TILE_EXIT_B     ';'
+#define TILE_EXIT_C     '<'
 #define TILE_FLOOR      '.'
+
+// Tile categories (bit flags)
+#define TILE_CAT_PASSABLE    0x01  // Can walk through
+#define TILE_CAT_BLOCKING    0x02  // Blocks movement
+#define TILE_CAT_PUSHABLE    0x04  // Can be pushed
+#define TILE_CAT_EXIT        0x08  // Win condition
+#define TILE_CAT_HOLE        0x10  // Duplication hole
+#define TILE_CAT_PLATE       0x20  // Pressure plate
+#define TILE_CAT_GATE        0x40  // Gate (open/closed)
 
 // Game state structure
 typedef struct {
@@ -95,12 +106,78 @@ byte get_tile(byte x, byte y);
 
 /*
   Set the tile at a specific position
-  
+
   @param x - X coordinate
   @param y - Y coordinate
   @param tile - The tile character to set
 */
 void set_tile(byte x, byte y, byte tile);
+
+/*
+  Check if a tile blocks movement
+
+  @param tile - The tile character to check
+  @return 1 if tile blocks movement, 0 otherwise
+*/
+byte is_blocking(char tile);
+
+/*
+  Check if a tile is passable
+
+  @param tile - The tile character to check
+  @return 1 if tile is passable, 0 otherwise
+*/
+byte is_passable(char tile);
+
+/*
+  Check if a tile is an exit
+
+  @param tile - The tile character to check
+  @return 1 if tile is an exit, 0 otherwise
+*/
+byte is_exit(char tile);
+
+/*
+  Check if a tile is pushable
+
+  @param tile - The tile character to check
+  @return 1 if tile is pushable, 0 otherwise
+*/
+byte is_pushable(char tile);
+
+/*
+  Try to push an object at a position in a direction
+
+  @param x - X coordinate of object to push
+  @param y - Y coordinate of object to push
+  @param dx - Horizontal push direction (-1, 0, or 1)
+  @param dy - Vertical push direction (-1, 0, or 1)
+  @return 1 if push was successful, 0 otherwise
+*/
+byte try_push(byte x, byte y, char dx, char dy);
+
+/*
+  Flood fill to spread door_open state to adjacent doors
+
+  @param x - X coordinate of starting door
+  @param y - Y coordinate of starting door
+*/
+void door_flood_fill(byte x, byte y);
+
+/*
+  Remove all open doors (door_) from the level
+*/
+void remove_open_doors(void);
+
+/*
+  Handle key touching door interaction
+
+  @param key_x - X coordinate of key
+  @param key_y - Y coordinate of key
+  @param door_x - X coordinate of door
+  @param door_y - Y coordinate of door
+*/
+void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y);
 
 #endif // DUPLICATOR_GAME_H
 
