@@ -11,6 +11,8 @@ static GameState game_state;
 
 // Level data storage
 static char level_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
+// Background layer (for tiles under objects)
+static char background_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
 
 // Simple queue for flood fill (reduced size to save memory)
 typedef struct {
@@ -27,8 +29,9 @@ void load_level(const char* level_data[], byte num_rows) {
     const char* row;
     char tile;
 
-    // Clear the level map
+    // Clear the maps
     memset(level_map, ' ', sizeof(level_map));
+    memset(background_map, '.', sizeof(background_map));
 
     // Reset game state
     game_state.num_players = 0;
@@ -38,37 +41,30 @@ void load_level(const char* level_data[], byte num_rows) {
     game_state.moves = 0;
     game_state.level_complete = 0;
 
-    // Load level data and find player position and objects
+    // First pass: Load all tiles and separate objects from background
     for (y = 0; y < num_rows; y++) {
         row = level_data[y];
         x = 0;
         while (row[x] != '\0' && x < MAX_LEVEL_WIDTH) {
             tile = row[x];
-            level_map[y][x] = tile;
 
-            // Find player starting position (can be 'p' or 'P')
-            if (tile == 'p' || tile == 'P') {
-                game_state.players[0].x = x;
-                game_state.players[0].y = y;
-                game_state.players[0].under = TILE_FLOOR;
-                game_state.num_players = 1;
-                level_map[y][x] = TILE_PLAYER;
-            }
-            // Check for 'z' = player on holeA
-            else if (tile == 'z') {
-                game_state.players[0].x = x;
-                game_state.players[0].y = y;
-                game_state.players[0].under = TILE_HOLE_A;
-                game_state.num_players = 1;
-                level_map[y][x] = TILE_PLAYER;
-            }
-            // Track pushable objects (keys, crates, enemies)
-            else if ((tile == 'k' || tile == '*' || tile == 'e') && game_state.num_objects < MAX_OBJECTS) {
-                game_state.objects[game_state.num_objects].x = x;
-                game_state.objects[game_state.num_objects].y = y;
-                game_state.objects[game_state.num_objects].type = tile;
-                game_state.objects[game_state.num_objects].under = TILE_FLOOR;
-                game_state.num_objects++;
+            // Determine if this is an object or background
+            if (tile == 'p' || tile == 'P' || tile == 'k' || tile == '*' || tile == 'e') {
+                // Object - store floor as background
+                background_map[y][x] = TILE_FLOOR;
+                level_map[y][x] = tile;
+            } else if (tile == 'z') {
+                // Player on holeA
+                background_map[y][x] = TILE_HOLE_A;
+                level_map[y][x] = 'p';
+            } else if (tile == 'y') {
+                // Enemy on holeB
+                background_map[y][x] = TILE_HOLE_B;
+                level_map[y][x] = 'e';
+            } else {
+                // Background tile
+                background_map[y][x] = tile;
+                level_map[y][x] = tile;
             }
 
             x++;
@@ -77,6 +73,30 @@ void load_level(const char* level_data[], byte num_rows) {
         // Track the maximum width
         if (x > game_state.level_width) {
             game_state.level_width = x;
+        }
+    }
+
+    // Second pass: Extract objects into arrays
+    for (y = 0; y < num_rows; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = level_map[y][x];
+
+            // Find player starting position
+            if (tile == 'p' || tile == 'P') {
+                game_state.players[0].x = x;
+                game_state.players[0].y = y;
+                game_state.players[0].under = background_map[y][x];
+                game_state.num_players = 1;
+                level_map[y][x] = TILE_PLAYER;
+            }
+            // Track pushable objects (keys, crates, enemies)
+            else if ((tile == 'k' || tile == '*' || tile == 'e') && game_state.num_objects < MAX_OBJECTS) {
+                game_state.objects[game_state.num_objects].x = x;
+                game_state.objects[game_state.num_objects].y = y;
+                game_state.objects[game_state.num_objects].type = tile;
+                game_state.objects[game_state.num_objects].under = background_map[y][x];
+                game_state.num_objects++;
+            }
         }
     }
 }
@@ -438,7 +458,6 @@ byte try_push(byte x, byte y, char dx, char dy) {
         // Find this object in the objects array and remove it
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
-                old_under = game_state.objects[i].under;
                 // Remove this object by shifting array
                 for (; i < game_state.num_objects - 1; i++) {
                     game_state.objects[i] = game_state.objects[i + 1];
@@ -447,9 +466,9 @@ byte try_push(byte x, byte y, char dx, char dy) {
                 break;
             }
         }
-        // Restore what was under the key
-        set_tile(x, y, old_under);
-        my_cputcxy(x, y + 2, old_under);
+        // Restore background where the key was
+        set_tile(x, y, background_map[y][x]);
+        my_cputcxy(x, y + 2, background_map[y][x]);
         // Handle key-door interaction
         handle_key_door(x, y, behind_x, behind_y);
         return 1;  // Push successful (key and doors removed)
@@ -467,15 +486,15 @@ byte try_push(byte x, byte y, char dx, char dy) {
             // Update object position and what's underneath
             game_state.objects[i].x = behind_x;
             game_state.objects[i].y = behind_y;
-            game_state.objects[i].under = behind_tile;
+            game_state.objects[i].under = background_map[behind_y][behind_x];
             break;
         }
     }
 
     // Perform the push
-    // Restore what was under the object
-    set_tile(x, y, old_under);
-    my_cputcxy(x, y + 2, old_under);
+    // Restore background at old position
+    set_tile(x, y, background_map[y][x]);
+    my_cputcxy(x, y + 2, background_map[y][x]);
 
     // Move object to new position
     set_tile(behind_x, behind_y, object_tile);
@@ -510,10 +529,11 @@ byte try_move_player(char dx, char dy) {
             // Move player
             game_state.players[i].x = new_x;
             game_state.players[i].y = new_y;
-            game_state.players[i].under = target_tile;
+            // Player is now standing on the background tile
+            game_state.players[i].under = background_map[new_y][new_x];
 
             // Check if reached exit
-            if (is_exit(target_tile)) {
+            if (is_exit(background_map[new_y][new_x])) {
                 game_state.level_complete = 1;
             }
 
@@ -529,10 +549,11 @@ byte try_move_player(char dx, char dy) {
                 set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
                 my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
 
-                // Move player
+                // Move player to where the object was
                 game_state.players[i].x = new_x;
                 game_state.players[i].y = new_y;
-                game_state.players[i].under = TILE_FLOOR;
+                // Player is now standing on the background tile (not floor!)
+                game_state.players[i].under = background_map[new_y][new_x];
 
                 set_tile(new_x, new_y, TILE_PLAYER);
                 my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
