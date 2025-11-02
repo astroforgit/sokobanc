@@ -270,28 +270,22 @@ void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
 }
 
 void update_gates(void) {
-    byte x, y;
+    byte x, y, i;
     char tile;
     byte plateA_has_object = 0;
     byte plateB_has_object = 0;
 
-    // Scan the level to check if plates have objects on them
-    for (y = 0; y < game_state.level_height; y++) {
-        for (x = 0; x < game_state.level_width; x++) {
-            tile = get_tile(x, y);
-
-            // Check if player is on a plate
-            if (tile == TILE_PLAYER) {
-                if (game_state.player_under_tile == TILE_PLATE_A) {
-                    plateA_has_object = 1;
-                } else if (game_state.player_under_tile == TILE_PLATE_B) {
-                    plateB_has_object = 1;
-                }
-            }
-            // TODO: Check if crate, key, or enemy is on a plate
-            // (will implement when we add object tracking)
+    // Check if any player is on a plate
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under_tile == TILE_PLATE_A) {
+            plateA_has_object = 1;
+        } else if (game_state.players[i].under_tile == TILE_PLATE_B) {
+            plateB_has_object = 1;
         }
     }
+
+    // TODO: Check if crate, key, or enemy is on a plate
+    // (will implement when we add object tracking)
 
     // Update gates based on plate states
     for (y = 0; y < game_state.level_height; y++) {
