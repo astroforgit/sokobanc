@@ -51,6 +51,7 @@ typedef unsigned short word;
 
 // Maximum players (optimized for memory)
 #define MAX_PLAYERS 6  // Allows up to 2 duplications (1->2->4, or 1->2->3->4->5->6)
+#define MAX_OBJECTS 8  // Max pushable objects (keys, crates, enemies)
 
 // Player structure (compact)
 typedef struct {
@@ -59,10 +60,20 @@ typedef struct {
     char under;  // What tile is underneath
 } Player;
 
+// Pushable object structure (for keys, crates, enemies)
+typedef struct {
+    byte x;
+    byte y;
+    char type;   // 'k', '*', 'e'
+    char under;  // What tile is underneath
+} PushableObject;
+
 // Game state structure with multiple players
 typedef struct {
     Player players[MAX_PLAYERS];
     byte num_players;
+    PushableObject objects[MAX_OBJECTS];
+    byte num_objects;
     byte level_width;
     byte level_height;
     byte moves;
