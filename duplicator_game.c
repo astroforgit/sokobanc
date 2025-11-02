@@ -386,7 +386,7 @@ byte try_move_player(char dx, char dy) {
     byte new_x = game_state.player_x + dx;
     byte new_y = game_state.player_y + dy;
     char target_tile;
-    char old_tile;
+
 
     // Check bounds
     if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
