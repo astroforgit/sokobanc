@@ -12,13 +12,13 @@ static GameState game_state;
 // Level data storage
 static char level_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
 
-// Simple queue for flood fill (max 256 positions)
+// Simple queue for flood fill (reduced size to save memory)
 typedef struct {
     byte x;
     byte y;
 } Position;
 
-static Position flood_queue[256];
+static Position flood_queue[64];  // Reduced from 256 to 64
 static byte queue_start;
 static byte queue_end;
 
@@ -330,18 +330,13 @@ void update_gates(void) {
 }
 
 void handle_duplication(void) {
-    byte x, y, i, j;
+    byte x, y, i;
     char tile;
     byte holeA_x = 0, holeA_y = 0, holeA_found = 0;
     byte holeB_x = 0, holeB_y = 0, holeB_found = 0;
     byte holeA_has_player = 0;
     byte holeB_has_player = 0;
-    byte players_to_remove[MAX_PLAYERS];
-    byte num_to_remove = 0;
-    byte new_players_x[MAX_PLAYERS];
-    byte new_players_y[MAX_PLAYERS];
-    char new_players_under[MAX_PLAYERS];
-    byte num_new_players = 0;
+    byte should_duplicate = 0;
 
     // Find holes in the level
     for (y = 0; y < game_state.level_height; y++) {
@@ -371,88 +366,40 @@ void handle_duplication(void) {
         }
     }
 
-    // Handle duplication/disappear logic for each player
-    for (i = 0; i < game_state.num_players; i++) {
-        // Check if this player is on holeA
-        if (game_state.players[i].under_tile == TILE_HOLE_A ||
-            game_state.players[i].under_tile == '[') {
-
-            if (holeB_has_player) {
-                // Both holes have players -> mark for disappear
-                players_to_remove[num_to_remove++] = i;
-                // Mark hole as filled
-                game_state.players[i].under_tile = '[';
-            } else if (holeB_found) {
-                // Duplicate to holeB
-                if (num_new_players < MAX_PLAYERS) {
-                    new_players_x[num_new_players] = holeB_x;
-                    new_players_y[num_new_players] = holeB_y;
-                    new_players_under[num_new_players] = TILE_HOLE_B;
-                    num_new_players++;
-                    holeB_has_player = 1;  // Now holeB has a player
-                }
-                // Mark holeA as filled
-                game_state.players[i].under_tile = '[';
-            }
-        }
-        // Check if this player is on holeB
-        else if (game_state.players[i].under_tile == TILE_HOLE_B ||
-                 game_state.players[i].under_tile == ']') {
-
-            if (holeA_has_player) {
-                // Both holes have players -> mark for disappear
-                players_to_remove[num_to_remove++] = i;
-                // Mark hole as filled
-                game_state.players[i].under_tile = ']';
-            } else if (holeA_found) {
-                // Duplicate to holeA
-                if (num_new_players < MAX_PLAYERS) {
-                    new_players_x[num_new_players] = holeA_x;
-                    new_players_y[num_new_players] = holeA_y;
-                    new_players_under[num_new_players] = TILE_HOLE_A;
-                    num_new_players++;
-                    holeA_has_player = 1;  // Now holeA has a player
-                }
-                // Mark holeB as filled
-                game_state.players[i].under_tile = ']';
-            }
-        }
+    // Handle disappear if both holes have players
+    if (holeA_has_player && holeB_has_player) {
+        // Remove all players and mark level complete
+        game_state.num_players = 0;
+        game_state.level_complete = 1;
+        // Mark holes as filled
+        set_tile(holeA_x, holeA_y, '[');
+        my_cputcxy(holeA_x, holeA_y + 2, '[');
+        set_tile(holeB_x, holeB_y, ']');
+        my_cputcxy(holeB_x, holeB_y + 2, ']');
+        return;
     }
 
-    // Remove players that disappeared
-    for (i = 0; i < num_to_remove; i++) {
-        byte idx = players_to_remove[i];
-        // Restore the filled hole underneath
-        set_tile(game_state.players[idx].x, game_state.players[idx].y,
-                 game_state.players[idx].under_tile);
-        my_cputcxy(game_state.players[idx].x, game_state.players[idx].y + 2,
-                   game_state.players[idx].under_tile);
-
-        // Remove player by shifting array
-        for (j = idx; j < game_state.num_players - 1; j++) {
-            game_state.players[j] = game_state.players[j + 1];
-        }
-        game_state.num_players--;
-
-        // Adjust indices in removal list
-        for (j = i + 1; j < num_to_remove; j++) {
-            if (players_to_remove[j] > idx) {
-                players_to_remove[j]--;
-            }
-        }
-    }
-
-    // Add new duplicated players
-    for (i = 0; i < num_new_players; i++) {
+    // Handle duplication: holeA has player, holeB empty
+    if (holeA_has_player && holeB_found && !holeB_has_player) {
         if (game_state.num_players < MAX_PLAYERS) {
-            game_state.players[game_state.num_players].x = new_players_x[i];
-            game_state.players[game_state.num_players].y = new_players_y[i];
-            game_state.players[game_state.num_players].under_tile = new_players_under[i];
+            game_state.players[game_state.num_players].x = holeB_x;
+            game_state.players[game_state.num_players].y = holeB_y;
+            game_state.players[game_state.num_players].under_tile = TILE_HOLE_B;
             game_state.num_players++;
+            set_tile(holeB_x, holeB_y, TILE_PLAYER);
+            my_cputcxy(holeB_x, holeB_y + 2, TILE_PLAYER);
+        }
+    }
 
-            // Display the new player
-            set_tile(new_players_x[i], new_players_y[i], TILE_PLAYER);
-            my_cputcxy(new_players_x[i], new_players_y[i] + 2, TILE_PLAYER);
+    // Handle duplication: holeB has player, holeA empty
+    if (holeB_has_player && holeA_found && !holeA_has_player) {
+        if (game_state.num_players < MAX_PLAYERS) {
+            game_state.players[game_state.num_players].x = holeA_x;
+            game_state.players[game_state.num_players].y = holeA_y;
+            game_state.players[game_state.num_players].under_tile = TILE_HOLE_A;
+            game_state.num_players++;
+            set_tile(holeA_x, holeA_y, TILE_PLAYER);
+            my_cputcxy(holeA_x, holeA_y + 2, TILE_PLAYER);
         }
     }
 
@@ -461,7 +408,6 @@ void handle_duplication(void) {
         for (x = 0; x < game_state.level_width; x++) {
             tile = get_tile(x, y);
 
-            // If filled hole has no player, reset to empty hole
             if (tile == '[') {
                 set_tile(x, y, TILE_HOLE_A);
                 my_cputcxy(x, y + 2, TILE_HOLE_A);
@@ -470,11 +416,6 @@ void handle_duplication(void) {
                 my_cputcxy(x, y + 2, TILE_HOLE_B);
             }
         }
-    }
-
-    // Check if all players disappeared -> level complete
-    if (game_state.num_players == 0) {
-        game_state.level_complete = 1;
     }
 }
 

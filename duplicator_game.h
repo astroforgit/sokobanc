@@ -15,9 +15,9 @@
 typedef unsigned char byte;
 typedef unsigned short word;
 
-// Game constants
-#define MAX_LEVEL_WIDTH 40
-#define MAX_LEVEL_HEIGHT 24
+// Game constants (reduced to save memory)
+#define MAX_LEVEL_WIDTH 20   // Reduced from 40
+#define MAX_LEVEL_HEIGHT 12  // Reduced from 24
 
 // Tile types
 #define TILE_EMPTY      ' '
@@ -50,7 +50,7 @@ typedef unsigned short word;
 #define TILE_CAT_GATE        0x40  // Gate (open/closed)
 
 // Maximum number of players (can duplicate many times)
-#define MAX_PLAYERS 16
+#define MAX_PLAYERS 8  // Reduced from 16 to save memory
 
 // Player instance structure
 typedef struct {
