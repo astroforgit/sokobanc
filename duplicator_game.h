@@ -49,11 +49,20 @@ typedef unsigned short word;
 #define TILE_CAT_PLATE       0x20  // Pressure plate
 #define TILE_CAT_GATE        0x40  // Gate (open/closed)
 
+// Maximum number of players (can duplicate many times)
+#define MAX_PLAYERS 16
+
+// Player instance structure
+typedef struct {
+    byte x;
+    byte y;
+    char under_tile;  // What tile is underneath this player
+} Player;
+
 // Game state structure
 typedef struct {
-    byte player_x;
-    byte player_y;
-    char player_under_tile;  // What tile is underneath the player
+    Player players[MAX_PLAYERS];
+    byte num_players;        // Number of active players
     byte level_width;
     byte level_height;
     byte moves;
@@ -191,6 +200,16 @@ void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y);
   - plateB without object -> gateB closes
 */
 void update_gates(void);
+
+/*
+  Handle duplication mechanics
+
+  When player enters a hole:
+  - If paired hole is empty -> duplicate player to paired hole
+  - If paired hole has player -> both players disappear
+  - Mark holes as filled when occupied
+*/
+void handle_duplication(void);
 
 #endif // DUPLICATOR_GAME_H
 

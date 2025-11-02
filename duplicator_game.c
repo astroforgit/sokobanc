@@ -30,9 +30,7 @@ void load_level(const char* level_data[], byte num_rows) {
     memset(level_map, ' ', sizeof(level_map));
     
     // Reset game state
-    game_state.player_x = 0;
-    game_state.player_y = 0;
-    game_state.player_under_tile = TILE_FLOOR;  // Default: player on floor
+    game_state.num_players = 0;
     game_state.level_width = 0;
     game_state.level_height = num_rows;
     game_state.moves = 0;
@@ -47,17 +45,23 @@ void load_level(const char* level_data[], byte num_rows) {
             
             // Find player starting position (can be 'p' or 'P')
             if (row[x] == 'p' || row[x] == 'P') {
-                game_state.player_x = x;
-                game_state.player_y = y;
-                game_state.player_under_tile = TILE_FLOOR;  // Player starts on floor
+                if (game_state.num_players < MAX_PLAYERS) {
+                    game_state.players[game_state.num_players].x = x;
+                    game_state.players[game_state.num_players].y = y;
+                    game_state.players[game_state.num_players].under_tile = TILE_FLOOR;
+                    game_state.num_players++;
+                }
                 // Normalize to lowercase 'p'
                 level_map[y][x] = TILE_PLAYER;
             }
             // Check for 'z' = player on holeA
             else if (row[x] == 'z') {
-                game_state.player_x = x;
-                game_state.player_y = y;
-                game_state.player_under_tile = TILE_HOLE_A;  // Player starts on holeA
+                if (game_state.num_players < MAX_PLAYERS) {
+                    game_state.players[game_state.num_players].x = x;
+                    game_state.players[game_state.num_players].y = y;
+                    game_state.players[game_state.num_players].under_tile = TILE_HOLE_A;
+                    game_state.num_players++;
+                }
                 level_map[y][x] = TILE_PLAYER;  // Display player, remember hole underneath
             }
             
@@ -331,6 +335,155 @@ void update_gates(void) {
     }
 }
 
+void handle_duplication(void) {
+    byte x, y, i, j;
+    char tile;
+    byte holeA_x = 0, holeA_y = 0, holeA_found = 0;
+    byte holeB_x = 0, holeB_y = 0, holeB_found = 0;
+    byte holeA_has_player = 0;
+    byte holeB_has_player = 0;
+    byte players_to_remove[MAX_PLAYERS];
+    byte num_to_remove = 0;
+    byte new_players_x[MAX_PLAYERS];
+    byte new_players_y[MAX_PLAYERS];
+    char new_players_under[MAX_PLAYERS];
+    byte num_new_players = 0;
+
+    // Find holes in the level
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = get_tile(x, y);
+
+            if (tile == TILE_HOLE_A || tile == '[') {
+                holeA_x = x;
+                holeA_y = y;
+                holeA_found = 1;
+            } else if (tile == TILE_HOLE_B || tile == ']') {
+                holeB_x = x;
+                holeB_y = y;
+                holeB_found = 1;
+            }
+        }
+    }
+
+    // Check which players are on holes
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under_tile == TILE_HOLE_A ||
+            game_state.players[i].under_tile == '[') {
+            holeA_has_player = 1;
+        } else if (game_state.players[i].under_tile == TILE_HOLE_B ||
+                   game_state.players[i].under_tile == ']') {
+            holeB_has_player = 1;
+        }
+    }
+
+    // Handle duplication/disappear logic for each player
+    for (i = 0; i < game_state.num_players; i++) {
+        // Check if this player is on holeA
+        if (game_state.players[i].under_tile == TILE_HOLE_A ||
+            game_state.players[i].under_tile == '[') {
+
+            if (holeB_has_player) {
+                // Both holes have players -> mark for disappear
+                players_to_remove[num_to_remove++] = i;
+                // Mark hole as filled
+                game_state.players[i].under_tile = '[';
+            } else if (holeB_found) {
+                // Duplicate to holeB
+                if (num_new_players < MAX_PLAYERS) {
+                    new_players_x[num_new_players] = holeB_x;
+                    new_players_y[num_new_players] = holeB_y;
+                    new_players_under[num_new_players] = TILE_HOLE_B;
+                    num_new_players++;
+                    holeB_has_player = 1;  // Now holeB has a player
+                }
+                // Mark holeA as filled
+                game_state.players[i].under_tile = '[';
+            }
+        }
+        // Check if this player is on holeB
+        else if (game_state.players[i].under_tile == TILE_HOLE_B ||
+                 game_state.players[i].under_tile == ']') {
+
+            if (holeA_has_player) {
+                // Both holes have players -> mark for disappear
+                players_to_remove[num_to_remove++] = i;
+                // Mark hole as filled
+                game_state.players[i].under_tile = ']';
+            } else if (holeA_found) {
+                // Duplicate to holeA
+                if (num_new_players < MAX_PLAYERS) {
+                    new_players_x[num_new_players] = holeA_x;
+                    new_players_y[num_new_players] = holeA_y;
+                    new_players_under[num_new_players] = TILE_HOLE_A;
+                    num_new_players++;
+                    holeA_has_player = 1;  // Now holeA has a player
+                }
+                // Mark holeB as filled
+                game_state.players[i].under_tile = ']';
+            }
+        }
+    }
+
+    // Remove players that disappeared
+    for (i = 0; i < num_to_remove; i++) {
+        byte idx = players_to_remove[i];
+        // Restore the filled hole underneath
+        set_tile(game_state.players[idx].x, game_state.players[idx].y,
+                 game_state.players[idx].under_tile);
+        my_cputcxy(game_state.players[idx].x, game_state.players[idx].y + 2,
+                   game_state.players[idx].under_tile);
+
+        // Remove player by shifting array
+        for (j = idx; j < game_state.num_players - 1; j++) {
+            game_state.players[j] = game_state.players[j + 1];
+        }
+        game_state.num_players--;
+
+        // Adjust indices in removal list
+        for (j = i + 1; j < num_to_remove; j++) {
+            if (players_to_remove[j] > idx) {
+                players_to_remove[j]--;
+            }
+        }
+    }
+
+    // Add new duplicated players
+    for (i = 0; i < num_new_players; i++) {
+        if (game_state.num_players < MAX_PLAYERS) {
+            game_state.players[game_state.num_players].x = new_players_x[i];
+            game_state.players[game_state.num_players].y = new_players_y[i];
+            game_state.players[game_state.num_players].under_tile = new_players_under[i];
+            game_state.num_players++;
+
+            // Display the new player
+            set_tile(new_players_x[i], new_players_y[i], TILE_PLAYER);
+            my_cputcxy(new_players_x[i], new_players_y[i] + 2, TILE_PLAYER);
+        }
+    }
+
+    // Reset filled holes that are now empty
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = get_tile(x, y);
+
+            // If filled hole has no player, reset to empty hole
+            if (tile == '[') {
+                set_tile(x, y, TILE_HOLE_A);
+                my_cputcxy(x, y + 2, TILE_HOLE_A);
+            } else if (tile == ']') {
+                set_tile(x, y, TILE_HOLE_B);
+                my_cputcxy(x, y + 2, TILE_HOLE_B);
+            }
+        }
+    }
+
+    // Check if all players disappeared -> level complete
+    if (game_state.num_players == 0) {
+        game_state.level_complete = 1;
+    }
+}
+
 byte try_push(byte x, byte y, char dx, char dy) {
     char object_tile;
     char behind_tile;
@@ -383,85 +536,139 @@ byte try_push(byte x, byte y, char dx, char dy) {
 }
 
 byte try_move_player(char dx, char dy) {
-    byte new_x = game_state.player_x + dx;
-    byte new_y = game_state.player_y + dy;
+    byte i;
+    byte new_x, new_y;
     char target_tile;
+    byte can_move;
 
-
-    // Check bounds
-    if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
-        return 0;  // Can't move out of bounds
+    // If no players, can't move
+    if (game_state.num_players == 0) {
+        return 0;
     }
 
-    target_tile = get_tile(new_x, new_y);
+    // Check if ALL players can move in this direction
+    for (i = 0; i < game_state.num_players; i++) {
+        new_x = game_state.players[i].x + dx;
+        new_y = game_state.players[i].y + dy;
 
-    // Check if target is passable
-    if (is_passable(target_tile)) {
-        // Restore the tile that was underneath the player at old position
-        set_tile(game_state.player_x, game_state.player_y, game_state.player_under_tile);
-        my_cputcxy(game_state.player_x, game_state.player_y + 2, game_state.player_under_tile);
-
-        // Move player to new position
-        game_state.player_x = new_x;
-        game_state.player_y = new_y;
-
-        // Remember what's underneath the player at new position
-        game_state.player_under_tile = target_tile;
-
-        // Check if player reached exit
-        if (is_exit(target_tile)) {
-            game_state.level_complete = 1;
+        // Check bounds
+        if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
+            return 0;  // Out of bounds
         }
 
-        // Set new player position
-        set_tile(new_x, new_y, TILE_PLAYER);
+        target_tile = get_tile(new_x, new_y);
+
+        // Check if this player can move to target
+        if (!is_passable(target_tile) && !is_pushable(target_tile)) {
+            return 0;  // Blocked
+        }
+    }
+
+    // Try to move all players
+    can_move = 1;
+
+    // First check if all moves are valid (passable tiles)
+    for (i = 0; i < game_state.num_players; i++) {
+        new_x = game_state.players[i].x + dx;
+        new_y = game_state.players[i].y + dy;
+        target_tile = get_tile(new_x, new_y);
+
+        if (!is_passable(target_tile)) {
+            can_move = 0;
+            break;
+        }
+    }
+
+    // If all players can move to passable tiles, move them
+    if (can_move) {
+        // Move all players
+        for (i = 0; i < game_state.num_players; i++) {
+            // Restore tile under old position
+            set_tile(game_state.players[i].x, game_state.players[i].y,
+                     game_state.players[i].under_tile);
+            my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2,
+                       game_state.players[i].under_tile);
+
+            // Calculate new position
+            new_x = game_state.players[i].x + dx;
+            new_y = game_state.players[i].y + dy;
+            target_tile = get_tile(new_x, new_y);
+
+            // Update player position
+            game_state.players[i].x = new_x;
+            game_state.players[i].y = new_y;
+            game_state.players[i].under_tile = target_tile;
+
+            // Check if player reached exit
+            if (is_exit(target_tile)) {
+                game_state.level_complete = 1;
+            }
+
+            // Set player at new position
+            set_tile(new_x, new_y, TILE_PLAYER);
+            my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+        }
 
         // Increment move counter
         game_state.moves++;
 
-        // Redraw the affected tiles
-        my_cputcxy(game_state.player_x, game_state.player_y + 2, TILE_PLAYER);
-
         // Update gates based on plate activation
         update_gates();
+
+        // Handle duplication mechanics
+        handle_duplication();
 
         return 1;  // Move successful
     }
 
-    // Check if target is pushable
-    if (is_pushable(target_tile)) {
-        // Try to push the object
-        if (try_push(new_x, new_y, dx, dy)) {
-            // Push successful, now move player into the vacated space
+    // Check if any player needs to push
+    // Try to push all pushable objects and move all players
+    for (i = 0; i < game_state.num_players; i++) {
+        new_x = game_state.players[i].x + dx;
+        new_y = game_state.players[i].y + dy;
+        target_tile = get_tile(new_x, new_y);
 
-            // Restore the tile that was underneath the player at old position
-            set_tile(game_state.player_x, game_state.player_y, game_state.player_under_tile);
-            my_cputcxy(game_state.player_x, game_state.player_y + 2, game_state.player_under_tile);
-
-            // Move player to where the object was
-            game_state.player_x = new_x;
-            game_state.player_y = new_y;
-
-            // The object was pushed away, so underneath is now floor
-            // (objects don't leave special tiles behind when pushed)
-            game_state.player_under_tile = TILE_FLOOR;
-
-            set_tile(new_x, new_y, TILE_PLAYER);
-
-            // Increment move counter
-            game_state.moves++;
-
-            // Redraw the affected tiles
-            my_cputcxy(game_state.player_x, game_state.player_y + 2, TILE_PLAYER);
-
-            // Update gates based on plate activation
-            update_gates();
-
-            return 1;  // Move and push successful
-        } else {
-            return 0;  // Can't push (blocked)
+        if (is_pushable(target_tile)) {
+            // Try to push this object
+            if (!try_push(new_x, new_y, dx, dy)) {
+                return 0;  // Can't push, so can't move
+            }
         }
     }
+
+    // All pushes successful (or no pushes needed), now move all players
+    for (i = 0; i < game_state.num_players; i++) {
+        // Restore tile under old position
+        set_tile(game_state.players[i].x, game_state.players[i].y,
+                 game_state.players[i].under_tile);
+        my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2,
+                   game_state.players[i].under_tile);
+
+        // Calculate new position
+        new_x = game_state.players[i].x + dx;
+        new_y = game_state.players[i].y + dy;
+
+        // Update player position
+        game_state.players[i].x = new_x;
+        game_state.players[i].y = new_y;
+        // Objects were pushed away, so underneath is now floor
+        game_state.players[i].under_tile = TILE_FLOOR;
+
+        // Set player at new position
+        set_tile(new_x, new_y, TILE_PLAYER);
+        my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+    }
+
+    // Increment move counter
+    game_state.moves++;
+
+    // Update gates based on plate activation
+    update_gates();
+
+    // Handle duplication mechanics
+    handle_duplication();
+
+    return 1;  // Move and push successful
 
     // Check if target is blocking (walls, doors, gates)
     if (is_blocking(target_tile)) {
