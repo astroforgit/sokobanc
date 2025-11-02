@@ -17,7 +17,7 @@
 // Bit 7 (leftmost) to Bit 0 (rightmost)
 
 // Character indices for game objects
-#define CHAR_PLAYER       0x40  // '@'
+#define CHAR_PLAYER       0x70  // 'p'
 #define CHAR_WALL         0x23  // '#'
 #define CHAR_CRATE        0x2A  // '*'
 #define CHAR_KEY          0x6B  // 'k'
@@ -29,9 +29,9 @@
 #define CHAR_PLATE_B      0x63  // 'c'
 #define CHAR_GATE_A       0x67  // 'g'
 #define CHAR_GATE_B       0x68  // 'h'
-#define CHAR_EXIT_A       0x3A  // ':'
-#define CHAR_EXIT_B       0x3B  // ';'
-#define CHAR_EXIT_C       0x3C  // '<'
+#define CHAR_EXIT_A       0x40  // '@'
+#define CHAR_EXIT_B       0x3A  // ':'
+#define CHAR_EXIT_C       0x3B  // ';'
 #define CHAR_FLOOR        0x2E  // '.'
 #define CHAR_WALL_LINE_A  0x24  // '$'
 #define CHAR_WALL_LINE_B  0x25  // '%'
@@ -44,7 +44,6 @@
 #define CHAR_LINE_F       0x36  // '6'
 #define CHAR_LINE_G       0x37  // '7'
 #define CHAR_LINE_H       0x38  // '8'
-#define CHAR_PLAYER_P     0x70  // 'p'
 #define CHAR_GATE_A_OPEN  0x47  // 'G'
 #define CHAR_GATE_B_OPEN  0x48  // 'H'
 #define CHAR_DOOR_OPEN    0x44  // 'D'

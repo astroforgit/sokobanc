@@ -107,7 +107,7 @@ void setup_duplicator_graphics(void) {
     
     // Install custom graphics for duplicator game tiles
     // Use direct character multiplication like sokoban does
-    memcpy(CHARSET_MEM + ('@' * 8), &duplicator_graphics[0], 8);   // Player
+    memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player
     memcpy(CHARSET_MEM + ('#' * 8), &duplicator_graphics[8], 8);   // Wall
     memcpy(CHARSET_MEM + ('*' * 8), &duplicator_graphics[16], 8);  // Crate
     memcpy(CHARSET_MEM + ('k' * 8), &duplicator_graphics[24], 8);  // Key
@@ -119,8 +119,8 @@ void setup_duplicator_graphics(void) {
     memcpy(CHARSET_MEM + ('c' * 8), &duplicator_graphics[72], 8);  // Plate B
     memcpy(CHARSET_MEM + ('g' * 8), &duplicator_graphics[80], 8);  // Gate A
     memcpy(CHARSET_MEM + ('h' * 8), &duplicator_graphics[88], 8);  // Gate B
-    memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[96], 8);  // Exit A
-    memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[104], 8); // Exit B
+    memcpy(CHARSET_MEM + ('@' * 8), &duplicator_graphics[96], 8);  // Exit A
+    memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[104], 8); // Exit B
     memcpy(CHARSET_MEM + ('.' * 8), &duplicator_graphics[112], 8); // Floor
     memcpy(CHARSET_MEM + ('$' * 8), &duplicator_graphics[120], 8); // Wall Line A
     memcpy(CHARSET_MEM + ('%' * 8), &duplicator_graphics[128], 8); // Wall Line B
@@ -133,8 +133,7 @@ void setup_duplicator_graphics(void) {
     memcpy(CHARSET_MEM + ('6' * 8), &duplicator_graphics[184], 8); // Line F
     memcpy(CHARSET_MEM + ('7' * 8), &duplicator_graphics[192], 8); // Line G
     memcpy(CHARSET_MEM + ('8' * 8), &duplicator_graphics[200], 8); // Line H
-    memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player (p same as @)
-    memcpy(CHARSET_MEM + ('<' * 8), &duplicator_graphics[208], 8); // Exit C
+    memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[208], 8); // Exit C
     memcpy(CHARSET_MEM + ('G' * 8), &duplicator_graphics[216], 8); // Gate A Open
     memcpy(CHARSET_MEM + ('H' * 8), &duplicator_graphics[224], 8); // Gate B Open
     memcpy(CHARSET_MEM + ('D' * 8), &duplicator_graphics[232], 8); // Door Open

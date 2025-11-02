@@ -124,7 +124,7 @@ byte is_passable(char tile) {
     }
 
     // Exits
-    if (tile == '@' || tile == ':' || tile == ';' || tile == '<') {
+    if (tile == '@' || tile == ':' || tile == ';') {
         return 1;
     }
 
@@ -152,7 +152,7 @@ byte is_passable(char tile) {
 }
 
 byte is_exit(char tile) {
-    return (tile == '@' || tile == ':' || tile == ';' || tile == '<');
+    return (tile == '@' || tile == ':' || tile == ';');
 }
 
 byte is_pushable(char tile) {

@@ -38,7 +38,6 @@ typedef unsigned short word;
 #define TILE_EXIT_A     '@'
 #define TILE_EXIT_B     ':'
 #define TILE_EXIT_C     ';'
-#define TILE_EXIT_D     '<'
 #define TILE_FLOOR      '.'
 
 // Tile categories (bit flags)
