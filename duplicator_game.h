@@ -49,20 +49,12 @@ typedef unsigned short word;
 #define TILE_CAT_PLATE       0x20  // Pressure plate
 #define TILE_CAT_GATE        0x40  // Gate (open/closed)
 
-// Maximum number of players (can duplicate many times)
-#define MAX_PLAYERS 8  // Reduced from 16 to save memory
-
-// Player instance structure
-typedef struct {
-    byte x;
-    byte y;
-    char under_tile;  // What tile is underneath this player
-} Player;
-
+// Simplified: Only support single player (no duplication) to save memory
 // Game state structure
 typedef struct {
-    Player players[MAX_PLAYERS];
-    byte num_players;        // Number of active players
+    byte player_x;
+    byte player_y;
+    char player_under_tile;  // What tile is underneath the player
     byte level_width;
     byte level_height;
     byte moves;

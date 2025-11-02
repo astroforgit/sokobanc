@@ -18,7 +18,7 @@ typedef struct {
     byte y;
 } Position;
 
-static Position flood_queue[64];  // Reduced from 256 to 64
+static Position flood_queue[32];  // Reduced from 64 to 32
 static byte queue_start;
 static byte queue_end;
 
@@ -30,7 +30,9 @@ void load_level(const char* level_data[], byte num_rows) {
     memset(level_map, ' ', sizeof(level_map));
     
     // Reset game state
-    game_state.num_players = 0;
+    game_state.player_x = 0;
+    game_state.player_y = 0;
+    game_state.player_under_tile = TILE_FLOOR;
     game_state.level_width = 0;
     game_state.level_height = num_rows;
     game_state.moves = 0;
@@ -45,24 +47,17 @@ void load_level(const char* level_data[], byte num_rows) {
             
             // Find player starting position (can be 'p' or 'P')
             if (row[x] == 'p' || row[x] == 'P') {
-                if (game_state.num_players < MAX_PLAYERS) {
-                    game_state.players[game_state.num_players].x = x;
-                    game_state.players[game_state.num_players].y = y;
-                    game_state.players[game_state.num_players].under_tile = TILE_FLOOR;
-                    game_state.num_players++;
-                }
-                // Normalize to lowercase 'p'
+                game_state.player_x = x;
+                game_state.player_y = y;
+                game_state.player_under_tile = TILE_FLOOR;
                 level_map[y][x] = TILE_PLAYER;
             }
             // Check for 'z' = player on holeA
             else if (row[x] == 'z') {
-                if (game_state.num_players < MAX_PLAYERS) {
-                    game_state.players[game_state.num_players].x = x;
-                    game_state.players[game_state.num_players].y = y;
-                    game_state.players[game_state.num_players].under_tile = TILE_HOLE_A;
-                    game_state.num_players++;
-                }
-                level_map[y][x] = TILE_PLAYER;  // Display player, remember hole underneath
+                game_state.player_x = x;
+                game_state.player_y = y;
+                game_state.player_under_tile = TILE_HOLE_A;
+                level_map[y][x] = TILE_PLAYER;
             }
             
             x++;
@@ -270,22 +265,17 @@ void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
 }
 
 void update_gates(void) {
-    byte x, y, i;
+    byte x, y;
     char tile;
     byte plateA_has_object = 0;
     byte plateB_has_object = 0;
 
-    // Check if any player is on a plate
-    for (i = 0; i < game_state.num_players; i++) {
-        if (game_state.players[i].under_tile == TILE_PLATE_A) {
-            plateA_has_object = 1;
-        } else if (game_state.players[i].under_tile == TILE_PLATE_B) {
-            plateB_has_object = 1;
-        }
+    // Check if player is on a plate
+    if (game_state.player_under_tile == TILE_PLATE_A) {
+        plateA_has_object = 1;
+    } else if (game_state.player_under_tile == TILE_PLATE_B) {
+        plateB_has_object = 1;
     }
-
-    // TODO: Check if crate, key, or enemy is on a plate
-    // (will implement when we add object tracking)
 
     // Update gates based on plate states
     for (y = 0; y < game_state.level_height; y++) {
@@ -551,7 +541,8 @@ byte try_move_player(char dx, char dy) {
         update_gates();
 
         // Handle duplication mechanics
-        handle_duplication();
+        // TEMPORARILY DISABLED TO SAVE MEMORY
+        // handle_duplication();
 
         return 1;  // Move successful
     }
@@ -601,7 +592,8 @@ byte try_move_player(char dx, char dy) {
     update_gates();
 
     // Handle duplication mechanics
-    handle_duplication();
+    // TEMPORARILY DISABLED TO SAVE MEMORY
+    // handle_duplication();
 
     return 1;  // Move and push successful
 
