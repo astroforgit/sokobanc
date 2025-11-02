@@ -157,9 +157,9 @@ void setup_duplicator_graphics(void) {
 // Main function
 void main(void) {
     byte joy, last_joy = 0;
+    byte i;
     GameState* state;
     byte current_level = 0;
-    char title_buf[25];
 
     // Initialize joystick
     joy_install(joy_static_stddrv);
@@ -177,10 +177,6 @@ start_level:
     state->current_level = current_level;
     draw_level();
 
-    // Display title with level number
-    sprintf(title_buf, "DUPLICATOR - LEVEL %d", current_level + 1);
-    my_cputsxy(0, 0, title_buf);
-    
     // Main game loop
     while (1) {
         // Read joystick
@@ -215,45 +211,24 @@ start_level:
                 break;  // Exit game
             }
         }
-        
-        // Display move counter
-        state = get_game_state();
-        my_cputsxy(0, 23, "MOVES: ");
-        // Simple number display (only works for < 100)
-        if (state->moves < 10) {
-            my_cputcxy(7, 23, ' ');
-            my_cputcxy(8, 23, '0' + state->moves);
-        } else {
-            my_cputcxy(7, 23, '0' + (state->moves / 10));
-            my_cputcxy(8, 23, '0' + (state->moves % 10));
-        }
-        
+
         // Check win condition
+        state = get_game_state();
         if (is_level_complete()) {
+            // Wait a moment to show completion
+            for (i = 0; i < 30; i++) {
+                wait_vblank();
+            }
+
             // Check if there are more levels
             if (current_level < NUM_LEVELS - 1) {
                 // Go to next level
-                my_cputsxy(8, 12, "LEVEL COMPLETE!");
-                my_cputsxy(8, 13, "PRESS ANY KEY");
-
-                // Wait for key press
-                while (!kbhit()) {
-                    wait_vblank();
-                }
-                cgetc();  // Clear the key
-
                 current_level++;
                 goto start_level;
             } else {
-                // All levels complete
-                my_cputsxy(7, 12, "ALL LEVELS DONE!");
-                my_cputsxy(8, 13, "PRESS ANY KEY");
-
-                // Wait for key press
-                while (!kbhit()) {
-                    wait_vblank();
-                }
-                break;
+                // All levels complete - restart from level 1
+                current_level = 0;
+                goto start_level;
             }
         }
 
