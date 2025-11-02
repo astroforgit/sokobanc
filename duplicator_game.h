@@ -15,9 +15,9 @@
 typedef unsigned char byte;
 typedef unsigned short word;
 
-// Game constants (reduced to save memory)
-#define MAX_LEVEL_WIDTH 20   // Reduced from 40
-#define MAX_LEVEL_HEIGHT 12  // Reduced from 24
+// Game constants (exact size needed for levels)
+#define MAX_LEVEL_WIDTH 18   // Exact width of largest level (17 + 1)
+#define MAX_LEVEL_HEIGHT 11  // Exact height of levels
 
 // Tile types
 #define TILE_EMPTY      ' '
@@ -133,20 +133,14 @@ byte is_blocking(char tile);
 byte is_passable(char tile);
 
 /*
-  Check if a tile is an exit
-
-  @param tile - The tile character to check
-  @return 1 if tile is an exit, 0 otherwise
+  Check if a tile is an exit - INLINE MACRO for speed/size
 */
-byte is_exit(char tile);
+#define is_exit(tile) ((tile) == '@' || (tile) == ':' || (tile) == ';')
 
 /*
-  Check if a tile is pushable
-
-  @param tile - The tile character to check
-  @return 1 if tile is pushable, 0 otherwise
+  Check if a tile is pushable - INLINE MACRO for speed/size
 */
-byte is_pushable(char tile);
+#define is_pushable(tile) ((tile) == '*' || (tile) == 'k' || (tile) == 'e')
 
 /*
   Try to push an object at a position in a direction
