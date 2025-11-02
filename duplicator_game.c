@@ -44,14 +44,12 @@ void load_level(const char* level_data[], byte num_rows) {
         while (row[x] != '\0' && x < MAX_LEVEL_WIDTH) {
             level_map[y][x] = row[x];
             
-            // Find player starting position (can be '@' or 'p')
-            if (row[x] == TILE_PLAYER || row[x] == 'p') {
+            // Find player starting position (can be 'p' or 'P')
+            if (row[x] == 'p' || row[x] == 'P') {
                 game_state.player_x = x;
                 game_state.player_y = y;
-                // Replace 'p' with '@' for display
-                if (row[x] == 'p') {
-                    level_map[y][x] = TILE_PLAYER;
-                }
+                // Normalize to lowercase 'p'
+                level_map[y][x] = TILE_PLAYER;
             }
             
             x++;
@@ -126,7 +124,7 @@ byte is_passable(char tile) {
     }
 
     // Exits
-    if (tile == ':' || tile == ';' || tile == '<') {
+    if (tile == '@' || tile == ':' || tile == ';' || tile == '<') {
         return 1;
     }
 
@@ -154,7 +152,7 @@ byte is_passable(char tile) {
 }
 
 byte is_exit(char tile) {
-    return (tile == ':' || tile == ';' || tile == '<');
+    return (tile == '@' || tile == ':' || tile == ';' || tile == '<');
 }
 
 byte is_pushable(char tile) {

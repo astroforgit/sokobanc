@@ -22,7 +22,8 @@ typedef unsigned short word;
 // Tile types
 #define TILE_EMPTY      ' '
 #define TILE_WALL       '#'
-#define TILE_PLAYER     '@'
+#define TILE_PLAYER     'p'
+#define TILE_PLAYER_ALT '@'  // Alternative player character (for display)
 #define TILE_CRATE      '*'
 #define TILE_KEY        'k'
 #define TILE_DOOR       'd'
@@ -34,9 +35,10 @@ typedef unsigned short word;
 #define TILE_PLATE_B    'c'
 #define TILE_GATE_A     'g'
 #define TILE_GATE_B     'h'
-#define TILE_EXIT_A     ':'
-#define TILE_EXIT_B     ';'
-#define TILE_EXIT_C     '<'
+#define TILE_EXIT_A     '@'
+#define TILE_EXIT_B     ':'
+#define TILE_EXIT_C     ';'
+#define TILE_EXIT_D     '<'
 #define TILE_FLOOR      '.'
 
 // Tile categories (bit flags)
