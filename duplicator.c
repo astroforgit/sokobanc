@@ -1,3 +1,6 @@
+// Use RAM-based configuration instead of ROM cartridge for more space
+#define CFGFILE atari-xex.cfg
+
 // Link the libraries
 //#link "atari_conio.c"
 //#link "duplicator_game.c"
