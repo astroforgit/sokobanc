@@ -104,11 +104,11 @@ void load_level(const char* level_data[], byte num_rows) {
 void draw_level(void) {
     byte x, y;
     char tile;
-    
+
     for (y = 0; y < game_state.level_height; y++) {
         for (x = 0; x < game_state.level_width; x++) {
             tile = level_map[y][x];
-            
+
             // Draw the tile
             if (tile != ' ') {
                 my_cputcxy(x, y + 2, tile);  // +2 to leave room for title
@@ -425,39 +425,32 @@ void handle_duplication(void) {
         }
     }
 }
-
+/*
+  Try to push an object at a position in a direction
+  (Corrected version to handle background tiles properly)
+*/
 byte try_push(byte x, byte y, char dx, char dy) {
-    char object_tile;
-    char behind_tile;
-    byte behind_x, behind_y;
     byte i;
-    char old_under = TILE_FLOOR;
-
-    // Get the object we're trying to push
-    object_tile = get_tile(x, y);
-
-    // Check if it's actually pushable
-    if (!is_pushable(object_tile)) {
-        return 0;
-    }
-
-    // Calculate position behind the object
-    behind_x = x + dx;
-    behind_y = y + dy;
+    char object_tile = get_tile(x, y);
+    byte behind_x = x + dx;
+    byte behind_y = y + dy;
+    char behind_tile;
 
     // Check bounds
     if (behind_x >= MAX_LEVEL_WIDTH || behind_y >= MAX_LEVEL_HEIGHT) {
         return 0;  // Can't push out of bounds
     }
 
-    // Get what's behind the object
     behind_tile = get_tile(behind_x, behind_y);
 
     // Special case: Key pushing into door
     if (object_tile == TILE_KEY && behind_tile == TILE_DOOR) {
-        // Find this object in the objects array and remove it
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
+                // Restore the tile the key was on before it disappears
+                set_tile(x, y, game_state.objects[i].under);
+                my_cputcxy(x, y + 2, game_state.objects[i].under);
+
                 // Remove this object by shifting array
                 for (; i < game_state.num_objects - 1; i++) {
                     game_state.objects[i] = game_state.objects[i + 1];
@@ -466,43 +459,47 @@ byte try_push(byte x, byte y, char dx, char dy) {
                 break;
             }
         }
-        // Restore background where the key was
-        set_tile(x, y, background_map[y][x]);
-        my_cputcxy(x, y + 2, background_map[y][x]);
-        // Handle key-door interaction
         handle_key_door(x, y, behind_x, behind_y);
-        return 1;  // Push successful (key and doors removed)
+        return 1;
     }
 
-    // Check if space behind is passable (empty or floor-like)
+    // Check if space behind is passable
     if (!is_passable(behind_tile)) {
         return 0;  // Can't push into blocking tile
     }
 
-    // Find this object in the objects array and update it
+    // Find the object being pushed to update it
     for (i = 0; i < game_state.num_objects; i++) {
         if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
-            old_under = game_state.objects[i].under;
-            // Update object position and what's underneath
+            // *** THE FIX IS HERE ***
+
+            // 1. Get the tile to restore from the object's OWN memory.
+            char tile_to_restore = game_state.objects[i].under;
+
+            // 2. Update the object's internal position and memory for its NEW tile.
             game_state.objects[i].x = behind_x;
             game_state.objects[i].y = behind_y;
-            game_state.objects[i].under = background_map[behind_y][behind_x];
-            break;
+            game_state.objects[i].under = behind_tile; // Remembers the dynamic tile it moves onto.
+
+            // 3. Restore the tile at the object's OLD position using its saved memory.
+            set_tile(x, y, tile_to_restore);
+            my_cputcxy(x, y + 2, tile_to_restore);
+
+            // 4. Move the object to its new position on the map.
+            set_tile(behind_x, behind_y, object_tile);
+            my_cputcxy(behind_x, behind_y + 2, object_tile);
+
+            return 1; // Push successful
         }
     }
 
-    // Perform the push
-    // Restore background at old position
-    set_tile(x, y, background_map[y][x]);
-    my_cputcxy(x, y + 2, background_map[y][x]);
-
-    // Move object to new position
-    set_tile(behind_x, behind_y, object_tile);
-    my_cputcxy(behind_x, behind_y + 2, object_tile);
-
-    return 1;  // Push successful
+    return 0; // Should not be reached, but as a fallback
 }
 
+ /*
+  Try to move the player in the given direction
+  (Corrected version to handle pushing objects correctly)
+*/
 byte try_move_player(char dx, char dy) {
     byte i, new_x, new_y;
     char target_tile;
@@ -529,11 +526,10 @@ byte try_move_player(char dx, char dy) {
             // Move player
             game_state.players[i].x = new_x;
             game_state.players[i].y = new_y;
-            // Player is now standing on the background tile
-            game_state.players[i].under = background_map[new_y][new_x];
+            game_state.players[i].under = target_tile;
 
             // Check if reached exit
-            if (is_exit(background_map[new_y][new_x])) {
+            if (is_exit(target_tile)) {
                 game_state.level_complete = 1;
             }
 
@@ -544,16 +540,20 @@ byte try_move_player(char dx, char dy) {
         }
         // Check if target is pushable
         else if (is_pushable(target_tile)) {
+            // The corrected try_push now handles restoring tiles correctly.
             if (try_push(new_x, new_y, dx, dy)) {
                 // Restore tile under old position
                 set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
                 my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
 
-                // Move player to where the object was
+                // Move player
                 game_state.players[i].x = new_x;
                 game_state.players[i].y = new_y;
-                // Player is now standing on the background tile (not floor!)
-                game_state.players[i].under = background_map[new_y][new_x];
+
+                // *** THE FIX IS HERE ***
+                // The player moves into the tile the object just left. We need to
+                // re-read that tile to correctly update the player's 'under' memory.
+                game_state.players[i].under = get_tile(new_x, new_y);
 
                 set_tile(new_x, new_y, TILE_PLAYER);
                 my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
