@@ -38,7 +38,6 @@ void load_level(const char* level_data[], byte num_rows) {
     game_state.num_objects = 0;
     game_state.level_width = 0;
     game_state.level_height = num_rows;
-    game_state.moves = 0;
     game_state.level_complete = 0;
 
     // First pass: Load all tiles and separate objects from background
@@ -49,18 +48,18 @@ void load_level(const char* level_data[], byte num_rows) {
             tile = row[x];
 
             // Determine if this is an object or background
-            if (tile == 'p' || tile == 'P' || tile == 'k' || tile == '*' || tile == 'e') {
+            if (tile == TILE_PLAYER || tile == TILE_KEY || tile == TILE_CRATE || tile == TILE_ENEMY) {
                 // Object - store floor as background
                 background_map[y][x] = TILE_FLOOR;
                 level_map[y][x] = tile;
             } else if (tile == 'z') {
                 // Player on holeA
                 background_map[y][x] = TILE_HOLE_A;
-                level_map[y][x] = 'p';
+                level_map[y][x] = TILE_PLAYER;
             } else if (tile == 'y') {
                 // Enemy on holeB
                 background_map[y][x] = TILE_HOLE_B;
-                level_map[y][x] = 'e';
+                level_map[y][x] = TILE_ENEMY;
             } else {
                 // Background tile
                 background_map[y][x] = tile;
@@ -82,7 +81,7 @@ void load_level(const char* level_data[], byte num_rows) {
             tile = level_map[y][x];
 
             // Find player starting position
-            if (tile == 'p' || tile == 'P') {
+            if (tile == TILE_PLAYER) {
                 game_state.players[0].x = x;
                 game_state.players[0].y = y;
                 game_state.players[0].under = background_map[y][x];
@@ -90,7 +89,7 @@ void load_level(const char* level_data[], byte num_rows) {
                 level_map[y][x] = TILE_PLAYER;
             }
             // Track pushable objects (keys, crates, enemies)
-            else if ((tile == 'k' || tile == '*' || tile == 'e') && game_state.num_objects < MAX_OBJECTS) {
+            else if ((tile == TILE_KEY || tile == TILE_CRATE || tile == TILE_ENEMY) && game_state.num_objects < MAX_OBJECTS) {
                 game_state.objects[game_state.num_objects].x = x;
                 game_state.objects[game_state.num_objects].y = y;
                 game_state.objects[game_state.num_objects].type = tile;
@@ -110,10 +109,10 @@ void draw_level(void) {
             tile = level_map[y][x];
 
             // Draw the tile
-            if (tile != ' ') {
-                my_cputcxy(x, y + 2, tile);  // +2 to leave room for title
+            if (tile != TILE_EMPTY) {
+                my_cputcxy(x, y + SCREEN_TOP_MARGIN, tile);
             } else {
-                my_cputcxy(x, y + 2, ' ');
+                my_cputcxy(x, y + SCREEN_TOP_MARGIN, TILE_EMPTY);
             }
         }
     }
@@ -132,19 +131,24 @@ void set_tile(byte x, byte y, byte tile) {
     }
 }
 
+void set_tile_and_draw(byte x, byte y, char tile) {
+    set_tile(x, y, tile);
+    my_cputcxy(x, y + SCREEN_TOP_MARGIN, tile);
+}
+
 byte is_blocking(char tile) {
     // Walls and wall lines
-    if (tile == '#' || tile == '$' || tile == '%' || tile == '&') {
+    if (tile == TILE_WALL || tile == '$' || tile == '%' || tile == '&') {
         return 1;
     }
 
     // Closed doors and gates
-    if (tile == 'd' || tile == 'g' || tile == 'h') {
+    if (tile == TILE_DOOR || tile == TILE_GATE_A || tile == TILE_GATE_B) {
         return 1;
     }
 
     // Pushable objects (blocking unless pushed)
-    if (tile == '*' || tile == 'k' || tile == 'e') {
+    if (tile == TILE_CRATE || tile == TILE_KEY || tile == TILE_ENEMY) {
         return 1;
     }
 
@@ -153,22 +157,22 @@ byte is_blocking(char tile) {
 
 byte is_passable(char tile) {
     // Floor and empty
-    if (tile == '.' || tile == ' ') {
+    if (tile == TILE_FLOOR || tile == TILE_EMPTY) {
         return 1;
     }
 
     // Holes (both empty and filled)
-    if (tile == '?' || tile == '!' || tile == '[' || tile == ']') {
+    if (tile == TILE_HOLE_A || tile == TILE_HOLE_B || tile == '[' || tile == ']') {
         return 1;
     }
 
     // Exits
-    if (tile == '@' || tile == ':' || tile == ';') {
+    if (tile == TILE_EXIT_A || tile == TILE_EXIT_B || tile == TILE_EXIT_C) {
         return 1;
     }
 
     // Plates
-    if (tile == 'b' || tile == 'c') {
+    if (tile == TILE_PLATE_A || tile == TILE_PLATE_B) {
         return 1;
     }
 
@@ -183,7 +187,7 @@ byte is_passable(char tile) {
     }
 
     // Open door
-    if (tile == 'D') {
+    if (tile == TILE_DOOR_OPEN) {
         return 1;
     }
 
@@ -236,9 +240,7 @@ void remove_open_doors(void) {
     for (y = 0; y < game_state.level_height; y++) {
         for (x = 0; x < game_state.level_width; x++) {
             if (get_tile(x, y) == TILE_DOOR_OPEN) {
-                set_tile(x, y, TILE_FLOOR);
-                // Redraw the tile
-                my_cputcxy(x, y + 2, TILE_FLOOR);
+                set_tile_and_draw(x, y, TILE_FLOOR);
             }
         }
     }
@@ -246,8 +248,7 @@ void remove_open_doors(void) {
 
 void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
     // Remove key
-    set_tile(key_x, key_y, TILE_FLOOR);
-    my_cputcxy(key_x, key_y + 2, TILE_FLOOR);
+    set_tile_and_draw(key_x, key_y, TILE_FLOOR);
 
     // Start flood fill from the door
     door_flood_fill(door_x, door_y);
@@ -282,14 +283,12 @@ void update_gates(void) {
                 if (plateA_has_object) {
                     // Open gate
                     if (tile != 'G') {
-                        set_tile(x, y, 'G');
-                        my_cputcxy(x, y + 2, 'G');
+                        set_tile_and_draw(x, y, 'G');
                     }
                 } else {
                     // Close gate
                     if (tile != TILE_GATE_A) {
-                        set_tile(x, y, TILE_GATE_A);
-                        my_cputcxy(x, y + 2, TILE_GATE_A);
+                        set_tile_and_draw(x, y, TILE_GATE_A);
                     }
                 }
             }
@@ -299,14 +298,12 @@ void update_gates(void) {
                 if (plateB_has_object) {
                     // Open gate
                     if (tile != 'H') {
-                        set_tile(x, y, 'H');
-                        my_cputcxy(x, y + 2, 'H');
+                        set_tile_and_draw(x, y, 'H');
                     }
                 } else {
                     // Close gate
                     if (tile != TILE_GATE_B) {
-                        set_tile(x, y, TILE_GATE_B);
-                        my_cputcxy(x, y + 2, TILE_GATE_B);
+                        set_tile_and_draw(x, y, TILE_GATE_B);
                     }
                 }
             }
@@ -328,7 +325,7 @@ void handle_duplication(void) {
 
     // Count keys in each hole type
     for (i = 0; i < game_state.num_objects; i++) {
-        if (game_state.objects[i].type == 'k') {
+        if (game_state.objects[i].type == TILE_KEY) {
             if (game_state.objects[i].under == TILE_HOLE_A) key_holeA++;
             if (game_state.objects[i].under == TILE_HOLE_B) key_holeB++;
         }
@@ -342,8 +339,7 @@ void handle_duplication(void) {
                 game_state.players[i].under != TILE_HOLE_B) {
                 game_state.players[j++] = game_state.players[i];
             } else {
-                set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
-                my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+                set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
             }
         }
         game_state.num_players = j;
@@ -357,13 +353,12 @@ void handle_duplication(void) {
     if (key_holeA > 0 && key_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
-            if (game_state.objects[i].type != 'k' ||
+            if (game_state.objects[i].type != TILE_KEY ||
                 (game_state.objects[i].under != TILE_HOLE_A &&
                  game_state.objects[i].under != TILE_HOLE_B)) {
                 game_state.objects[j++] = game_state.objects[i];
             } else {
-                set_tile(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
-                my_cputcxy(game_state.objects[i].x, game_state.objects[i].y + 2, game_state.objects[i].under);
+                set_tile_and_draw(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
             }
         }
         game_state.num_objects = j;
@@ -378,8 +373,7 @@ void handle_duplication(void) {
                     game_state.players[game_state.num_players].x = x;
                     game_state.players[game_state.num_players].y = y;
                     game_state.players[game_state.num_players].under = TILE_HOLE_A;
-                    set_tile(x, y, TILE_PLAYER);
-                    my_cputcxy(x, y + 2, TILE_PLAYER);
+                    set_tile_and_draw(x, y, TILE_PLAYER);
                     game_state.num_players++;
                     player_holeA++;
                 }
@@ -387,8 +381,7 @@ void handle_duplication(void) {
                     game_state.players[game_state.num_players].x = x;
                     game_state.players[game_state.num_players].y = y;
                     game_state.players[game_state.num_players].under = TILE_HOLE_B;
-                    set_tile(x, y, TILE_PLAYER);
-                    my_cputcxy(x, y + 2, TILE_PLAYER);
+                    set_tile_and_draw(x, y, TILE_PLAYER);
                     game_state.num_players++;
                     player_holeB++;
                 }
@@ -404,20 +397,18 @@ void handle_duplication(void) {
                 if (tile == TILE_HOLE_A && key_holeB > 0 && game_state.num_objects < MAX_OBJECTS) {
                     game_state.objects[game_state.num_objects].x = x;
                     game_state.objects[game_state.num_objects].y = y;
-                    game_state.objects[game_state.num_objects].type = 'k';
+                    game_state.objects[game_state.num_objects].type = TILE_KEY;
                     game_state.objects[game_state.num_objects].under = TILE_HOLE_A;
-                    set_tile(x, y, 'k');
-                    my_cputcxy(x, y + 2, 'k');
+                    set_tile_and_draw(x, y, TILE_KEY);
                     game_state.num_objects++;
                     key_holeA++;
                 }
                 else if (tile == TILE_HOLE_B && key_holeA > 0 && game_state.num_objects < MAX_OBJECTS) {
                     game_state.objects[game_state.num_objects].x = x;
                     game_state.objects[game_state.num_objects].y = y;
-                    game_state.objects[game_state.num_objects].type = 'k';
+                    game_state.objects[game_state.num_objects].type = TILE_KEY;
                     game_state.objects[game_state.num_objects].under = TILE_HOLE_B;
-                    set_tile(x, y, 'k');
-                    my_cputcxy(x, y + 2, 'k');
+                    set_tile_and_draw(x, y, TILE_KEY);
                     game_state.num_objects++;
                     key_holeB++;
                 }
@@ -448,8 +439,7 @@ byte try_push(byte x, byte y, char dx, char dy) {
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
                 // Restore the tile the key was on before it disappears
-                set_tile(x, y, game_state.objects[i].under);
-                my_cputcxy(x, y + 2, game_state.objects[i].under);
+                set_tile_and_draw(x, y, game_state.objects[i].under);
 
                 // Remove this object by shifting array
                 for (; i < game_state.num_objects - 1; i++) {
@@ -482,12 +472,10 @@ byte try_push(byte x, byte y, char dx, char dy) {
             game_state.objects[i].under = behind_tile; // Remembers the dynamic tile it moves onto.
 
             // 3. Restore the tile at the object's OLD position using its saved memory.
-            set_tile(x, y, tile_to_restore);
-            my_cputcxy(x, y + 2, tile_to_restore);
+            set_tile_and_draw(x, y, tile_to_restore);
 
             // 4. Move the object to its new position on the map.
-            set_tile(behind_x, behind_y, object_tile);
-            my_cputcxy(behind_x, behind_y + 2, object_tile);
+            set_tile_and_draw(behind_x, behind_y, object_tile);
 
             return 1; // Push successful
         }
@@ -520,8 +508,7 @@ byte try_move_player(char dx, char dy) {
         // Check if target is passable
         if (is_passable(target_tile)) {
             // Restore tile under old position
-            set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
-            my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+            set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
 
             // Move player
             game_state.players[i].x = new_x;
@@ -534,8 +521,7 @@ byte try_move_player(char dx, char dy) {
             }
 
             // Set player at new position
-            set_tile(new_x, new_y, TILE_PLAYER);
-            my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+            set_tile_and_draw(new_x, new_y, TILE_PLAYER);
             moved = 1;
         }
         // Check if target is pushable
@@ -543,8 +529,7 @@ byte try_move_player(char dx, char dy) {
             // The corrected try_push now handles restoring tiles correctly.
             if (try_push(new_x, new_y, dx, dy)) {
                 // Restore tile under old position
-                set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
-                my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+                set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
 
                 // Move player
                 game_state.players[i].x = new_x;
@@ -555,15 +540,13 @@ byte try_move_player(char dx, char dy) {
                 // re-read that tile to correctly update the player's 'under' memory.
                 game_state.players[i].under = get_tile(new_x, new_y);
 
-                set_tile(new_x, new_y, TILE_PLAYER);
-                my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+                set_tile_and_draw(new_x, new_y, TILE_PLAYER);
                 moved = 1;
             }
         }
     }
 
     if (moved) {
-        game_state.moves++;
         handle_duplication();
         update_gates();
     }

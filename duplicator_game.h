@@ -18,12 +18,12 @@ typedef unsigned short word;
 // Game constants (exact size needed for levels)
 #define MAX_LEVEL_WIDTH 18   // Exact width of largest level (17 + 1)
 #define MAX_LEVEL_HEIGHT 11  // Exact height of levels
+#define SCREEN_TOP_MARGIN 2  // Number of lines reserved for title/UI at top
 
 // Tile types
 #define TILE_EMPTY      ' '
 #define TILE_WALL       '#'
 #define TILE_PLAYER     'p'
-#define TILE_PLAYER_ALT '@'  // Alternative player character (for display)
 #define TILE_CRATE      '*'
 #define TILE_KEY        'k'
 #define TILE_DOOR       'd'
@@ -76,7 +76,6 @@ typedef struct {
     byte num_objects;
     byte level_width;
     byte level_height;
-    byte moves;
     byte level_complete;
     byte current_level;
 } GameState;
@@ -215,6 +214,18 @@ void update_gates(void);
   - Mark holes as filled when occupied
 */
 void handle_duplication(void);
+
+/*
+  Set tile in both level map and screen display
+
+  Helper function that combines set_tile() and my_cputcxy() to update
+  both the game state and screen display in one call.
+
+  @param x - X coordinate
+  @param y - Y coordinate
+  @param tile - Tile character to set
+*/
+void set_tile_and_draw(byte x, byte y, char tile);
 
 #endif // DUPLICATOR_GAME_H
 
