@@ -14,6 +14,44 @@ static char level_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
 // Background layer (for tiles under objects)
 static char background_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
 
+// Tile category lookup table (256 bytes - one for each ASCII character)
+// Each byte contains bit flags for tile properties
+const byte tile_categories[256] = {
+    [' '] = TILE_CAT_PASSABLE,                                    // TILE_EMPTY
+    ['.'] = TILE_CAT_PASSABLE,                                    // TILE_FLOOR
+    ['#'] = TILE_CAT_BLOCKING,                                    // TILE_WALL
+    ['p'] = TILE_CAT_BLOCKING,                                    // TILE_PLAYER (blocking to other players)
+    ['*'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_CRATE
+    ['k'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_KEY
+    ['e'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_ENEMY
+    ['d'] = TILE_CAT_BLOCKING,                                    // TILE_DOOR (closed)
+    ['D'] = TILE_CAT_PASSABLE,                                    // TILE_DOOR_OPEN
+    ['?'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_A
+    ['!'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_B
+    ['['] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_A filled
+    [']'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_B filled
+    ['b'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE,                   // TILE_PLATE_A
+    ['c'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE,                   // TILE_PLATE_B
+    ['g'] = TILE_CAT_BLOCKING | TILE_CAT_GATE,                    // TILE_GATE_A (closed)
+    ['h'] = TILE_CAT_BLOCKING | TILE_CAT_GATE,                    // TILE_GATE_B (closed)
+    ['G'] = TILE_CAT_PASSABLE | TILE_CAT_GATE,                    // TILE_GATE_A (open)
+    ['H'] = TILE_CAT_PASSABLE | TILE_CAT_GATE,                    // TILE_GATE_B (open)
+    ['@'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_A
+    [':'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_B
+    [';'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_C
+    ['$'] = TILE_CAT_BLOCKING,                                    // Wall line A
+    ['%'] = TILE_CAT_BLOCKING,                                    // Wall line B
+    ['&'] = TILE_CAT_BLOCKING,                                    // Wall line C
+    ['1'] = TILE_CAT_PASSABLE,                                    // Decorative line 1
+    ['2'] = TILE_CAT_PASSABLE,                                    // Decorative line 2
+    ['3'] = TILE_CAT_PASSABLE,                                    // Decorative line 3
+    ['4'] = TILE_CAT_PASSABLE,                                    // Decorative line 4
+    ['5'] = TILE_CAT_PASSABLE,                                    // Decorative line 5
+    ['6'] = TILE_CAT_PASSABLE,                                    // Decorative line 6
+    ['7'] = TILE_CAT_PASSABLE,                                    // Decorative line 7
+    ['8'] = TILE_CAT_PASSABLE,                                    // Decorative line 8
+};
+
 // Simple queue for flood fill (reduced size to save memory)
 typedef struct {
     byte x;
@@ -48,7 +86,7 @@ void load_level(const char* level_data[], byte num_rows) {
             tile = row[x];
 
             // Determine if this is an object or background
-            if (tile == TILE_PLAYER || tile == TILE_KEY || tile == TILE_CRATE || tile == TILE_ENEMY) {
+            if (tile == TILE_PLAYER || is_pushable(tile)) {
                 // Object - store floor as background
                 background_map[y][x] = TILE_FLOOR;
                 level_map[y][x] = tile;
@@ -89,7 +127,7 @@ void load_level(const char* level_data[], byte num_rows) {
                 level_map[y][x] = TILE_PLAYER;
             }
             // Track pushable objects (keys, crates, enemies)
-            else if ((tile == TILE_KEY || tile == TILE_CRATE || tile == TILE_ENEMY) && game_state.num_objects < MAX_OBJECTS) {
+            else if (is_pushable(tile) && game_state.num_objects < MAX_OBJECTS) {
                 game_state.objects[game_state.num_objects].x = x;
                 game_state.objects[game_state.num_objects].y = y;
                 game_state.objects[game_state.num_objects].type = tile;
@@ -137,61 +175,11 @@ void set_tile_and_draw(byte x, byte y, char tile) {
 }
 
 byte is_blocking(char tile) {
-    // Walls and wall lines
-    if (tile == TILE_WALL || tile == '$' || tile == '%' || tile == '&') {
-        return 1;
-    }
-
-    // Closed doors and gates
-    if (tile == TILE_DOOR || tile == TILE_GATE_A || tile == TILE_GATE_B) {
-        return 1;
-    }
-
-    // Pushable objects (blocking unless pushed)
-    if (tile == TILE_CRATE || tile == TILE_KEY || tile == TILE_ENEMY) {
-        return 1;
-    }
-
-    return 0;
+    return (tile_categories[(byte)tile] & TILE_CAT_BLOCKING) != 0;
 }
 
 byte is_passable(char tile) {
-    // Floor and empty
-    if (tile == TILE_FLOOR || tile == TILE_EMPTY) {
-        return 1;
-    }
-
-    // Holes (both empty and filled)
-    if (tile == TILE_HOLE_A || tile == TILE_HOLE_B || tile == '[' || tile == ']') {
-        return 1;
-    }
-
-    // Exits
-    if (tile == TILE_EXIT_A || tile == TILE_EXIT_B || tile == TILE_EXIT_C) {
-        return 1;
-    }
-
-    // Plates
-    if (tile == TILE_PLATE_A || tile == TILE_PLATE_B) {
-        return 1;
-    }
-
-    // Decorative lines (1-8)
-    if (tile >= '1' && tile <= '8') {
-        return 1;
-    }
-
-    // Open gates (uppercase G, H)
-    if (tile == 'G' || tile == 'H') {
-        return 1;
-    }
-
-    // Open door
-    if (tile == TILE_DOOR_OPEN) {
-        return 1;
-    }
-
-    return 0;
+    return (tile_categories[(byte)tile] & TILE_CAT_PASSABLE) != 0;
 }
 
 // is_exit and is_pushable are now macros in the header file
@@ -335,8 +323,7 @@ void handle_duplication(void) {
     if (player_holeA > 0 && player_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_players; i++) {
-            if (game_state.players[i].under != TILE_HOLE_A &&
-                game_state.players[i].under != TILE_HOLE_B) {
+            if (!is_hole(game_state.players[i].under)) {
                 game_state.players[j++] = game_state.players[i];
             } else {
                 set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
@@ -353,9 +340,7 @@ void handle_duplication(void) {
     if (key_holeA > 0 && key_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
-            if (game_state.objects[i].type != TILE_KEY ||
-                (game_state.objects[i].under != TILE_HOLE_A &&
-                 game_state.objects[i].under != TILE_HOLE_B)) {
+            if (game_state.objects[i].type != TILE_KEY || !is_hole(game_state.objects[i].under)) {
                 game_state.objects[j++] = game_state.objects[i];
             } else {
                 set_tile_and_draw(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);

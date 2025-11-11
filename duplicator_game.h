@@ -151,14 +151,35 @@ byte is_blocking(char tile);
 byte is_passable(char tile);
 
 /*
-  Check if a tile is an exit - INLINE MACRO for speed/size
+  Tile category lookup table - external declaration
+  Defined in duplicator_game.c
 */
-#define is_exit(tile) ((tile) == '@' || (tile) == ':' || (tile) == ';')
+extern const byte tile_categories[256];
 
 /*
-  Check if a tile is pushable - INLINE MACRO for speed/size
+  Check if a tile is an exit - INLINE MACRO using category table
 */
-#define is_pushable(tile) ((tile) == '*' || (tile) == 'k' || (tile) == 'e')
+#define is_exit(tile) ((tile_categories[(byte)(tile)] & TILE_CAT_EXIT) != 0)
+
+/*
+  Check if a tile is pushable - INLINE MACRO using category table
+*/
+#define is_pushable(tile) ((tile_categories[(byte)(tile)] & TILE_CAT_PUSHABLE) != 0)
+
+/*
+  Check if a tile is a hole - INLINE MACRO using category table
+*/
+#define is_hole(tile) ((tile_categories[(byte)(tile)] & TILE_CAT_HOLE) != 0)
+
+/*
+  Check if a tile is a pressure plate - INLINE MACRO using category table
+*/
+#define is_plate(tile) ((tile_categories[(byte)(tile)] & TILE_CAT_PLATE) != 0)
+
+/*
+  Check if a tile is a gate - INLINE MACRO using category table
+*/
+#define is_gate(tile) ((tile_categories[(byte)(tile)] & TILE_CAT_GATE) != 0)
 
 /*
   Try to push an object at a position in a direction

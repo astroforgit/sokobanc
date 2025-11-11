@@ -1,0 +1,2646 @@
+/* -----------------------------------------------------------------------
+ * File: duplicator.c
+ * ----------------------------------------------------------------------- */
+
+// Use RAM-based configuration instead of ROM cartridge for more space
+#define CFGFILE atari-xex.cfg
+
+// Link the libraries
+//#link "atari_conio.c"
+//#link "duplicator_game.c"
+
+/*
+  Duplicator Game - Playable Version
+  Based on the PuzzleScript game by competor
+*/
+
+#include "duplicator_font.h"
+#include "duplicator_game.h"
+#include "atari_conio.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <peekpoke.h>
+#include <conio.h>
+#include <joystick.h>
+
+// Data types for clarity
+typedef unsigned char byte;
+typedef unsigned short word;
+
+// Memory definitions
+#define CHARSET_MEM ((byte*)0x7000)
+#define DLIST_MEM   ((byte*)0x8000)
+#define SCREEN_MEM  ((byte*)0x9000)
+#define ROM_CHARSET_ADDRESS 0xE000
+
+// Level data from duplicator.txt
+// Note: 'z' = holeA and Player, 'y' = holeB and enemy, 'p' = Player
+const char* level_1[] = {
+    "########:########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "########.########",
+    "#######...#...###",
+    "#######.p.#.e.###",
+    "#######...#...###",
+    "############.####",
+    "############.####"
+};
+
+const char* level_2[] = {
+    "#################",
+    "#################",
+    "###...#...#...###",
+    "###.!2%2?...b.###",
+    "###...#...#.1.###",
+    "####.#######$####",
+    "####.##...##$####",
+    "####........g...@",
+    "#######...#######",
+    "########.########",
+    "########p########"
+};
+
+const char* level_3[] = {
+    "#################",
+    "#################",
+    "###...#...#...###",
+    "###.!2%2?...b.###",
+    "###...#...#.1.###",
+    "####.#######$####",
+    "###.......##$####",
+    "p.......c2h.g...@",
+    "###.......#######",
+    "#################",
+    "#################"
+};
+
+const char* level_4[] = {
+    "############.####",
+    "############.####",
+    "###...#...#...###",
+    "###.!2%2?.#......",
+    "###...#...#...###",
+    "####.###.########",
+    "###...#...d.d.###",
+    "p.....#.k.d.d...@",
+    "###...#...d.d.###",
+    "#################",
+    "#################"
+};
+
+// Level definitions
+typedef struct {
+    const char** data;
+    byte rows;
+} LevelDef;
+
+const LevelDef levels[] = {
+    { level_1, 11 },
+    { level_2, 11 },
+    { level_3, 11 },
+    { level_4, 11 }
+};
+
+#define NUM_LEVELS 4
+
+// Setup graphics with duplicator fonts
+void setup_duplicator_graphics(void) {
+    byte i;
+    word screen_addr = (word)SCREEN_MEM;
+    word dlist_addr = (word)DLIST_MEM;
+    word charset_addr = (word)CHARSET_MEM;
+    
+    // Create custom display list
+    // 3 blank lines at top
+    DLIST_MEM[0] = 0x70;
+    DLIST_MEM[1] = 0x70;
+    DLIST_MEM[2] = 0x70;
+    
+    // First line with LMS (Load Memory Scan) - points to screen memory
+    DLIST_MEM[3] = 0x42;
+    DLIST_MEM[4] = (byte)screen_addr;
+    DLIST_MEM[5] = (byte)(screen_addr >> 8);
+    
+    // 23 more lines of mode 2 (text mode, 40 columns)
+    for (i = 0; i < 23; ++i) {
+        DLIST_MEM[6 + i] = 0x02;
+    }
+    
+    // Jump back to start of display list
+    DLIST_MEM[29] = 0x41;
+    DLIST_MEM[30] = (byte)dlist_addr;
+    DLIST_MEM[31] = (byte)(dlist_addr >> 8);
+    
+    // Set character set pointer (CHBAS register at location 756)
+    POKE(756, (byte)(charset_addr >> 8));
+    
+    // Copy ROM character set to RAM so we can modify it
+    memcpy(CHARSET_MEM, (void*)ROM_CHARSET_ADDRESS, 1024);
+    
+    // Install custom graphics for duplicator game tiles
+    // Use direct character multiplication like sokoban does
+    memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player
+    memcpy(CHARSET_MEM + ('#' * 8), &duplicator_graphics[8], 8);   // Wall
+    memcpy(CHARSET_MEM + ('*' * 8), &duplicator_graphics[16], 8);  // Crate
+    memcpy(CHARSET_MEM + ('k' * 8), &duplicator_graphics[24], 8);  // Key
+    memcpy(CHARSET_MEM + ('d' * 8), &duplicator_graphics[32], 8);  // Door
+    memcpy(CHARSET_MEM + ('e' * 8), &duplicator_graphics[40], 8);  // Enemy
+    memcpy(CHARSET_MEM + ('?' * 8), &duplicator_graphics[48], 8);  // Hole A
+    memcpy(CHARSET_MEM + ('!' * 8), &duplicator_graphics[56], 8);  // Hole B
+    memcpy(CHARSET_MEM + ('b' * 8), &duplicator_graphics[64], 8);  // Plate A
+    memcpy(CHARSET_MEM + ('c' * 8), &duplicator_graphics[72], 8);  // Plate B
+    memcpy(CHARSET_MEM + ('g' * 8), &duplicator_graphics[80], 8);  // Gate A
+    memcpy(CHARSET_MEM + ('h' * 8), &duplicator_graphics[88], 8);  // Gate B
+    memcpy(CHARSET_MEM + ('@' * 8), &duplicator_graphics[96], 8);  // Exit A
+    memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[104], 8); // Exit B
+    memcpy(CHARSET_MEM + ('.' * 8), &duplicator_graphics[112], 8); // Floor
+    memcpy(CHARSET_MEM + ('$' * 8), &duplicator_graphics[120], 8); // Wall Line A
+    memcpy(CHARSET_MEM + ('%' * 8), &duplicator_graphics[128], 8); // Wall Line B
+    memcpy(CHARSET_MEM + ('&' * 8), &duplicator_graphics[136], 8); // Wall Line G
+    memcpy(CHARSET_MEM + ('1' * 8), &duplicator_graphics[144], 8); // Line A
+    memcpy(CHARSET_MEM + ('2' * 8), &duplicator_graphics[152], 8); // Line B
+    memcpy(CHARSET_MEM + ('3' * 8), &duplicator_graphics[160], 8); // Line C
+    memcpy(CHARSET_MEM + ('4' * 8), &duplicator_graphics[168], 8); // Line D
+    memcpy(CHARSET_MEM + ('5' * 8), &duplicator_graphics[176], 8); // Line E
+    memcpy(CHARSET_MEM + ('6' * 8), &duplicator_graphics[184], 8); // Line F
+    memcpy(CHARSET_MEM + ('7' * 8), &duplicator_graphics[192], 8); // Line G
+    memcpy(CHARSET_MEM + ('8' * 8), &duplicator_graphics[200], 8); // Line H
+    memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[208], 8); // Exit C
+    memcpy(CHARSET_MEM + ('G' * 8), &duplicator_graphics[216], 8); // Gate A Open
+    memcpy(CHARSET_MEM + ('H' * 8), &duplicator_graphics[224], 8); // Gate B Open
+    memcpy(CHARSET_MEM + ('D' * 8), &duplicator_graphics[232], 8); // Door Open
+    memcpy(CHARSET_MEM + ('[' * 8), &duplicator_graphics[240], 8); // Hole A Filled
+    memcpy(CHARSET_MEM + (']' * 8), &duplicator_graphics[248], 8); // Hole B Filled
+    
+    // Set colors
+    POKE(709, 0);   // Background color (black)
+    POKE(710, 14);  // Foreground color (light blue)
+    
+    // Set display list pointer (SDLSTL/SDLSTH at 560/561)
+    POKEW(560, dlist_addr);
+    
+    // Turn off cursor
+    POKE(752, 1);
+}
+
+// Main function
+void main(void) {
+    byte joy, last_joy = 0;
+    byte i;
+    GameState* state;
+    byte current_level = 0;
+
+    // Initialize joystick
+    joy_install(joy_static_stddrv);
+
+    // Initialize graphics
+    setup_duplicator_graphics();
+
+start_level:
+    // Clear screen
+    my_clrscr();
+
+    // Load and draw current level
+    load_level(levels[current_level].data, levels[current_level].rows);
+    state = get_game_state();
+    state->current_level = current_level;
+    draw_level();
+
+    // Main game loop
+    while (1) {
+        // Read joystick
+        joy = joy_read(0);
+        
+        // Handle joystick input (with debouncing)
+        if (joy && !last_joy) {
+            if (JOY_UP(joy)) {
+                try_move_player(0, -1);
+            } else if (JOY_DOWN(joy)) {
+                try_move_player(0, 1);
+            } else if (JOY_LEFT(joy)) {
+                try_move_player(-1, 0);
+            } else if (JOY_RIGHT(joy)) {
+                try_move_player(1, 0);
+            }
+        }
+        last_joy = joy;
+        
+        // Also check keyboard
+        if (kbhit()) {
+            byte key = cgetc();
+            if (key == CH_CURS_UP || key == 'w' || key == 'W') {
+                try_move_player(0, -1);
+            } else if (key == CH_CURS_DOWN || key == 's' || key == 'S') {
+                try_move_player(0, 1);
+            } else if (key == CH_CURS_LEFT || key == 'a' || key == 'A') {
+                try_move_player(-1, 0);
+            } else if (key == CH_CURS_RIGHT || key == 'd' || key == 'D') {
+                try_move_player(1, 0);
+            } else if (key == CH_ESC) {
+                break;  // Exit game
+            }
+        }
+
+        // Check win condition
+        state = get_game_state();
+        if (is_level_complete()) {
+            // Wait a moment to show completion
+            for (i = 0; i < 30; i++) {
+                wait_vblank();
+            }
+
+            // Check if there are more levels
+            if (current_level < NUM_LEVELS - 1) {
+                // Go to next level
+                current_level++;
+                goto start_level;
+            } else {
+                // All levels complete - restart from level 1
+                current_level = 0;
+                goto start_level;
+            }
+        }
+
+        wait_vblank();
+    }
+}
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator.txt
+ * ----------------------------------------------------------------------- */
+
+title Duplicators
+author competor
+homepage competor.itch.io
+
+background_color #eeeeee
+text_color #1F1F1F
+again_interval 0.08
+
+norepeat_action
+noaction
+
+========
+OBJECTS
+========
+Background  (special, automatically placed in its own layer)
+#eeeeee
+
+
+Player    (Required by game)
+#242424 #757575
+.000.
+.000.
+00000
+.000.
+.0.0.
+
+anim_player_1
+blue
+.....
+.....
+.....
+.....
+.0.0.
+
+anim_player_2
+blue
+.....
+.....
+.....
+.000.
+.0.0.
+
+anim_player_3
+blue
+.....
+.....
+00000
+.000.
+.0.0.
+
+anim_player_4
+blue
+.....
+.000.
+00000
+.000.
+.0.0.
+
+anim_disappear_1
+red
+00000
+00000
+00000
+00000
+00000
+
+anim_disappear_2
+red
+.....
+00000
+00000
+00000
+00000
+
+anim_disappear_3
+red
+.....
+.....
+00000
+00000
+00000
+
+anim_disappear_4
+red
+.....
+.....
+.....
+00000
+00000
+
+anim_disappear_5
+red
+.....
+.....
+.....
+.....
+00000
+
+holeA
+#33B07E #DBDBDB
+11111
+10101
+11111
+10101
+11111
+
+holeA_
+#00B06B
+
+
+holeB
+#33B07E #DBDBDB
+11111
+10101
+11111
+10101
+11111
+
+holeB_
+#00B06B
+
+floor_gray
+#DBDBDB
+
+wall
+#1F1F1F
+
+Crate
+#967E36
+.....
+.000.
+.0.0.
+.000.
+.....
+
+anim_crate_1
+blue
+.....
+.....
+.....
+.....
+.....
+
+anim_crate_2
+blue
+.....
+.....
+.....
+.000.
+.....
+
+anim_crate_3
+blue
+.....
+.....
+.0.0.
+.000.
+.....
+
+anim_crate_4
+blue
+.....
+.000.
+.0.0.
+.000.
+.....
+
+key
+#CFCF53
+.....
+000.0
+0.000
+000..
+.....
+
+anim_key_1
+blue
+.....
+.....
+.....
+.....
+.....
+
+anim_key_2
+blue
+.....
+.....
+.....
+000..
+.....
+
+anim_key_3
+blue
+.....
+.....
+0.000
+000..
+.....
+anim_key_4
+blue
+.....
+000.0
+0.000
+000..
+.....
+
+door
+#1F1F1F #CFCF53
+.101.
+.101.
+.101.
+.101.
+.101.
+
+door_
+#1F1F1F #CFCF53
+..1..
+..1..
+..1..
+..1..
+..1..
+
+enemy
+#CF5353
+.....
+.0.0.
+.000.
+00000
+.0.0.
+
+anim_enemy_1
+#CF5353
+.....
+.....
+.....
+.....
+.0.0.
+
+anim_enemy_2
+#CF5353
+.....
+.....
+.....
+00000
+.0.0.
+
+anim_enemy_3
+#CF5353
+.....
+.....
+.000.
+00000
+.0.0.
+
+anim_enemy_4
+#CF5353
+.....
+.0.0.
+.000.
+00000
+.0.0.
+
+plateA
+#7077FF #DBDBDB
+11111
+11011
+10001
+11011
+11111
+
+plateB
+#C47C41 #DBDBDB
+11111
+11011
+10001
+11011
+11111
+
+
+gateA_closed
+#7077FF #1F1F1F
+01010
+11111
+01110
+11111
+01010
+
+gateA_open
+#7077FF #1F1F1F
+0...0
+.....
+.....
+.....
+0...0
+
+
+
+gateB_closed
+#C47C41 #1F1F1F
+01010
+11111
+01110
+11111
+01010
+
+gateB_open
+#C47C41 #1F1F1F
+0...0
+.....
+.....
+.....
+0...0
+
+line_A
+#DBDBDB
+..0..
+..0..
+..0..
+..0..
+..0..
+
+line_B
+#DBDBDB
+.....
+.....
+00000
+.....
+.....
+
+line_C
+#DBDBDB
+.....
+.....
+000..
+..0..
+..0..
+
+line_D
+#DBDBDB
+..0..
+..0..
+000..
+.....
+.....
+
+line_E
+#DBDBDB
+..0..
+..0..
+..000
+.....
+.....
+
+line_F
+#DBDBDB
+.....
+.....
+..000
+..0..
+..0..
+
+line_G
+#DBDBDB
+..0..
+..0..
+00000
+..0..
+..0..
+
+line_H
+#DBDBDB
+.....
+.....
+00000
+..0..
+..0..
+
+
+wall_lineA
+#1F1F1F #474747
+00100
+00100
+00100
+00100
+00100
+
+wall_lineB
+#1F1F1F #474747
+00000
+00000
+11111
+00000
+00000
+
+wall_lineG
+#1F1F1F #474747
+00100
+00100
+11111
+00100
+00100
+
+exitA
+#00B06B
+.....
+0..0.
+.0..0
+0..0.
+.....
+
+exitB
+#00B06B
+..0..
+.0.0.
+.....
+..0..
+.0.0.
+
+exitC
+#00B06B
+.....
+.0..0
+0..0.
+.0..0
+.....
+
+SeenV
+transparent
+SeenH
+transparent
+
+=======
+LEGEND
+=======
+. = Background
+# = wall
+$ = wall_lineA
+% = wall_lineB
+& = wall_lineG
+? = holeA
+! = holeB
+P = player
+@ = exitA
+: = exitB
+; = exitC
+* = Crate
+k = key
+d = door
+e = enemy
+b = plateA
+c = plateB
+g = gateA_closed
+h = gateB_closed
+1 = line_A
+2 = line_B
+3 = line_C
+4 = line_D
+5 = line_E
+6 = line_F
+7 = line_G
+8 = line_H
+y = holeB_ and enemy
+z = holeA and Player
+
+Seen = SeenV or SeenH
+walls = wall or wall_lineA or wall_lineB or wall_lineG
+soundobject = Crate or key or enemy
+enemySeen = enemy or walls or door or gateA_closed or gateB_closed
+enemystopper = crate or key or enemy or walls or door or gateA_closed or gateB_closed
+object = Player or crate or key or enemy
+animations = anim_player_1 or anim_player_2 or anim_player_3 or anim_player_4 or anim_disappear_1 or anim_disappear_2 or anim_disappear_3 or anim_disappear_4 or anim_disappear_5 or anim_crate_1 or anim_crate_2 or anim_crate_3 or anim_crate_4 or anim_key_1 or anim_key_2 or anim_key_3 or anim_key_4 or anim_enemy_1 or anim_enemy_2 or anim_enemy_3 or anim_enemy_4
+lines = line_A or line_B or line_C or line_D or line_E or line_F or line_G or line_H
+exits = exitA or exitB or exitC
+=========
+SOUNDS
+=========
+restart 53933706
+soundobject move 209907
+(endlevel 7121610)
+EndGame 45539704
+sfx0 21775906
+sfx1 80891906
+sfx2 11775906
+sfx3 45772902
+sfx4 11033709
+sfx5 40827500
+sfx6 45539704
+sfx7 44990904
+================
+COLLISIONLAYERS
+================
+
+Background
+holeA, holeB, holeA_, holeB_, floor_gray
+exits
+plateA, plateB,lines,
+Player,  walls, Crate , key, door, door_, enemy, gateA_closed,gateB_closed
+gateA_open,gateB_open
+animations
+seenV
+SeenH
+
+======
+RULES
+======
+
+
+(input)
+[> object | object ] -> [> object | > object ]
+
+(gate)
+late [ plateA no object][gateA_open no object] -> [plateA][gateA_closed] sfx2
+late [ plateA object][gateA_closed] -> [plateA object][gateA_open] sfx0
+
+late [ plateB no object][gateB_open no object] -> [plateB][gateB_closed] sfx2
+late [ plateB object][gateB_closed] -> [plateB object][gateB_open] sfx0
+
+(key)
+late [ door_ | door] -> [ door_ | door_] again
+[ > key | door ] -> [ | door_ ] again sfx5
+late [ door_ ] -> []
+
+(enemy)
+vertical   [ enemy | SeenV no enemystopper ] -> [ > enemy | ] again sfx7
+horizontal [ enemy | SeenH no enemystopper ] -> [ > enemy | ] again sfx7
+[ > enemy | Player ] -> [ | enemy] sfx6  again
+late [ Seen ] -> [ ]
+late [ Player ] -> [ Player SeenH SeenV ]
+late vertical   [ SeenV | no enemySeen ] -> [ SeenV | SeenV ]
+late horizontal [ SeenH | no enemySeen ] -> [ SeenH | SeenH ]
+
+late vertical   [ enemy | SeenV ] -> [ enemy | SeenV ] again
+late horizontal [ enemy | SeenH ] -> [ enemy | SeenH ] again
+
+(
+[enemy | no enemystopper | ... | Player] -> [ > enemy | | ... | Player] again sfx7
+[enemy | Player ] -> [ > enemy | ] sfx6  again
+late [ enemy | no enemystopper | ... | Player] -> [  enemy | | ... | Player]  again
+late [ enemy | Player ] -> [ enemy | Player ] again
+)
+
+(duplicate)
+[anim_player_4] -> [Player] again
+[anim_player_3] -> [anim_player_4] again
+[anim_player_2] -> [anim_player_3] again
+[anim_player_1] -> [anim_player_2] again
+late [ holeA Player ][ holeB no object ] -> [ holeA_ Player ][ holeB_ anim_player_1 ] again sfx0 sfx4
+late [ holeB Player ][ holeA no object ] -> [ holeB_ Player ][ holeA_ anim_player_1 ] again sfx0 sfx4
+
+[anim_crate_4] -> [crate] again
+[anim_crate_3] -> [anim_crate_4] again
+[anim_crate_2] -> [anim_crate_3] again
+[anim_crate_1] -> [anim_crate_2] again
+late [ holeA crate ][ holeB no object ] -> [ holeA_ crate ][ holeB_ anim_crate_1 ] again sfx0 sfx4
+late [ holeB crate ][ holeA no object ] -> [ holeB_ crate ][ holeA_ anim_crate_1 ] again sfx0 sfx4
+
+[anim_key_4] -> [key] again
+[anim_key_3] -> [anim_key_4] again
+[anim_key_2] -> [anim_key_3] again
+[anim_key_1] -> [anim_key_2] again
+late [ holeA key ][ holeB no object ] -> [ holeA_ key ][ holeB_ anim_key_1 ] again sfx0 sfx4
+late [ holeB key ][ holeA no object ] -> [ holeB_ key ][ holeA_ anim_key_1 ] again sfx0 sfx4
+
+[anim_enemy_4] -> [enemy] again
+[anim_enemy_3] -> [anim_enemy_4] again
+[anim_enemy_2] -> [anim_enemy_3] again
+[anim_enemy_1] -> [anim_enemy_2] again
+late [ holeA enemy ][ holeB no object ] -> [ holeA_ enemy ][ holeB_ anim_enemy_1 ] again sfx0 sfx4
+late [ holeB enemy ][ holeA no object ] -> [ holeB_ enemy ][ holeA_ anim_enemy_1 ] again sfx0 sfx4
+
+(disappear)
+[anim_disappear_5] -> [] again
+[anim_disappear_4] -> [anim_disappear_5] again
+[anim_disappear_3] -> [anim_disappear_4] again
+[anim_disappear_2] -> [anim_disappear_3] again
+[anim_disappear_1] -> [anim_disappear_2] again
+late [holeA  Player][holeB Player] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  Crate][holeB Crate] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  key][holeB key] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+late [holeA  enemy][holeB enemy] -> [holeA_ anim_disappear_1][holeB_ anim_disappear_1] again sfx0 sfx3
+
+(reset temp hole)
+late [holeA_ no object no animations] -> [holeA] sfx2
+late [holeB_ no object no animations] -> [holeB] sfx2
+
+
+
+==============
+WINCONDITIONS
+==============
+some Player on exits
+
+=======
+LEVELS
+=======
+
+########:########
+########.########
+########.########
+########.########
+########.########
+########.########
+#######...#...###
+#######.z.#.y.###
+#######...#...###
+############.####
+############.####
+
+#################
+#################
+###...#...#...###
+###.!2%2?...b.###
+###...#...#.1.###
+####.#######$####
+####.##...##$####
+####........g...@
+#######...#######
+########.########
+########p########
+
+#################
+#################
+###...#...#...###
+###.!2%2?...b.###
+###...#...#.1.###
+####.#######$####
+###.......##$####
+p.......c2h.g...@
+###.......#######
+#################
+#################
+
+############.####
+############.####
+###...#...#...###
+###.!2%2?.#......
+###...#...#...###
+####.###.########
+###...#...d.d.###
+p.....#.k.d.d...@
+###...#...d.d.###
+#################
+#################
+
+#################
+##.............##
+#####.#####.#####
+.................
+#################
+##.....?d......##
+#######5%3#######
+p.k.k.d.d1..d...@
+#####.#.#!#.#####
+##......#......##
+#################
+
+########:########
+########.########
+##6222cg2%%%223##
+##1....g.###..1##
+##1..#######..1##
+##1?2%%%%%%%2!1##
+##1..#######..1##
+p.1..#######..1##
+##1....h......1##
+##52222hb222224##
+#################
+
+########:########
+########g########
+###622%24.#...###
+###1..#.......###
+###1..#...#...###
+###$!%%%2%%%?####
+###1..#...#...###
+###5b.#...#.*.###
+###...#...#...###
+########.########
+########p########
+
+###:#############
+###.#############
+###.d...d..*!k.##
+###.d...d6224..##
+#########$####.##
+###......?.*.#.##
+###............##
+###............##
+###............##
+########.########
+########p########
+
+#################
+##...##...##...##
+##.!....k......##
+##.1.##...##...##
+###$####.####.###
+###$####.####.###
+##.1.##...##...##
+##.?.##.e......d@
+##...##...##...##
+###.#############
+###p#############
+
+#################
+##.....###.....##
+##......*...e..##
+##.....###.....##
+##......*...e..##
+##.....###.....##
+##......*...e..##
+p......###......@
+#################
+#################
+#################
+
+#################
+#######...h2223.@
+#######.!.####$##
+#######.1.####$##
+########$#####$##
+#####...1....e5c#
+#####.##$##.#####
+p..bg...?...#####
+#################
+#################
+#################
+
+########:########
+p..hh23..########
+#..###$##########
+#..?2%&!.########
+#....#$..########
+######c..########
+#################
+.................
+#################
+.................
+#################
+
+#################
+#################
+#####......######
+##..g....*6?...b#
+##*##.....1####h#
+##*#######$####1@
+##*##622227%%%%h#
+##.ch4...*5!....#
+##.##......######
+##.##############
+##p##############
+
+
+#############:###
+####e.....###.###
+####.###..###.###
+#b..!222362g..###
+#$##.###11#######
+p5222%%%74#######
+##.*....?...#####
+##...############
+##.*.############
+##...############
+#################
+
+#################
+#.........#######
+#eke......#######
+#.........#######
+#...###...#######
+#...###...#######
+#...###....bg.d.#
+#.........###.#.#
+#.......!2%%?.#.#
+#.........###.#.@
+#############p###
+
+#################
+#.....!.?...ed.d#
+#.....524....d.d#
+#............d.d#
+#............d.d#
+#.e..........d.d#
+#............d.d@
+#............d.d#
+######.k.########
+p...ch...########
+#################
+
+#################
+############..d.@
+############..d##
+###6222%223##g###
+###1...#.#!##g%b#
+###1...#.#....#.#
+p..1...h........#
+###?.c2h.....k..#
+###############.#
+###############e#
+#################
+
+#################
+p.ch....?...62g.@
+####6%%%7%%%4####
+####1###53#######
+####1#...1##.####
+####1...e522!####
+####1##....#.####
+####$##.*###.####
+####1###*###.####
+#b224........####
+#################
+
+#############:###
+p.ch.....?236g###
+#####****.*11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......11.###
+#####......57!###
+#####eeeee..5b###
+#################
+
+#################
+#################
+#################
+#################
+#################
+#################
+#################
+;....g.....!hc###
+#####$#######.###
+;....gb....?#.###
+#############p###
+
+########.########
+...hh23..########
+#..###$##########
+#..?2%&!.########
+#....#$..########
+######c..########
+#################
+;...............p
+#################
+;...............p
+#################
+
+#################
+####........#####
+####........#####
+;.##........#####
+#.##....##.*#####
+#.......##..#####
+####.ee.##..#####
+##########......p
+##########..#####
+##########......p
+#################
+
+#################
+##.............##
+#####.#####.#####
+;...............p
+#################
+##.....?d......##
+#######5%3#######
+..k.k.d.d1..d....
+#####.#.#!#.#####
+##......#......##
+#################
+
+############:####
+############.####
+###...#...#...###
+###.!2%2?.#.....p
+###...#...#...###
+####.###.########
+###...#...d.d.###
+......#.k.d.d....
+###...#...d.d.###
+#################
+#################
+
+############:####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############.####
+############p####
+
+########:########
+########.########
+########.########
+########.########
+########.########
+########.########
+#######...#...###
+#######.?.#.!e###
+#######...#...###
+############.####
+############p####
+
+message end.
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_font.h
+ * ----------------------------------------------------------------------- */
+
+/*
+  duplicator_font.h - Font definitions for Duplicator game
+  Converted from PuzzleScript 5x5 format to Atari 8x8 format
+
+  Conversion: 5x5 centered in 8x8 with:
+  - 1 empty pixel on left
+  - 1 empty pixel on top
+  - 1 empty pixel on bottom
+  - 2 empty pixels on right
+*/
+
+#ifndef DUPLICATOR_FONT_H
+#define DUPLICATOR_FONT_H
+
+// Each character is 8 bytes (8x8 pixels, 1 bit per pixel)
+// Format: Each byte represents one row of 8 pixels
+// Bit 7 (leftmost) to Bit 0 (rightmost)
+
+// Character indices for game objects
+#define CHAR_PLAYER       0x70  // 'p'
+#define CHAR_WALL         0x23  // '#'
+#define CHAR_CRATE        0x2A  // '*'
+#define CHAR_KEY          0x6B  // 'k'
+#define CHAR_DOOR         0x64  // 'd'
+#define CHAR_ENEMY        0x65  // 'e'
+#define CHAR_HOLE_A       0x3F  // '?'
+#define CHAR_HOLE_B       0x21  // '!'
+#define CHAR_PLATE_A      0x62  // 'b'
+#define CHAR_PLATE_B      0x63  // 'c'
+#define CHAR_GATE_A       0x67  // 'g'
+#define CHAR_GATE_B       0x68  // 'h'
+#define CHAR_EXIT_A       0x40  // '@'
+#define CHAR_EXIT_B       0x3A  // ':'
+#define CHAR_EXIT_C       0x3B  // ';'
+#define CHAR_FLOOR        0x2E  // '.'
+#define CHAR_WALL_LINE_A  0x24  // '$'
+#define CHAR_WALL_LINE_B  0x25  // '%'
+#define CHAR_WALL_LINE_G  0x26  // '&'
+#define CHAR_LINE_A       0x31  // '1'
+#define CHAR_LINE_B       0x32  // '2'
+#define CHAR_LINE_C       0x33  // '3'
+#define CHAR_LINE_D       0x34  // '4'
+#define CHAR_LINE_E       0x35  // '5'
+#define CHAR_LINE_F       0x36  // '6'
+#define CHAR_LINE_G       0x37  // '7'
+#define CHAR_LINE_H       0x38  // '8'
+#define CHAR_GATE_A_OPEN  0x47  // 'G'
+#define CHAR_GATE_B_OPEN  0x48  // 'H'
+#define CHAR_DOOR_OPEN    0x44  // 'D'
+#define CHAR_HOLE_A_FILL  0x5B  // '['
+#define CHAR_HOLE_B_FILL  0x5D  // ']'
+
+// Graphics data array
+static unsigned char duplicator_graphics[] = {
+    // Player (#242424 #757575)
+    // .000.
+    // .000.
+    // 00000
+    // .000.
+    // .0.0.
+    /* 0: Player */
+    0b00000000,  // ........
+    0b00111000,  // ..000...
+    0b00111000,  // ..000...
+    0b01111100,  // .00000..
+    0b00111000,  // ..000...
+    0b00101000,  // ..0.0...
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // Wall (#1F1F1F) - all black
+    /* 8: Wall - solid block */
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+    0xFF,  // ########
+
+    // Crate (#967E36)
+    // .....
+    // .000.
+    // .0.0.
+    // .000.
+    // .....
+    /* 16: Crate */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00111000,  // ..000...
+    0b00101000,  // ..0.0...
+    0b00111000,  // ..000...
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // key (#CFCF53)
+    /* 24: Key */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b01110100,  // .000.0..
+    0b01011100,  // .0.000..
+    0b01110000,  // .000....
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // door (#1F1F1F #CFCF53)
+    /* 32: Door */
+    0b00000000,  // ........
+    0b00101000,  // ..101...
+    0b00101000,  // ..101...
+    0b00101000,  // ..101...
+    0b00101000,  // ..101...
+    0b00101000,  // ..101...
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // enemy (#CF5353)
+    /* 40: Enemy */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00101000,  // ..0.0...
+    0b00111000,  // ..000...
+    0b01111100,  // .00000..
+    0b00101000,  // ..0.0...
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // holeA (#33B07E #DBDBDB)
+    /* 48: Hole A */
+    0b00000000,  // ........
+    0b01111100,  // .11111..
+    0b01010100,  // .10101..
+    0b01111100,  // .11111..
+    0b01010100,  // .10101..
+    0b01111100,  // .11111..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // holeB (#33B07E #DBDBDB)
+    /* 56: Hole B */
+    0b00000000,  // ........
+    0b01111100,  // .11111..
+    0b01010100,  // .10101..
+    0b01111100,  // .11111..
+    0b01010100,  // .10101..
+    0b01111100,  // .11111..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // plateA (#7077FF #DBDBDB)
+    /* 64: Plate A */
+    0b00000000,  // ........
+    0b01111100,  // .11111..
+    0b01101100,  // .11011..
+    0b01000100,  // .10001..
+    0b01101100,  // .11011..
+    0b01111100,  // .11111..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // plateB (#C47C41 #DBDBDB)
+    /* 72: Plate B */
+    0b00000000,  // ........
+    0b01111100,  // .11111..
+    0b01101100,  // .11011..
+    0b01000100,  // .10001..
+    0b01101100,  // .11011..
+    0b01111100,  // .11111..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // gateA_closed (#7077FF #1F1F1F)
+    /* 80: Gate A Closed */
+    0b00000000,  // ........
+    0b00101000,  // ..01010.
+    0b01111100,  // .11111..
+    0b00111000,  // ..01110.
+    0b01111100,  // .11111..
+    0b00101000,  // ..01010.
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // gateB_closed (#C47C41 #1F1F1F)
+    /* 88: Gate B Closed */
+    0b00000000,  // ........
+    0b00101000,  // ..01010.
+    0b01111100,  // .11111..
+    0b00111000,  // ..01110.
+    0b01111100,  // .11111..
+    0b00101000,  // ..01010.
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // exitA (#00B06B)
+    // .....
+    // 0..0.
+    // .0..0
+    // 0..0.
+    // .....
+    /* 96: Exit A */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b01001000,  // .0..0...
+    0b00100100,  // ..0..0..
+    0b01001000,  // .0..0...
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // exitB (#00B06B)
+
+    0b00000000,  // ........
+    0b00010000,  // ...0....
+    0b00101000,  // ..0.0...
+    0b00000000,  // ........
+    0b00010000,  // ...0....
+    0b00101000,  // ..0.0...
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // floor_gray (#DBDBDB)
+    /* 112: Floor */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // wall_lineA (#1F1F1F #474747) - vertical line (INVERTED - white on black)
+
+    /* 120: Wall Line A */
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+
+    // wall_lineB (#1F1F1F #474747) - horizontal line (INVERTED - white on black)
+
+    /* 128: Wall Line B */
+    0b11111111,  // 00000000
+    0b11111111,  // 00000000
+    0b11111111,  // 00000000
+    0b00000000,  // ........
+    0b11111111,  // 00000000
+    0b11111111,  // 00000000
+    0b11111111,  // 00000000
+    0b11111111,  // 00000000
+
+    // wall_lineG (#1F1F1F #474747) - cross (INVERTED - white on black)
+
+    /* 136: Wall Line G */
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b00000000,  // ........
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+    0b11101111,  // 000.0000
+
+    // line_A (#DBDBDB) - vertical thin (8 pixels long)
+
+    /* 144: Line A */
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+
+    // line_B (#DBDBDB) - horizontal thin (8 pixels long)
+    // 00000000
+    /* 152: Line B */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b11111111,  // 00000000
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // line_C (#DBDBDB) - corner bottom-left to top (8 pixels long)
+    // 00000000
+    // ....0
+    // ....0
+    // ....0
+    // ....0
+    /* 160: Line C */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b11111111,  // 00000000
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+
+    // line_D (#DBDBDB) - corner top to bottom-left (8 pixels long)
+    // ....0
+    // ....0
+    // ....0
+    // ....0
+    // 00000000
+    /* 168: Line D */
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b11111111,  // 00000000
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // line_E (#DBDBDB) - corner top to bottom-right (8 pixels long)
+    // 0
+    // 0
+    // 0
+    // 0
+    // 00000000
+    /* 176: Line E */
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b11111111,  // 00000000
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // line_F (#DBDBDB) - corner bottom-right to top (8 pixels long)
+    // 00000000
+    // 0
+    // 0
+    // 0
+    // 0
+    /* 184: Line F */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b11111111,  // 00000000
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+
+    // line_G (#DBDBDB) - cross thin (8 pixels long)
+    // ....0
+    // ....0
+    // ....0
+    // 00000000
+    // ....0
+    // ....0
+    // ....0
+    // ....0
+    /* 192: Line G */
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b11111111,  // 00000000
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+
+    // line_H (#DBDBDB) - horizontal thin (8 pixels long)
+    // 00000000
+    /* 200: Line H */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b11111111,  // 00000000
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // exitC (#00B06B)
+    // .....
+    // .0..0
+    // 0..0.
+    // .0..0
+    // .....
+    /* 208: Exit C */
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00100010,  // ..0..0..
+    0b01001000,  // .0..0...
+    0b00100010,  // ..0..0..
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // gateA_open (#7077FF #1F1F1F)
+    // 0...0
+    // .....
+    // .....
+    // .....
+    // 0...0
+    /* 216: Gate A Open */
+    0b00000000,  // ........
+    0b01000010,  // .0...0..
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b01000010,  // .0...0..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // gateB_open (#C47C41 #1F1F1F)
+    // 0...0
+    // .....
+    // .....
+    // .....
+    // 0...0
+    /* 224: Gate B Open */
+    0b00000000,  // ........
+    0b01000010,  // .0...0..
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b00000000,  // ........
+    0b01000010,  // .0...0..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // door_ (#1F1F1F #CFCF53) - open door
+    // ..1..
+    // ..1..
+    // ..1..
+    // ..1..
+    // ..1..
+    /* 232: Door Open */
+    0b00000000,  // ........
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00010000,  // ...0....
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // holeA_ (#00B06B) - filled hole A (solid color)
+    /* 240: Hole A Filled */
+    0b00000000,  // ........
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b00000000,  // ........
+    0b00000000,  // ........
+
+    // holeB_ (#00B06B) - filled hole B (solid color)
+    /* 248: Hole B Filled */
+    0b00000000,  // ........
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b01111100,  // .00000..
+    0b00000000,  // ........
+    0b00000000,  // ........
+};
+
+#endif // DUPLICATOR_FONT_H
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_game.c
+ * ----------------------------------------------------------------------- */
+
+/*
+  duplicator_game.c - Game logic for Duplicator game
+  Implementation file
+*/
+
+#include "duplicator_game.h"
+#include "atari_conio.h"
+
+// Game state
+static GameState game_state;
+
+// Level data storage
+static char level_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
+// Background layer (for tiles under objects)
+static char background_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
+
+// Simple queue for flood fill (reduced size to save memory)
+typedef struct {
+    byte x;
+    byte y;
+} Position;
+
+static Position flood_queue[32];  // Reduced from 64 to 32
+static byte queue_start;
+static byte queue_end;
+
+void load_level(const char* level_data[], byte num_rows) {
+    byte x, y;
+    const char* row;
+    char tile;
+
+    // Clear the maps
+    memset(level_map, ' ', sizeof(level_map));
+    memset(background_map, '.', sizeof(background_map));
+
+    // Reset game state
+    game_state.num_players = 0;
+    game_state.num_objects = 0;
+    game_state.level_width = 0;
+    game_state.level_height = num_rows;
+    game_state.moves = 0;
+    game_state.level_complete = 0;
+
+    // First pass: Load all tiles and separate objects from background
+    for (y = 0; y < num_rows; y++) {
+        row = level_data[y];
+        x = 0;
+        while (row[x] != '\0' && x < MAX_LEVEL_WIDTH) {
+            tile = row[x];
+
+            // Determine if this is an object or background
+            if (tile == 'p' || tile == 'P' || tile == 'k' || tile == '*' || tile == 'e') {
+                // Object - store floor as background
+                background_map[y][x] = TILE_FLOOR;
+                level_map[y][x] = tile;
+            } else if (tile == 'z') {
+                // Player on holeA
+                background_map[y][x] = TILE_HOLE_A;
+                level_map[y][x] = 'p';
+            } else if (tile == 'y') {
+                // Enemy on holeB
+                background_map[y][x] = TILE_HOLE_B;
+                level_map[y][x] = 'e';
+            } else {
+                // Background tile
+                background_map[y][x] = tile;
+                level_map[y][x] = tile;
+            }
+
+            x++;
+        }
+
+        // Track the maximum width
+        if (x > game_state.level_width) {
+            game_state.level_width = x;
+        }
+    }
+
+    // Second pass: Extract objects into arrays
+    for (y = 0; y < num_rows; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = level_map[y][x];
+
+            // Find player starting position
+            if (tile == 'p' || tile == 'P') {
+                game_state.players[0].x = x;
+                game_state.players[0].y = y;
+                game_state.players[0].under = background_map[y][x];
+                game_state.num_players = 1;
+                level_map[y][x] = TILE_PLAYER;
+            }
+            // Track pushable objects (keys, crates, enemies)
+            else if ((tile == 'k' || tile == '*' || tile == 'e') && game_state.num_objects < MAX_OBJECTS) {
+                game_state.objects[game_state.num_objects].x = x;
+                game_state.objects[game_state.num_objects].y = y;
+                game_state.objects[game_state.num_objects].type = tile;
+                game_state.objects[game_state.num_objects].under = background_map[y][x];
+                game_state.num_objects++;
+            }
+        }
+    }
+}
+
+void draw_level(void) {
+    byte x, y;
+    char tile;
+    
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = level_map[y][x];
+            
+            // Draw the tile
+            if (tile != ' ') {
+                my_cputcxy(x, y + 2, tile);  // +2 to leave room for title
+            } else {
+                my_cputcxy(x, y + 2, ' ');
+            }
+        }
+    }
+}
+
+byte get_tile(byte x, byte y) {
+    if (x >= MAX_LEVEL_WIDTH || y >= MAX_LEVEL_HEIGHT) {
+        return TILE_WALL;  // Out of bounds = wall
+    }
+    return level_map[y][x];
+}
+
+void set_tile(byte x, byte y, byte tile) {
+    if (x < MAX_LEVEL_WIDTH && y < MAX_LEVEL_HEIGHT) {
+        level_map[y][x] = tile;
+    }
+}
+
+byte is_blocking(char tile) {
+    // Walls and wall lines
+    if (tile == '#' || tile == '$' || tile == '%' || tile == '&') {
+        return 1;
+    }
+
+    // Closed doors and gates
+    if (tile == 'd' || tile == 'g' || tile == 'h') {
+        return 1;
+    }
+
+    // Pushable objects (blocking unless pushed)
+    if (tile == '*' || tile == 'k' || tile == 'e') {
+        return 1;
+    }
+
+    return 0;
+}
+
+byte is_passable(char tile) {
+    // Floor and empty
+    if (tile == '.' || tile == ' ') {
+        return 1;
+    }
+
+    // Holes (both empty and filled)
+    if (tile == '?' || tile == '!' || tile == '[' || tile == ']') {
+        return 1;
+    }
+
+    // Exits
+    if (tile == '@' || tile == ':' || tile == ';') {
+        return 1;
+    }
+
+    // Plates
+    if (tile == 'b' || tile == 'c') {
+        return 1;
+    }
+
+    // Decorative lines (1-8)
+    if (tile >= '1' && tile <= '8') {
+        return 1;
+    }
+
+    // Open gates (uppercase G, H)
+    if (tile == 'G' || tile == 'H') {
+        return 1;
+    }
+
+    // Open door
+    if (tile == 'D') {
+        return 1;
+    }
+
+    return 0;
+}
+
+// is_exit and is_pushable are now macros in the header file
+
+void door_flood_fill(byte x, byte y) {
+    byte cx, cy, nx, ny;
+    char tile;
+    char dx, dy, i;
+
+    queue_start = 0;
+    queue_end = 0;
+    flood_queue[queue_end].x = x;
+    flood_queue[queue_end].y = y;
+    queue_end++;
+    set_tile(x, y, TILE_DOOR_OPEN);
+
+    while (queue_start != queue_end) {
+        cx = flood_queue[queue_start].x;
+        cy = flood_queue[queue_start].y;
+        queue_start++;
+
+        // Check 4 directions: up, down, left, right
+        for (i = 0; i < 4; i++) {
+            dx = (i == 2) ? -1 : (i == 3) ? 1 : 0;
+            dy = (i == 0) ? -1 : (i == 1) ? 1 : 0;
+            nx = cx + dx;
+            ny = cy + dy;
+
+            if (nx < MAX_LEVEL_WIDTH && ny < MAX_LEVEL_HEIGHT) {
+                tile = get_tile(nx, ny);
+                if (tile == TILE_DOOR) {
+                    set_tile(nx, ny, TILE_DOOR_OPEN);
+                    flood_queue[queue_end].x = nx;
+                    flood_queue[queue_end].y = ny;
+                    queue_end++;
+                }
+            }
+        }
+    }
+}
+
+void remove_open_doors(void) {
+    byte x, y;
+
+    // Scan entire level and remove all door_open tiles
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            if (get_tile(x, y) == TILE_DOOR_OPEN) {
+                set_tile(x, y, TILE_FLOOR);
+                // Redraw the tile
+                my_cputcxy(x, y + 2, TILE_FLOOR);
+            }
+        }
+    }
+}
+
+void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
+    // Remove key
+    set_tile(key_x, key_y, TILE_FLOOR);
+    my_cputcxy(key_x, key_y + 2, TILE_FLOOR);
+
+    // Start flood fill from the door
+    door_flood_fill(door_x, door_y);
+
+    // Remove all open doors
+    remove_open_doors();
+}
+
+void update_gates(void) {
+    byte x, y, i;
+    char tile;
+    byte plateA_has_object = 0;
+    byte plateB_has_object = 0;
+
+    // Check if any player is on a plate
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under == TILE_PLATE_A) {
+            plateA_has_object = 1;
+        }
+        if (game_state.players[i].under == TILE_PLATE_B) {
+            plateB_has_object = 1;
+        }
+    }
+
+    // Update gates based on plate states
+    for (y = 0; y < game_state.level_height; y++) {
+        for (x = 0; x < game_state.level_width; x++) {
+            tile = get_tile(x, y);
+
+            // Update gateA
+            if (tile == TILE_GATE_A || tile == 'G') {
+                if (plateA_has_object) {
+                    // Open gate
+                    if (tile != 'G') {
+                        set_tile(x, y, 'G');
+                        my_cputcxy(x, y + 2, 'G');
+                    }
+                } else {
+                    // Close gate
+                    if (tile != TILE_GATE_A) {
+                        set_tile(x, y, TILE_GATE_A);
+                        my_cputcxy(x, y + 2, TILE_GATE_A);
+                    }
+                }
+            }
+
+            // Update gateB
+            if (tile == TILE_GATE_B || tile == 'H') {
+                if (plateB_has_object) {
+                    // Open gate
+                    if (tile != 'H') {
+                        set_tile(x, y, 'H');
+                        my_cputcxy(x, y + 2, 'H');
+                    }
+                } else {
+                    // Close gate
+                    if (tile != TILE_GATE_B) {
+                        set_tile(x, y, TILE_GATE_B);
+                        my_cputcxy(x, y + 2, TILE_GATE_B);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Optimized duplication handler
+void handle_duplication(void) {
+    byte i, j, x, y;
+    byte player_holeA = 0, player_holeB = 0;
+    byte key_holeA = 0, key_holeB = 0;
+
+    // Count players in each hole type
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under == TILE_HOLE_A) player_holeA++;
+        if (game_state.players[i].under == TILE_HOLE_B) player_holeB++;
+    }
+
+    // Count keys in each hole type
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].type == 'k') {
+            if (game_state.objects[i].under == TILE_HOLE_A) key_holeA++;
+            if (game_state.objects[i].under == TILE_HOLE_B) key_holeB++;
+        }
+    }
+
+    // If both holes have players, they disappear (win condition)
+    if (player_holeA > 0 && player_holeB > 0) {
+        j = 0;
+        for (i = 0; i < game_state.num_players; i++) {
+            if (game_state.players[i].under != TILE_HOLE_A &&
+                game_state.players[i].under != TILE_HOLE_B) {
+                game_state.players[j++] = game_state.players[i];
+            } else {
+                set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
+                my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+            }
+        }
+        game_state.num_players = j;
+        if (game_state.num_players == 0) {
+            game_state.level_complete = 1;
+        }
+        return;
+    }
+
+    // If both holes have keys, they disappear
+    if (key_holeA > 0 && key_holeB > 0) {
+        j = 0;
+        for (i = 0; i < game_state.num_objects; i++) {
+            if (game_state.objects[i].type != 'k' ||
+                (game_state.objects[i].under != TILE_HOLE_A &&
+                 game_state.objects[i].under != TILE_HOLE_B)) {
+                game_state.objects[j++] = game_state.objects[i];
+            } else {
+                set_tile(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
+                my_cputcxy(game_state.objects[i].x, game_state.objects[i].y + 2, game_state.objects[i].under);
+            }
+        }
+        game_state.num_objects = j;
+    }
+
+    // Duplicate players
+    if (game_state.num_players < MAX_PLAYERS) {
+        for (y = 0; y < game_state.level_height; y++) {
+            for (x = 0; x < game_state.level_width; x++) {
+                char tile = get_tile(x, y);
+                if (tile == TILE_HOLE_A && player_holeB > 0 && game_state.num_players < MAX_PLAYERS) {
+                    game_state.players[game_state.num_players].x = x;
+                    game_state.players[game_state.num_players].y = y;
+                    game_state.players[game_state.num_players].under = TILE_HOLE_A;
+                    set_tile(x, y, TILE_PLAYER);
+                    my_cputcxy(x, y + 2, TILE_PLAYER);
+                    game_state.num_players++;
+                    player_holeA++;
+                }
+                else if (tile == TILE_HOLE_B && player_holeA > 0 && game_state.num_players < MAX_PLAYERS) {
+                    game_state.players[game_state.num_players].x = x;
+                    game_state.players[game_state.num_players].y = y;
+                    game_state.players[game_state.num_players].under = TILE_HOLE_B;
+                    set_tile(x, y, TILE_PLAYER);
+                    my_cputcxy(x, y + 2, TILE_PLAYER);
+                    game_state.num_players++;
+                    player_holeB++;
+                }
+            }
+        }
+    }
+
+    // Duplicate keys
+    if (game_state.num_objects < MAX_OBJECTS) {
+        for (y = 0; y < game_state.level_height; y++) {
+            for (x = 0; x < game_state.level_width; x++) {
+                char tile = get_tile(x, y);
+                if (tile == TILE_HOLE_A && key_holeB > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = 'k';
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_A;
+                    set_tile(x, y, 'k');
+                    my_cputcxy(x, y + 2, 'k');
+                    game_state.num_objects++;
+                    key_holeA++;
+                }
+                else if (tile == TILE_HOLE_B && key_holeA > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = 'k';
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_B;
+                    set_tile(x, y, 'k');
+                    my_cputcxy(x, y + 2, 'k');
+                    game_state.num_objects++;
+                    key_holeB++;
+                }
+            }
+        }
+    }
+}
+
+byte try_push(byte x, byte y, char dx, char dy) {
+    char object_tile;
+    char behind_tile;
+    byte behind_x, behind_y;
+    byte i;
+    char old_under = TILE_FLOOR;
+
+    // Get the object we're trying to push
+    object_tile = get_tile(x, y);
+
+    // Check if it's actually pushable
+    if (!is_pushable(object_tile)) {
+        return 0;
+    }
+
+    // Calculate position behind the object
+    behind_x = x + dx;
+    behind_y = y + dy;
+
+    // Check bounds
+    if (behind_x >= MAX_LEVEL_WIDTH || behind_y >= MAX_LEVEL_HEIGHT) {
+        return 0;  // Can't push out of bounds
+    }
+
+    // Get what's behind the object
+    behind_tile = get_tile(behind_x, behind_y);
+
+    // Special case: Key pushing into door
+    if (object_tile == TILE_KEY && behind_tile == TILE_DOOR) {
+        // Find this object in the objects array and remove it
+        for (i = 0; i < game_state.num_objects; i++) {
+            if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
+                // Remove this object by shifting array
+                for (; i < game_state.num_objects - 1; i++) {
+                    game_state.objects[i] = game_state.objects[i + 1];
+                }
+                game_state.num_objects--;
+                break;
+            }
+        }
+        // Restore background where the key was
+        set_tile(x, y, background_map[y][x]);
+        my_cputcxy(x, y + 2, background_map[y][x]);
+        // Handle key-door interaction
+        handle_key_door(x, y, behind_x, behind_y);
+        return 1;  // Push successful (key and doors removed)
+    }
+
+    // Check if space behind is passable (empty or floor-like)
+    if (!is_passable(behind_tile)) {
+        return 0;  // Can't push into blocking tile
+    }
+
+    // Find this object in the objects array and update it
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
+            old_under = game_state.objects[i].under;
+            // Update object position and what's underneath
+            game_state.objects[i].x = behind_x;
+            game_state.objects[i].y = behind_y;
+            game_state.objects[i].under = background_map[behind_y][behind_x];
+            break;
+        }
+    }
+
+    // Perform the push
+    // Restore background at old position
+    set_tile(x, y, background_map[y][x]);
+    my_cputcxy(x, y + 2, background_map[y][x]);
+
+    // Move object to new position
+    set_tile(behind_x, behind_y, object_tile);
+    my_cputcxy(behind_x, behind_y + 2, object_tile);
+
+    return 1;  // Push successful
+}
+
+byte try_move_player(char dx, char dy) {
+    byte i, new_x, new_y;
+    char target_tile;
+    byte moved = 0;
+
+    // Move all players simultaneously
+    for (i = 0; i < game_state.num_players; i++) {
+        new_x = game_state.players[i].x + dx;
+        new_y = game_state.players[i].y + dy;
+
+        // Check bounds
+        if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
+            continue;
+        }
+
+        target_tile = get_tile(new_x, new_y);
+
+        // Check if target is passable
+        if (is_passable(target_tile)) {
+            // Restore tile under old position
+            set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
+            my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+
+            // Move player
+            game_state.players[i].x = new_x;
+            game_state.players[i].y = new_y;
+            game_state.players[i].under = target_tile;
+
+            // Check if reached exit
+            if (is_exit(target_tile)) {
+                game_state.level_complete = 1;
+            }
+
+            // Set player at new position
+            set_tile(new_x, new_y, TILE_PLAYER);
+            my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+            moved = 1;
+        }
+        // Check if target is pushable
+        else if (is_pushable(target_tile)) {
+            if (try_push(new_x, new_y, dx, dy)) {
+                // Restore tile under old position
+                set_tile(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
+                my_cputcxy(game_state.players[i].x, game_state.players[i].y + 2, game_state.players[i].under);
+
+                // Move player
+                game_state.players[i].x = new_x;
+                game_state.players[i].y = new_y;
+                game_state.players[i].under = TILE_FLOOR;
+
+                set_tile(new_x, new_y, TILE_PLAYER);
+                my_cputcxy(new_x, new_y + 2, TILE_PLAYER);
+                moved = 1;
+            }
+        }
+    }
+
+    if (moved) {
+        game_state.moves++;
+        handle_duplication();
+        update_gates();
+    }
+
+    return moved;
+}
+
+byte is_level_complete(void) {
+    return game_state.level_complete;
+}
+
+GameState* get_game_state(void) {
+    return &game_state;
+}
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_game.h
+ * ----------------------------------------------------------------------- */
+
+/*
+  duplicator_game.h - Game logic for Duplicator game
+  
+  This library handles game state, level loading, player movement,
+  and win conditions.
+*/
+
+#ifndef DUPLICATOR_GAME_H
+#define DUPLICATOR_GAME_H
+
+#include <stdlib.h>
+#include <string.h>
+
+// Data types for clarity
+typedef unsigned char byte;
+typedef unsigned short word;
+
+// Game constants (exact size needed for levels)
+#define MAX_LEVEL_WIDTH 18   // Exact width of largest level (17 + 1)
+#define MAX_LEVEL_HEIGHT 11  // Exact height of levels
+
+// Tile types
+#define TILE_EMPTY      ' '
+#define TILE_WALL       '#'
+#define TILE_PLAYER     'p'
+#define TILE_PLAYER_ALT '@'  // Alternative player character (for display)
+#define TILE_CRATE      '*'
+#define TILE_KEY        'k'
+#define TILE_DOOR       'd'
+#define TILE_DOOR_OPEN  'D'
+#define TILE_ENEMY      'e'
+#define TILE_HOLE_A     '?'
+#define TILE_HOLE_B     '!'
+#define TILE_PLATE_A    'b'
+#define TILE_PLATE_B    'c'
+#define TILE_GATE_A     'g'
+#define TILE_GATE_B     'h'
+#define TILE_EXIT_A     '@'
+#define TILE_EXIT_B     ':'
+#define TILE_EXIT_C     ';'
+#define TILE_FLOOR      '.'
+
+// Tile categories (bit flags)
+#define TILE_CAT_PASSABLE    0x01  // Can walk through
+#define TILE_CAT_BLOCKING    0x02  // Blocks movement
+#define TILE_CAT_PUSHABLE    0x04  // Can be pushed
+#define TILE_CAT_EXIT        0x08  // Win condition
+#define TILE_CAT_HOLE        0x10  // Duplication hole
+#define TILE_CAT_PLATE       0x20  // Pressure plate
+#define TILE_CAT_GATE        0x40  // Gate (open/closed)
+
+// Maximum players (optimized for memory)
+#define MAX_PLAYERS 6  // Allows up to 2 duplications (1->2->4, or 1->2->3->4->5->6)
+#define MAX_OBJECTS 8  // Max pushable objects (keys, crates, enemies)
+
+// Player structure (compact)
+typedef struct {
+    byte x;
+    byte y;
+    char under;  // What tile is underneath
+} Player;
+
+// Pushable object structure (for keys, crates, enemies)
+typedef struct {
+    byte x;
+    byte y;
+    char type;   // 'k', '*', 'e'
+    char under;  // What tile is underneath
+} PushableObject;
+
+// Game state structure with multiple players
+typedef struct {
+    Player players[MAX_PLAYERS];
+    byte num_players;
+    PushableObject objects[MAX_OBJECTS];
+    byte num_objects;
+    byte level_width;
+    byte level_height;
+    byte moves;
+    byte level_complete;
+    byte current_level;
+} GameState;
+
+/*
+  Load a level from string array
+  
+  @param level_data - Array of strings representing the level
+  @param num_rows - Number of rows in the level
+*/
+void load_level(const char* level_data[], byte num_rows);
+
+/*
+  Draw the entire level to screen
+*/
+void draw_level(void);
+
+/*
+  Try to move the player in the given direction
+  
+  @param dx - Horizontal movement (-1, 0, or 1)
+  @param dy - Vertical movement (-1, 0, or 1)
+  @return 1 if move was successful, 0 otherwise
+*/
+byte try_move_player(char dx, char dy);
+
+/*
+  Check if the level is complete (player reached exit)
+  
+  @return 1 if level is complete, 0 otherwise
+*/
+byte is_level_complete(void);
+
+/*
+  Get the current game state
+  
+  @return Pointer to the game state structure
+*/
+GameState* get_game_state(void);
+
+/*
+  Get the tile at a specific position
+  
+  @param x - X coordinate
+  @param y - Y coordinate
+  @return The tile character at that position
+*/
+byte get_tile(byte x, byte y);
+
+/*
+  Set the tile at a specific position
+
+  @param x - X coordinate
+  @param y - Y coordinate
+  @param tile - The tile character to set
+*/
+void set_tile(byte x, byte y, byte tile);
+
+/*
+  Check if a tile blocks movement
+
+  @param tile - The tile character to check
+  @return 1 if tile blocks movement, 0 otherwise
+*/
+byte is_blocking(char tile);
+
+/*
+  Check if a tile is passable
+
+  @param tile - The tile character to check
+  @return 1 if tile is passable, 0 otherwise
+*/
+byte is_passable(char tile);
+
+/*
+  Check if a tile is an exit - INLINE MACRO for speed/size
+*/
+#define is_exit(tile) ((tile) == '@' || (tile) == ':' || (tile) == ';')
+
+/*
+  Check if a tile is pushable - INLINE MACRO for speed/size
+*/
+#define is_pushable(tile) ((tile) == '*' || (tile) == 'k' || (tile) == 'e')
+
+/*
+  Try to push an object at a position in a direction
+
+  @param x - X coordinate of object to push
+  @param y - Y coordinate of object to push
+  @param dx - Horizontal push direction (-1, 0, or 1)
+  @param dy - Vertical push direction (-1, 0, or 1)
+  @return 1 if push was successful, 0 otherwise
+*/
+byte try_push(byte x, byte y, char dx, char dy);
+
+/*
+  Flood fill to spread door_open state to adjacent doors
+
+  @param x - X coordinate of starting door
+  @param y - Y coordinate of starting door
+*/
+void door_flood_fill(byte x, byte y);
+
+/*
+  Remove all open doors (door_) from the level
+*/
+void remove_open_doors(void);
+
+/*
+  Handle key touching door interaction
+
+  @param key_x - X coordinate of key
+  @param key_y - Y coordinate of key
+  @param door_x - X coordinate of door
+  @param door_y - Y coordinate of door
+*/
+void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y);
+
+/*
+  Update gate states based on plate activation
+
+  Checks all plates and opens/closes corresponding gates:
+  - plateA with object -> gateA opens
+  - plateA without object -> gateA closes
+  - plateB with object -> gateB opens
+  - plateB without object -> gateB closes
+*/
+void update_gates(void);
+
+/*
+  Handle duplication mechanics
+
+  When player enters a hole:
+  - If paired hole is empty -> duplicate player to paired hole
+  - If paired hole has player -> both players disappear
+  - Mark holes as filled when occupied
+*/
+void handle_duplication(void);
+
+#endif // DUPLICATOR_GAME_H
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_test.c
+ * ----------------------------------------------------------------------- */
+
+// Link the libraries
+//#link "atari_conio.c"
+
+/*
+  Duplicator Font Test
+  Displays all converted fonts from the Duplicator game
+*/
+
+#include "duplicator_font.h"
+#include "atari_conio.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <peekpoke.h>
+#include <conio.h>
+
+// Data types for clarity
+typedef unsigned char byte;
+typedef unsigned short word;
+
+// Memory definitions
+#define CHARSET_MEM ((byte*)0x7000)
+#define DLIST_MEM   ((byte*)0x8000)
+#define SCREEN_MEM  ((byte*)0x9000)
+#define ROM_CHARSET_ADDRESS 0xE000
+
+// Setup graphics with duplicator fonts
+void setup_duplicator_graphics(void) {
+    byte i;
+    word screen_addr = (word)SCREEN_MEM;
+    word dlist_addr = (word)DLIST_MEM;
+    word charset_addr = (word)CHARSET_MEM;
+    
+    // Create custom display list
+    // 3 blank lines at top
+    DLIST_MEM[0] = 0x70;
+    DLIST_MEM[1] = 0x70;
+    DLIST_MEM[2] = 0x70;
+    
+    // First line with LMS (Load Memory Scan) - points to screen memory
+    DLIST_MEM[3] = 0x42;
+    DLIST_MEM[4] = (byte)screen_addr;
+    DLIST_MEM[5] = (byte)(screen_addr >> 8);
+    
+    // 23 more lines of mode 2 (text mode, 40 columns)
+    for (i = 0; i < 23; ++i) {
+        DLIST_MEM[6 + i] = 0x02;
+    }
+    
+    // Jump back to start of display list
+    DLIST_MEM[29] = 0x41;
+    DLIST_MEM[30] = (byte)dlist_addr;
+    DLIST_MEM[31] = (byte)(dlist_addr >> 8);
+    
+    // Set character set pointer (CHBAS register at location 756)
+    POKE(756, (byte)(charset_addr >> 8));
+    
+    // Copy ROM character set to RAM so we can modify it
+    memcpy(CHARSET_MEM, (void*)ROM_CHARSET_ADDRESS, 1024);
+    
+    // Install custom graphics for duplicator game tiles
+    // Use direct character multiplication like sokoban does
+    memcpy(CHARSET_MEM + ('@' * 8), &duplicator_graphics[0], 8);   // Player
+    memcpy(CHARSET_MEM + ('#' * 8), &duplicator_graphics[8], 8);   // Wall
+    memcpy(CHARSET_MEM + ('*' * 8), &duplicator_graphics[16], 8);  // Crate
+    memcpy(CHARSET_MEM + ('k' * 8), &duplicator_graphics[24], 8);  // Key
+    memcpy(CHARSET_MEM + ('d' * 8), &duplicator_graphics[32], 8);  // Door
+    memcpy(CHARSET_MEM + ('e' * 8), &duplicator_graphics[40], 8);  // Enemy
+    memcpy(CHARSET_MEM + ('?' * 8), &duplicator_graphics[48], 8);  // Hole A
+    memcpy(CHARSET_MEM + ('!' * 8), &duplicator_graphics[56], 8);  // Hole B
+    memcpy(CHARSET_MEM + ('b' * 8), &duplicator_graphics[64], 8);  // Plate A
+    memcpy(CHARSET_MEM + ('c' * 8), &duplicator_graphics[72], 8);  // Plate B
+    memcpy(CHARSET_MEM + ('g' * 8), &duplicator_graphics[80], 8);  // Gate A
+    memcpy(CHARSET_MEM + ('h' * 8), &duplicator_graphics[88], 8);  // Gate B
+    memcpy(CHARSET_MEM + (':' * 8), &duplicator_graphics[96], 8);  // Exit A
+    memcpy(CHARSET_MEM + (';' * 8), &duplicator_graphics[104], 8); // Exit B
+    memcpy(CHARSET_MEM + ('.' * 8), &duplicator_graphics[112], 8); // Floor
+    memcpy(CHARSET_MEM + ('$' * 8), &duplicator_graphics[120], 8); // Wall Line A
+    memcpy(CHARSET_MEM + ('%' * 8), &duplicator_graphics[128], 8); // Wall Line B
+    memcpy(CHARSET_MEM + ('&' * 8), &duplicator_graphics[136], 8); // Wall Line G
+    memcpy(CHARSET_MEM + ('1' * 8), &duplicator_graphics[144], 8); // Line A
+    memcpy(CHARSET_MEM + ('2' * 8), &duplicator_graphics[152], 8); // Line B
+    memcpy(CHARSET_MEM + ('3' * 8), &duplicator_graphics[160], 8); // Line C
+    memcpy(CHARSET_MEM + ('4' * 8), &duplicator_graphics[168], 8); // Line D
+    memcpy(CHARSET_MEM + ('5' * 8), &duplicator_graphics[176], 8); // Line E
+    memcpy(CHARSET_MEM + ('6' * 8), &duplicator_graphics[184], 8); // Line F
+    memcpy(CHARSET_MEM + ('7' * 8), &duplicator_graphics[192], 8); // Line G
+    memcpy(CHARSET_MEM + ('8' * 8), &duplicator_graphics[200], 8); // Line H
+    memcpy(CHARSET_MEM + ('p' * 8), &duplicator_graphics[0], 8);   // Player (p same as @)
+    memcpy(CHARSET_MEM + ('<' * 8), &duplicator_graphics[208], 8); // Exit C
+    memcpy(CHARSET_MEM + ('G' * 8), &duplicator_graphics[216], 8); // Gate A Open
+    memcpy(CHARSET_MEM + ('H' * 8), &duplicator_graphics[224], 8); // Gate B Open
+    memcpy(CHARSET_MEM + ('D' * 8), &duplicator_graphics[232], 8); // Door Open
+    memcpy(CHARSET_MEM + ('[' * 8), &duplicator_graphics[240], 8); // Hole A Filled
+    memcpy(CHARSET_MEM + (']' * 8), &duplicator_graphics[248], 8); // Hole B Filled
+    
+    // Set colors
+    POKE(709, 0);   // Background color (black)
+    POKE(710, 14);  // Foreground color (light blue)
+    
+    // Set display list pointer (SDLSTL/SDLSTH at 560/561)
+    POKEW(560, dlist_addr);
+    
+    // Turn off cursor
+    POKE(752, 1);
+}
+
+// Main function
+void main(void) {
+    // Initialize graphics
+    setup_duplicator_graphics();
+
+    // Clear screen
+    my_clrscr();
+    
+    // Display title
+    my_cputsxy(5, 0, "DUPLICATOR FONT TEST");
+    my_cputsxy(5, 1, "====================");
+    
+    // Display all characters with labels
+    my_cputsxy(2, 3, "@ PLAYER");
+    my_cputsxy(2, 4, "# WALL");
+    my_cputsxy(2, 5, "* CRATE");
+    my_cputsxy(2, 6, "k KEY");
+    my_cputsxy(2, 7, "d DOOR");
+    my_cputsxy(2, 8, "e ENEMY");
+    
+    my_cputsxy(2, 10, "? HOLE A");
+    my_cputsxy(2, 11, "! HOLE B");
+    my_cputsxy(2, 12, "b PLATE A");
+    my_cputsxy(2, 13, "c PLATE B");
+    
+    my_cputsxy(2, 15, "g GATE A");
+    my_cputsxy(2, 16, "h GATE B");
+    my_cputsxy(2, 17, ": EXIT A");
+    my_cputsxy(2, 18, "; EXIT B");
+    my_cputsxy(2, 19, ". FLOOR");
+    
+    // Display sample level from duplicator
+    my_cputsxy(20, 3, "SAMPLE LEVEL:");
+    my_cputsxy(20, 5, "########:########");
+    my_cputsxy(20, 6, "########.########");
+    my_cputsxy(20, 7, "#######...#...###");
+    my_cputsxy(20, 8, "#######.@.#.e.###");
+    my_cputsxy(20, 9, "#######...#...###");
+    my_cputsxy(20, 10, "############.####");
+    
+    my_cputsxy(2, 21, "PRESS ANY KEY TO EXIT");
+    
+    // Wait for key press
+    while (!kbhit()) {
+        wait_vblank();
+    }
+    cgetc();
+}
+
+
+
