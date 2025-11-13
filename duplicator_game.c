@@ -150,6 +150,9 @@ void load_level(const char* level_data[], byte num_rows) {
             }
         }
     }
+
+    // Reset duplication tracking so objects already on holes don't trigger duplication
+    reset_duplication_tracking();
 }
 
 void draw_level(void) {
@@ -313,28 +316,103 @@ void update_gates(void) {
     }
 }
 
+// Static arrays to track previous 'under' state for duplication detection
+static char prev_player_under[MAX_PLAYERS];
+static char prev_object_under[MAX_OBJECTS];
+static byte tracking_initialized = 0;
+
+// Reset duplication tracking (call when loading a new level)
+void reset_duplication_tracking(void) {
+    byte i;
+
+    // Initialize ALL entries to prevent stale data
+    for (i = 0; i < MAX_PLAYERS; i++) {
+        prev_player_under[i] = TILE_FLOOR;
+    }
+    for (i = 0; i < MAX_OBJECTS; i++) {
+        prev_object_under[i] = TILE_FLOOR;
+    }
+
+    // Then set current state for existing players/objects
+    for (i = 0; i < game_state.num_players; i++) {
+        prev_player_under[i] = game_state.players[i].under;
+    }
+    for (i = 0; i < game_state.num_objects; i++) {
+        prev_object_under[i] = game_state.objects[i].under;
+    }
+
+    tracking_initialized = 1;
+}
+
 // Optimized duplication handler
+// NOTE: This is called AFTER movement, so we need to track which objects
+// JUST ENTERED a hole this turn (not objects that were already on holes)
 void handle_duplication(void) {
     byte i, j, x, y;
     byte player_holeA = 0, player_holeB = 0;
     byte key_holeA = 0, key_holeB = 0;
+    byte total_player_holeA = 0, total_player_holeB = 0;
+    byte total_key_holeA = 0, total_key_holeB = 0;
+    char current_under, previous_under;
 
-    // Count players in each hole type
-    for (i = 0; i < game_state.num_players; i++) {
-        if (game_state.players[i].under == TILE_HOLE_A) player_holeA++;
-        if (game_state.players[i].under == TILE_HOLE_B) player_holeB++;
+    // Safety check: if tracking not initialized, initialize it now
+    if (!tracking_initialized) {
+        reset_duplication_tracking();
+        return;  // Don't trigger duplication on first call
     }
 
-    // Count keys in each hole type
+    // Count players that JUST ENTERED each hole type (not already on it)
+    for (i = 0; i < game_state.num_players; i++) {
+        current_under = game_state.players[i].under;
+        previous_under = prev_player_under[i];
+
+        // Only count if player just moved ONTO a hole (wasn't on a hole before)
+        if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+            player_holeA++;
+        }
+        if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+            player_holeB++;
+        }
+
+        // Update previous state for next turn
+        prev_player_under[i] = current_under;
+    }
+
+    // Count keys that JUST ENTERED each hole type (not already on it)
     for (i = 0; i < game_state.num_objects; i++) {
         if (game_state.objects[i].type == TILE_KEY) {
-            if (game_state.objects[i].under == TILE_HOLE_A) key_holeA++;
-            if (game_state.objects[i].under == TILE_HOLE_B) key_holeB++;
+            current_under = game_state.objects[i].under;
+            previous_under = prev_object_under[i];
+
+            // Only count if key just moved ONTO a hole (wasn't on a hole before)
+            if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+                key_holeA++;
+            }
+            if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+                key_holeB++;
+            }
+
+            // Update previous state for next turn
+            prev_object_under[i] = current_under;
+        }
+    }
+
+    // Check if BOTH holes have players (for disappearing, check ALL players on holes)
+
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under == TILE_HOLE_A) total_player_holeA++;
+        if (game_state.players[i].under == TILE_HOLE_B) total_player_holeB++;
+    }
+
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].type == TILE_KEY) {
+            if (game_state.objects[i].under == TILE_HOLE_A) total_key_holeA++;
+            if (game_state.objects[i].under == TILE_HOLE_B) total_key_holeB++;
         }
     }
 
     // If both holes have players, they disappear (win condition)
-    if (player_holeA > 0 && player_holeB > 0) {
+    if (total_player_holeA > 0 && total_player_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_players; i++) {
             if (!is_hole(game_state.players[i].under)) {
@@ -351,7 +429,7 @@ void handle_duplication(void) {
     }
 
     // If both holes have keys, they disappear
-    if (key_holeA > 0 && key_holeB > 0) {
+    if (total_key_holeA > 0 && total_key_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].type != TILE_KEY || !is_hole(game_state.objects[i].under)) {

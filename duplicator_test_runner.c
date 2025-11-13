@@ -545,13 +545,120 @@ void test_players_and_keys_line(void) {
     printf("\n✓ TEST PASSED: Players and Keys in Horizontal Line\n");
 }
 
+void test_key_pushed_off_hole(void) {
+    GameState* state;
+    byte i;
+
+    printf("========================================\n");
+    printf("TEST: Key Pushed OFF Hole (No Duplication)\n");
+    printf("========================================\n");
+    printf("Bug: Key on hole A should NOT duplicate when player pushes key off hole B\n\n");
+
+    // Level: Simple level with two holes and space
+    const char* test_level[] = {
+        "##########",
+        "#.?...!..#",
+        "#........#",
+        "#........#",
+        "##########"
+    };
+
+    load_level(test_level, 5);
+    state = get_game_state();
+
+    // Manually place keys on the holes and player below hole B
+    state->objects[0].x = 2;
+    state->objects[0].y = 1;
+    state->objects[0].type = TILE_KEY;
+    state->objects[0].under = TILE_HOLE_A;
+    set_tile(2, 1, TILE_KEY);
+
+    state->objects[1].x = 6;
+    state->objects[1].y = 1;
+    state->objects[1].type = TILE_KEY;
+    state->objects[1].under = TILE_HOLE_B;
+    set_tile(6, 1, TILE_KEY);
+
+    state->num_objects = 2;
+
+    // Place player directly below hole B
+    state->players[0].x = 6;
+    state->players[0].y = 2;
+    state->players[0].under = TILE_FLOOR;
+    set_tile(6, 2, TILE_PLAYER);
+
+    // Reset duplication tracking so keys already on holes don't trigger duplication
+    reset_duplication_tracking();
+
+    printf("Initial state:\n");
+    printf("  Player at (%d, %d)\n", state->players[0].x, state->players[0].y);
+    printf("  Key 0 at (%d, %d) under='%c' (on hole A)\n",
+           state->objects[0].x, state->objects[0].y, state->objects[0].under);
+    printf("  Key 1 at (%d, %d) under='%c' (on hole B)\n",
+           state->objects[1].x, state->objects[1].y, state->objects[1].under);
+    printf("  Hole A at (2, 1), Hole B at (6, 1)\n");
+    printf("  Number of keys: %d\n\n", state->num_objects);
+
+    // Move 1: Player moves UP (pushes key OFF hole B, player moves onto hole B)
+    printf("Move 1: Player UP (pushes key 1 OFF hole B)\n");
+    execute_moves("U");
+    printf("  Player at (%d, %d) under='%c'\n",
+           state->players[0].x, state->players[0].y, state->players[0].under);
+
+    // Print all keys
+    printf("  Keys:\n");
+    for (i = 0; i < state->num_objects; i++) {
+        if (state->objects[i].type == TILE_KEY) {
+            printf("    Key %d at (%d, %d) under='%c'\n",
+                   i, state->objects[i].x, state->objects[i].y, state->objects[i].under);
+        }
+    }
+    printf("  Number of keys: %d\n\n", state->num_objects);
+
+    // Move 2: Player moves DOWN (moves OFF hole B)
+    printf("Move 2: Player DOWN (moves OFF hole B)\n");
+    printf("  Before move: %d keys\n", state->num_objects);
+    execute_moves("D");
+    printf("  After move:\n");
+    printf("    Player at (%d, %d) under='%c'\n",
+           state->players[0].x, state->players[0].y, state->players[0].under);
+
+    // Print all keys
+    printf("    Keys:\n");
+    for (i = 0; i < state->num_objects; i++) {
+        if (state->objects[i].type == TILE_KEY) {
+            printf("      Key %d at (%d, %d) under='%c'\n",
+                   i, state->objects[i].x, state->objects[i].y, state->objects[i].under);
+        }
+    }
+    printf("    Number of keys: %d\n", state->num_objects);
+
+    // Check: Key should NOT be duplicated
+    // Key 0 is still on hole A (didn't move)
+    // Key 1 is on floor (was pushed off hole B)
+    // Player left hole B, so hole B is now empty
+    // But duplication should only happen when object ENTERS a hole, not when it stays on it
+    if (state->num_objects != 2) {
+        printf("\n❌ BUG DETECTED: Key duplicated even though no key entered a hole!\n");
+        printf("   Expected: 2 keys (key 0 stayed on hole A, key 1 on floor)\n");
+        printf("   Actual: %d keys\n", state->num_objects);
+        printf("   Key 0 was already on hole A and didn't move.\n");
+        printf("   Duplication should only happen when object ENTERS a hole!\n");
+        assert(0 && "BUG: Key duplicated when staying on hole!");
+    }
+
+    printf("  ✓ Correct: Keys were NOT duplicated (no key entered a hole)\n\n");
+
+    printf("✓ TEST PASSED: Key Pushed OFF Hole\n\n");
+}
+
 // Main test runner
 int main(void) {
     printf("========================================\n");
     printf("DUPLICATOR GAME TEST SUITE\n");
     printf("========================================\n");
     printf("Testing game logic without Atari hardware\n");
-    
+
     // Run all tests
     test_simple_movement();
     test_key_door();
@@ -559,6 +666,7 @@ int main(void) {
     test_gate_plate();
     test_three_players_horizontal();
     test_players_and_keys_line();  // Test mixed players and keys
+    test_key_pushed_off_hole();  // Test duplication only on entry
 
     printf("\n\n========================================\n");
     printf("ALL TESTS PASSED!\n");

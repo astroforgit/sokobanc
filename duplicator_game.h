@@ -94,6 +94,12 @@ void load_level(const char* level_data[], byte num_rows);
 void draw_level(void);
 
 /*
+  Reset duplication tracking
+  Call this after manually modifying player/object positions
+*/
+void reset_duplication_tracking(void);
+
+/*
   Try to move the player in the given direction
 
   @param dx - Horizontal movement (-1, 0, or 1)
