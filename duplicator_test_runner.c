@@ -51,6 +51,26 @@ const char* test_level_gates[] = {
     "#################"
 };
 
+// Test level: 3 players in horizontal line (start with 1, we'll add 2 more manually)
+const char* test_level_three_players[] = {
+    "########:########",
+    "########.########",
+    "#####.......#####",
+    "#####...p...#####",
+    "#####.......#####",
+    "#################"
+};
+
+// Test level: 3 players + 2 keys in horizontal line (all movable objects)
+const char* test_level_players_and_keys[] = {
+    "########:########",
+    "########.########",
+    "#####.........###",
+    "#####...p.....###",
+    "#####.........###",
+    "#################"
+};
+
 // Helper function to print game state
 void print_game_state(void) {
     GameState* state = get_game_state();
@@ -273,6 +293,258 @@ void test_gate_plate(void) {
     printf("\n✓ TEST PASSED: Gate and Pressure Plate\n");
 }
 
+// Test case: 3 players in horizontal line (should expose bug)
+void test_three_players_horizontal(void) {
+    printf("\n\n========================================\n");
+    printf("TEST: Three Players in Horizontal Line\n");
+    printf("========================================\n");
+    printf("This test should FAIL due to a bug where not all 3 players move together\n");
+
+    load_level(test_level_three_players, 6);
+
+    GameState* state = get_game_state();
+
+    // Manually add 2 more players to create a horizontal line of 3
+    // Player 0 is at (8, 3) from level load
+    // Add player 1 at (7, 3) - left of player 0
+    state->players[1].x = 7;
+    state->players[1].y = 3;
+    state->players[1].under = TILE_FLOOR;
+    state->num_players = 2;
+
+    // Add player 2 at (9, 3) - right of player 0
+    state->players[2].x = 9;
+    state->players[2].y = 3;
+    state->players[2].under = TILE_FLOOR;
+    state->num_players = 3;
+
+    // Draw all players on the map
+    set_tile(7, 3, TILE_PLAYER);
+    set_tile(8, 3, TILE_PLAYER);
+    set_tile(9, 3, TILE_PLAYER);
+
+    draw_level();
+
+    printf("\nInitial state (3 players in horizontal line):");
+    print_level();
+    print_game_state();
+
+    // Verify we have 3 players
+    assert(state->num_players == 3);
+    printf("✓ Have 3 players as expected\n");
+
+    // Record initial positions
+    byte initial_x0 = state->players[0].x;
+    byte initial_x1 = state->players[1].x;
+    byte initial_x2 = state->players[2].x;
+    byte initial_y = state->players[0].y;
+
+    printf("\nInitial positions:\n");
+    printf("  Player 0: (%d, %d)\n", initial_x0, initial_y);
+    printf("  Player 1: (%d, %d)\n", initial_x1, initial_y);
+    printf("  Player 2: (%d, %d)\n", initial_x2, initial_y);
+
+    // Move right - all 3 players should move
+    printf("\nMoving RIGHT (all 3 players should move together)...");
+    execute_moves("r");
+
+    printf("\nAfter moving right:");
+    print_game_state();
+    print_level();
+
+    // Check if all 3 players moved
+    byte moved_0 = (state->players[0].x == initial_x0 + 1);
+    byte moved_1 = (state->players[1].x == initial_x1 + 1);
+    byte moved_2 = (state->players[2].x == initial_x2 + 1);
+
+    printf("\nMovement check:\n");
+    printf("  Player 0: %s (from %d to %d)\n", moved_0 ? "MOVED" : "STUCK", initial_x0, state->players[0].x);
+    printf("  Player 1: %s (from %d to %d)\n", moved_1 ? "MOVED" : "STUCK", initial_x1, state->players[1].x);
+    printf("  Player 2: %s (from %d to %d)\n", moved_2 ? "MOVED" : "STUCK", initial_x2, state->players[2].x);
+
+    // This assertion should FAIL if there's a bug
+    if (!moved_0 || !moved_1 || !moved_2) {
+        printf("\n❌ BUG DETECTED: Not all 3 players moved!\n");
+        printf("   Expected: All 3 players move together\n");
+        printf("   Actual: Only %d player(s) moved\n", moved_0 + moved_1 + moved_2);
+        assert(0 && "BUG: Not all 3 players moved together!");
+    }
+
+    // Update positions for next test
+    initial_x0 = state->players[0].x;
+    initial_x1 = state->players[1].x;
+    initial_x2 = state->players[2].x;
+
+    // Move left - all 3 players should move
+    printf("\nMoving LEFT (all 3 players should move together)...");
+    execute_moves("l");
+
+    printf("\nAfter moving left:");
+    print_game_state();
+    print_level();
+
+    // Check if all 3 players moved
+    moved_0 = (state->players[0].x == initial_x0 - 1);
+    moved_1 = (state->players[1].x == initial_x1 - 1);
+    moved_2 = (state->players[2].x == initial_x2 - 1);
+
+    printf("\nMovement check:\n");
+    printf("  Player 0: %s (from %d to %d)\n", moved_0 ? "MOVED" : "STUCK", initial_x0, state->players[0].x);
+    printf("  Player 1: %s (from %d to %d)\n", moved_1 ? "MOVED" : "STUCK", initial_x1, state->players[1].x);
+    printf("  Player 2: %s (from %d to %d)\n", moved_2 ? "MOVED" : "STUCK", initial_x2, state->players[2].x);
+
+    // This assertion should FAIL if there's a bug
+    if (!moved_0 || !moved_1 || !moved_2) {
+        printf("\n❌ BUG DETECTED: Not all 3 players moved!\n");
+        printf("   Expected: All 3 players move together\n");
+        printf("   Actual: Only %d player(s) moved\n", moved_0 + moved_1 + moved_2);
+        assert(0 && "BUG: Not all 3 players moved together!");
+    }
+
+    printf("\n✓ TEST PASSED: Three Players in Horizontal Line\n");
+}
+
+// Test case: 3 players + 2 keys in horizontal line (all should move together)
+void test_players_and_keys_line(void) {
+    printf("\n\n========================================\n");
+    printf("TEST: Players and Keys in Horizontal Line\n");
+    printf("========================================\n");
+    printf("Testing: p k p k p (all movable objects should move together)\n");
+
+    load_level(test_level_players_and_keys, 6);
+
+    GameState* state = get_game_state();
+
+    // Manually create the line: p k p k p
+    // Player 0 at (8, 3) from level load
+    // Key 0 at (9, 3)
+    state->objects[0].x = 9;
+    state->objects[0].y = 3;
+    state->objects[0].type = TILE_KEY;
+    state->objects[0].under = TILE_FLOOR;
+    state->num_objects = 1;
+
+    // Player 1 at (10, 3)
+    state->players[1].x = 10;
+    state->players[1].y = 3;
+    state->players[1].under = TILE_FLOOR;
+    state->num_players = 2;
+
+    // Key 1 at (11, 3)
+    state->objects[1].x = 11;
+    state->objects[1].y = 3;
+    state->objects[1].type = TILE_KEY;
+    state->objects[1].under = TILE_FLOOR;
+    state->num_objects = 2;
+
+    // Player 2 at (12, 3)
+    state->players[2].x = 12;
+    state->players[2].y = 3;
+    state->players[2].under = TILE_FLOOR;
+    state->num_players = 3;
+
+    // Draw all objects on the map
+    set_tile(8, 3, TILE_PLAYER);   // p
+    set_tile(9, 3, TILE_KEY);      // k
+    set_tile(10, 3, TILE_PLAYER);  // p
+    set_tile(11, 3, TILE_KEY);     // k
+    set_tile(12, 3, TILE_PLAYER);  // p
+
+    draw_level();
+
+    printf("\nInitial state (p k p k p in horizontal line):");
+    print_level();
+    print_game_state();
+
+    // Verify we have 3 players and 2 keys
+    assert(state->num_players == 3);
+    assert(state->num_objects == 2);
+    printf("✓ Have 3 players and 2 keys as expected\n");
+
+    // Record initial positions
+    byte initial_p0_x = state->players[0].x;
+    byte initial_p1_x = state->players[1].x;
+    byte initial_p2_x = state->players[2].x;
+    byte initial_k0_x = state->objects[0].x;
+    byte initial_k1_x = state->objects[1].x;
+
+    printf("\nInitial positions:\n");
+    printf("  Player 0: (%d, 3)\n", initial_p0_x);
+    printf("  Key 0:    (%d, 3)\n", initial_k0_x);
+    printf("  Player 1: (%d, 3)\n", initial_p1_x);
+    printf("  Key 1:    (%d, 3)\n", initial_k1_x);
+    printf("  Player 2: (%d, 3)\n", initial_p2_x);
+
+    // Move right - all 5 objects should move
+    printf("\nMoving RIGHT (all 5 objects should move together)...");
+    execute_moves("r");
+
+    printf("\nAfter moving right:");
+    print_game_state();
+    print_level();
+
+    // Check if all objects moved
+    byte p0_moved = (state->players[0].x == initial_p0_x + 1);
+    byte p1_moved = (state->players[1].x == initial_p1_x + 1);
+    byte p2_moved = (state->players[2].x == initial_p2_x + 1);
+    byte k0_moved = (state->objects[0].x == initial_k0_x + 1);
+    byte k1_moved = (state->objects[1].x == initial_k1_x + 1);
+
+    printf("\nMovement check:\n");
+    printf("  Player 0: %s (from %d to %d)\n", p0_moved ? "MOVED" : "STUCK", initial_p0_x, state->players[0].x);
+    printf("  Key 0:    %s (from %d to %d)\n", k0_moved ? "MOVED" : "STUCK", initial_k0_x, state->objects[0].x);
+    printf("  Player 1: %s (from %d to %d)\n", p1_moved ? "MOVED" : "STUCK", initial_p1_x, state->players[1].x);
+    printf("  Key 1:    %s (from %d to %d)\n", k1_moved ? "MOVED" : "STUCK", initial_k1_x, state->objects[1].x);
+    printf("  Player 2: %s (from %d to %d)\n", p2_moved ? "MOVED" : "STUCK", initial_p2_x, state->players[2].x);
+
+    // This assertion should pass if the fix works
+    if (!p0_moved || !p1_moved || !p2_moved || !k0_moved || !k1_moved) {
+        printf("\n❌ BUG DETECTED: Not all objects moved!\n");
+        printf("   Expected: All 5 objects move together\n");
+        printf("   Actual: Only %d object(s) moved\n", p0_moved + p1_moved + p2_moved + k0_moved + k1_moved);
+        assert(0 && "BUG: Not all objects moved together!");
+    }
+
+    // Update positions for next test
+    initial_p0_x = state->players[0].x;
+    initial_p1_x = state->players[1].x;
+    initial_p2_x = state->players[2].x;
+    initial_k0_x = state->objects[0].x;
+    initial_k1_x = state->objects[1].x;
+
+    // Move left - all 5 objects should move
+    printf("\nMoving LEFT (all 5 objects should move together)...");
+    execute_moves("l");
+
+    printf("\nAfter moving left:");
+    print_game_state();
+    print_level();
+
+    // Check if all objects moved
+    p0_moved = (state->players[0].x == initial_p0_x - 1);
+    p1_moved = (state->players[1].x == initial_p1_x - 1);
+    p2_moved = (state->players[2].x == initial_p2_x - 1);
+    k0_moved = (state->objects[0].x == initial_k0_x - 1);
+    k1_moved = (state->objects[1].x == initial_k1_x - 1);
+
+    printf("\nMovement check:\n");
+    printf("  Player 0: %s (from %d to %d)\n", p0_moved ? "MOVED" : "STUCK", initial_p0_x, state->players[0].x);
+    printf("  Key 0:    %s (from %d to %d)\n", k0_moved ? "MOVED" : "STUCK", initial_k0_x, state->objects[0].x);
+    printf("  Player 1: %s (from %d to %d)\n", p1_moved ? "MOVED" : "STUCK", initial_p1_x, state->players[1].x);
+    printf("  Key 1:    %s (from %d to %d)\n", k1_moved ? "MOVED" : "STUCK", initial_k1_x, state->objects[1].x);
+    printf("  Player 2: %s (from %d to %d)\n", p2_moved ? "MOVED" : "STUCK", initial_p2_x, state->players[2].x);
+
+    // This assertion should pass if the fix works
+    if (!p0_moved || !p1_moved || !p2_moved || !k0_moved || !k1_moved) {
+        printf("\n❌ BUG DETECTED: Not all objects moved!\n");
+        printf("   Expected: All 5 objects move together\n");
+        printf("   Actual: Only %d object(s) moved\n", p0_moved + p1_moved + p2_moved + k0_moved + k1_moved);
+        assert(0 && "BUG: Not all objects moved together!");
+    }
+
+    printf("\n✓ TEST PASSED: Players and Keys in Horizontal Line\n");
+}
+
 // Main test runner
 int main(void) {
     printf("========================================\n");
@@ -285,11 +557,13 @@ int main(void) {
     test_key_door();
     test_hole_duplication();
     test_gate_plate();
-    
+    test_three_players_horizontal();
+    test_players_and_keys_line();  // Test mixed players and keys
+
     printf("\n\n========================================\n");
     printf("ALL TESTS PASSED!\n");
     printf("========================================\n");
-    
+
     return 0;
 }
 

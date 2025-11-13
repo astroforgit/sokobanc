@@ -16,41 +16,48 @@ static char background_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];
 
 // Tile category lookup table (256 bytes - one for each ASCII character)
 // Each byte contains bit flags for tile properties
-const byte tile_categories[256] = {
-    [' '] = TILE_CAT_PASSABLE,                                    // TILE_EMPTY
-    ['.'] = TILE_CAT_PASSABLE,                                    // TILE_FLOOR
-    ['#'] = TILE_CAT_BLOCKING,                                    // TILE_WALL
-    ['p'] = TILE_CAT_BLOCKING,                                    // TILE_PLAYER (blocking to other players)
-    ['*'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_CRATE
-    ['k'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_KEY
-    ['e'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE,                // TILE_ENEMY
-    ['d'] = TILE_CAT_BLOCKING,                                    // TILE_DOOR (closed)
-    ['D'] = TILE_CAT_PASSABLE,                                    // TILE_DOOR_OPEN
-    ['?'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_A
-    ['!'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_B
-    ['['] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_A filled
-    [']'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE,                    // TILE_HOLE_B filled
-    ['b'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE,                   // TILE_PLATE_A
-    ['c'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE,                   // TILE_PLATE_B
-    ['g'] = TILE_CAT_BLOCKING | TILE_CAT_GATE,                    // TILE_GATE_A (closed)
-    ['h'] = TILE_CAT_BLOCKING | TILE_CAT_GATE,                    // TILE_GATE_B (closed)
-    ['G'] = TILE_CAT_PASSABLE | TILE_CAT_GATE,                    // TILE_GATE_A (open)
-    ['H'] = TILE_CAT_PASSABLE | TILE_CAT_GATE,                    // TILE_GATE_B (open)
-    ['@'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_A
-    [':'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_B
-    [';'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT,                    // TILE_EXIT_C
-    ['$'] = TILE_CAT_BLOCKING,                                    // Wall line A
-    ['%'] = TILE_CAT_BLOCKING,                                    // Wall line B
-    ['&'] = TILE_CAT_BLOCKING,                                    // Wall line C
-    ['1'] = TILE_CAT_PASSABLE,                                    // Decorative line 1
-    ['2'] = TILE_CAT_PASSABLE,                                    // Decorative line 2
-    ['3'] = TILE_CAT_PASSABLE,                                    // Decorative line 3
-    ['4'] = TILE_CAT_PASSABLE,                                    // Decorative line 4
-    ['5'] = TILE_CAT_PASSABLE,                                    // Decorative line 5
-    ['6'] = TILE_CAT_PASSABLE,                                    // Decorative line 6
-    ['7'] = TILE_CAT_PASSABLE,                                    // Decorative line 7
-    ['8'] = TILE_CAT_PASSABLE,                                    // Decorative line 8
-};
+byte tile_categories[256];
+
+// Initialize the tile category lookup table
+static void init_tile_categories(void) {
+    // Initialize all to 0 (no flags)
+    memset(tile_categories, 0, sizeof(tile_categories));
+
+    // Set tile categories
+    tile_categories[' '] = TILE_CAT_PASSABLE;                                    // TILE_EMPTY
+    tile_categories['.'] = TILE_CAT_PASSABLE;                                    // TILE_FLOOR
+    tile_categories['#'] = TILE_CAT_BLOCKING;                                    // TILE_WALL
+    tile_categories['p'] = TILE_CAT_BLOCKING;                                    // TILE_PLAYER (blocking to other players)
+    tile_categories['*'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE;                // TILE_CRATE
+    tile_categories['k'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE;                // TILE_KEY
+    tile_categories['e'] = TILE_CAT_BLOCKING | TILE_CAT_PUSHABLE;                // TILE_ENEMY
+    tile_categories['d'] = TILE_CAT_BLOCKING;                                    // TILE_DOOR (closed)
+    tile_categories['D'] = TILE_CAT_PASSABLE;                                    // TILE_DOOR_OPEN
+    tile_categories['?'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE;                    // TILE_HOLE_A
+    tile_categories['!'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE;                    // TILE_HOLE_B
+    tile_categories['['] = TILE_CAT_PASSABLE | TILE_CAT_HOLE;                    // TILE_HOLE_A filled
+    tile_categories[']'] = TILE_CAT_PASSABLE | TILE_CAT_HOLE;                    // TILE_HOLE_B filled
+    tile_categories['b'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE;                   // TILE_PLATE_A
+    tile_categories['c'] = TILE_CAT_PASSABLE | TILE_CAT_PLATE;                   // TILE_PLATE_B
+    tile_categories['g'] = TILE_CAT_BLOCKING | TILE_CAT_GATE;                    // TILE_GATE_A (closed)
+    tile_categories['h'] = TILE_CAT_BLOCKING | TILE_CAT_GATE;                    // TILE_GATE_B (closed)
+    tile_categories['G'] = TILE_CAT_PASSABLE | TILE_CAT_GATE;                    // TILE_GATE_A (open)
+    tile_categories['H'] = TILE_CAT_PASSABLE | TILE_CAT_GATE;                    // TILE_GATE_B (open)
+    tile_categories['@'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT;                    // TILE_EXIT_A
+    tile_categories[':'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT;                    // TILE_EXIT_B
+    tile_categories[';'] = TILE_CAT_PASSABLE | TILE_CAT_EXIT;                    // TILE_EXIT_C
+    tile_categories['$'] = TILE_CAT_BLOCKING;                                    // Wall line A
+    tile_categories['%'] = TILE_CAT_BLOCKING;                                    // Wall line B
+    tile_categories['&'] = TILE_CAT_BLOCKING;                                    // Wall line C
+    tile_categories['1'] = TILE_CAT_PASSABLE;                                    // Decorative line 1
+    tile_categories['2'] = TILE_CAT_PASSABLE;                                    // Decorative line 2
+    tile_categories['3'] = TILE_CAT_PASSABLE;                                    // Decorative line 3
+    tile_categories['4'] = TILE_CAT_PASSABLE;                                    // Decorative line 4
+    tile_categories['5'] = TILE_CAT_PASSABLE;                                    // Decorative line 5
+    tile_categories['6'] = TILE_CAT_PASSABLE;                                    // Decorative line 6
+    tile_categories['7'] = TILE_CAT_PASSABLE;                                    // Decorative line 7
+    tile_categories['8'] = TILE_CAT_PASSABLE;                                    // Decorative line 8
+}
 
 // Simple queue for flood fill (reduced size to save memory)
 typedef struct {
@@ -66,6 +73,13 @@ void load_level(const char* level_data[], byte num_rows) {
     byte x, y;
     const char* row;
     char tile;
+    static byte categories_initialized = 0;
+
+    // Initialize tile categories on first call
+    if (!categories_initialized) {
+        init_tile_categories();
+        categories_initialized = 1;
+    }
 
     // Clear the maps
     memset(level_map, ' ', sizeof(level_map));
@@ -405,7 +419,7 @@ void handle_duplication(void) {
   Try to push an object at a position in a direction
   (Corrected version to handle background tiles properly)
 */
-byte try_push(byte x, byte y, char dx, char dy) {
+byte try_push(byte x, byte y, signed char dx, signed char dy) {
     byte i;
     char object_tile = get_tile(x, y);
     byte behind_x = x + dx;
@@ -471,59 +485,108 @@ byte try_push(byte x, byte y, char dx, char dy) {
 
  /*
   Try to move the player in the given direction
-  (Corrected version to handle pushing objects correctly)
+  New algorithm: Process players from back to front in movement direction
+  This ensures that when multiple players are in a line, they all move together
 */
-byte try_move_player(char dx, char dy) {
-    byte i, new_x, new_y;
+byte try_move_player(signed char dx, signed char dy) {
+    byte i, j, new_x, new_y;
     char target_tile;
     byte moved = 0;
+    byte player_order[MAX_PLAYERS];
+    byte temp_idx;
 
-    // Move all players simultaneously
+    /* Step 1: Create an array of player indices */
     for (i = 0; i < game_state.num_players; i++) {
-        new_x = game_state.players[i].x + dx;
-        new_y = game_state.players[i].y + dy;
+        player_order[i] = i;
+    }
 
-        // Check bounds
+    /* Step 2: Sort players so we process them from BACK to FRONT
+       in the movement direction. This means:
+       - If moving RIGHT (dx=1), process rightmost players first
+       - If moving LEFT (dx=-1), process leftmost players first
+       - If moving DOWN (dy=1), process bottom players first
+       - If moving UP (dy=-1), process top players first
+    */
+    for (i = 0; i < game_state.num_players - 1; i++) {
+        for (j = i + 1; j < game_state.num_players; j++) {
+            byte should_swap = 0;
+
+            /* Determine if we should swap based on movement direction */
+            if (dx == 1) {
+                /* Moving right: process rightmost first */
+                if (game_state.players[player_order[i]].x < game_state.players[player_order[j]].x) {
+                    should_swap = 1;
+                }
+            } else if (dx == -1) {
+                /* Moving left: process leftmost first */
+                if (game_state.players[player_order[i]].x > game_state.players[player_order[j]].x) {
+                    should_swap = 1;
+                }
+            } else if (dy == 1) {
+                /* Moving down: process bottom first */
+                if (game_state.players[player_order[i]].y < game_state.players[player_order[j]].y) {
+                    should_swap = 1;
+                }
+            } else if (dy == -1) {
+                /* Moving up: process top first */
+                if (game_state.players[player_order[i]].y > game_state.players[player_order[j]].y) {
+                    should_swap = 1;
+                }
+            }
+
+            if (should_swap) {
+                temp_idx = player_order[i];
+                player_order[i] = player_order[j];
+                player_order[j] = temp_idx;
+            }
+        }
+    }
+
+    /* Step 3: Process players in sorted order (back to front) */
+    for (i = 0; i < game_state.num_players; i++) {
+        byte player_idx = player_order[i];
+
+        new_x = game_state.players[player_idx].x + dx;
+        new_y = game_state.players[player_idx].y + dy;
+
+        /* Check bounds */
         if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
             continue;
         }
 
         target_tile = get_tile(new_x, new_y);
 
-        // Check if target is passable
+        /* Check if target is passable */
         if (is_passable(target_tile)) {
-            // Restore tile under old position
-            set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
+            /* Restore tile under old position */
+            set_tile_and_draw(game_state.players[player_idx].x, game_state.players[player_idx].y, game_state.players[player_idx].under);
 
-            // Move player
-            game_state.players[i].x = new_x;
-            game_state.players[i].y = new_y;
-            game_state.players[i].under = target_tile;
+            /* Move player */
+            game_state.players[player_idx].x = new_x;
+            game_state.players[player_idx].y = new_y;
+            game_state.players[player_idx].under = target_tile;
 
-            // Check if reached exit
+            /* Check if reached exit */
             if (is_exit(target_tile)) {
                 game_state.level_complete = 1;
             }
 
-            // Set player at new position
+            /* Set player at new position */
             set_tile_and_draw(new_x, new_y, TILE_PLAYER);
             moved = 1;
         }
-        // Check if target is pushable
+        /* Check if target is pushable */
         else if (is_pushable(target_tile)) {
-            // The corrected try_push now handles restoring tiles correctly.
             if (try_push(new_x, new_y, dx, dy)) {
-                // Restore tile under old position
-                set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
+                /* Restore tile under old position */
+                set_tile_and_draw(game_state.players[player_idx].x, game_state.players[player_idx].y, game_state.players[player_idx].under);
 
-                // Move player
-                game_state.players[i].x = new_x;
-                game_state.players[i].y = new_y;
+                /* Move player */
+                game_state.players[player_idx].x = new_x;
+                game_state.players[player_idx].y = new_y;
 
-                // *** THE FIX IS HERE ***
-                // The player moves into the tile the object just left. We need to
-                // re-read that tile to correctly update the player's 'under' memory.
-                game_state.players[i].under = get_tile(new_x, new_y);
+                /* Re-read the tile to correctly update the player's 'under' memory */
+                game_state.players[player_idx].under = get_tile(new_x, new_y);
 
                 set_tile_and_draw(new_x, new_y, TILE_PLAYER);
                 moved = 1;

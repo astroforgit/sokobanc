@@ -95,12 +95,12 @@ void draw_level(void);
 
 /*
   Try to move the player in the given direction
-  
+
   @param dx - Horizontal movement (-1, 0, or 1)
   @param dy - Vertical movement (-1, 0, or 1)
   @return 1 if move was successful, 0 otherwise
 */
-byte try_move_player(char dx, char dy);
+byte try_move_player(signed char dx, signed char dy);
 
 /*
   Check if the level is complete (player reached exit)
@@ -154,7 +154,7 @@ byte is_passable(char tile);
   Tile category lookup table - external declaration
   Defined in duplicator_game.c
 */
-extern const byte tile_categories[256];
+extern byte tile_categories[256];
 
 /*
   Check if a tile is an exit - INLINE MACRO using category table
@@ -190,7 +190,7 @@ extern const byte tile_categories[256];
   @param dy - Vertical push direction (-1, 0, or 1)
   @return 1 if push was successful, 0 otherwise
 */
-byte try_push(byte x, byte y, char dx, char dy);
+byte try_push(byte x, byte y, signed char dx, signed char dy);
 
 /*
   Flood fill to spread door_open state to adjacent doors
