@@ -218,8 +218,9 @@ void remove_open_doors(void);
   @param key_y - Y coordinate of key
   @param door_x - X coordinate of door
   @param door_y - Y coordinate of door
+  @param tile_under_key - The tile that was under the key (to restore it)
 */
-void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y);
+void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y, char tile_under_key);
 
 /*
   Update gate states based on plate activation

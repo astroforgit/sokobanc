@@ -254,9 +254,9 @@ void remove_open_doors(void) {
     }
 }
 
-void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y) {
-    // Remove key
-    set_tile_and_draw(key_x, key_y, TILE_FLOOR);
+void handle_key_door(byte key_x, byte key_y, byte door_x, byte door_y, char tile_under_key) {
+    // Remove key and restore the tile that was under it
+    set_tile_and_draw(key_x, key_y, tile_under_key);
 
     // Start flood fill from the door
     door_flood_fill(door_x, door_y);
@@ -505,6 +505,7 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
     byte end_x, end_y;
     char check_tile;
     char end_tile;
+    char tile_under_key;
 
     // Find the length of the chain
     // Start at the first object and walk forward
@@ -551,11 +552,11 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
 
         if (last_obj_tile == TILE_KEY) {
             // Remove the key that's hitting the door
+            // Use background_map to get the correct tile under the key
+            tile_under_key = background_map[last_obj_y][last_obj_x];
+
             for (i = 0; i < game_state.num_objects; i++) {
                 if (game_state.objects[i].x == last_obj_x && game_state.objects[i].y == last_obj_y) {
-                    // Restore the tile the key was on
-                    set_tile_and_draw(last_obj_x, last_obj_y, game_state.objects[i].under);
-
                     // Remove this object by shifting BOTH arrays
                     for (j = i; j < game_state.num_objects - 1; j++) {
                         game_state.objects[j] = game_state.objects[j + 1];
@@ -566,8 +567,8 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
                 }
             }
 
-            // Open the door
-            handle_key_door(last_obj_x, last_obj_y, end_x, end_y);
+            // Open the door and restore the tile that was under the key
+            handle_key_door(last_obj_x, last_obj_y, end_x, end_y, tile_under_key);
 
             // Now push the remaining objects in the chain (if any)
             if (chain_length > 0) {
