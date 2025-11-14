@@ -93,6 +93,20 @@ const char* level_4[] = {
     "#################"
 };
 
+const char* level_5[] = {
+    "#################",
+    "##.............##",
+    "#####.#####.#####",
+    ".................",
+    "#################",
+    "##.....?d......##",
+    "#######5%3#######",
+    "p.k.k.d.d1..d...@",
+    "#####.#.#!#.#####",
+    "##......#......##",
+    "#################"
+};
+
 // Level definitions
 typedef struct {
     const char** data;
@@ -103,10 +117,11 @@ const LevelDef levels[] = {
     { level_1, 11 },
     { level_2, 11 },
     { level_3, 11 },
-    { level_4, 11 }
+    { level_4, 11 },
+    { level_5, 11 }
 };
 
-#define NUM_LEVELS 4
+#define NUM_LEVELS 5
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
@@ -2173,71 +2188,103 @@ void handle_duplication(void) {
 }
 /*
   Try to push an object at a position in a direction
-  (Corrected version to handle background tiles properly)
+  Handles chain pushing by checking the entire chain first
 */
 byte try_push(byte x, byte y, signed char dx, signed char dy) {
     byte i;
+    byte chain_x, chain_y;
+    byte chain_length = 0;
     char object_tile = get_tile(x, y);
-    byte behind_x = x + dx;
-    byte behind_y = y + dy;
     char behind_tile;
 
-    // Check bounds
-    if (behind_x >= MAX_LEVEL_WIDTH || behind_y >= MAX_LEVEL_HEIGHT) {
-        return 0;  // Can't push out of bounds
+    // First, find the length of the chain and check if it can be pushed
+    chain_x = x;
+    chain_y = y;
+
+    // Walk along the chain to find where it ends
+    while (chain_length < 10) {  // Max chain length of 10
+        byte next_x = chain_x + dx;
+        byte next_y = chain_y + dy;
+
+        // Check bounds
+        if (next_x >= MAX_LEVEL_WIDTH || next_y >= MAX_LEVEL_HEIGHT) {
+            return 0;  // Can't push out of bounds
+        }
+
+        behind_tile = get_tile(next_x, next_y);
+
+        // Special case: Key pushing into door (only for the first object in chain)
+        if (chain_length == 0 && object_tile == TILE_KEY && behind_tile == TILE_DOOR) {
+            for (i = 0; i < game_state.num_objects; i++) {
+                if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
+                    byte j;
+                    // Restore the tile the key was on before it disappears
+                    set_tile_and_draw(x, y, game_state.objects[i].under);
+
+                    // Remove this object by shifting BOTH arrays
+                    for (j = i; j < game_state.num_objects - 1; j++) {
+                        game_state.objects[j] = game_state.objects[j + 1];
+                        prev_object_under[j] = prev_object_under[j + 1];
+                    }
+                    game_state.num_objects--;
+                    break;
+                }
+            }
+            handle_key_door(x, y, next_x, next_y);
+            return 1;
+        }
+
+        // If the next tile is pushable, continue the chain
+        if (is_pushable(behind_tile)) {
+            chain_x = next_x;
+            chain_y = next_y;
+            chain_length++;
+        }
+        // If the next tile is passable, we can push the chain
+        else if (is_passable(behind_tile)) {
+            break;  // Found the end of the chain
+        }
+        // Otherwise, the chain is blocked
+        else {
+            return 0;  // Can't push - blocked
+        }
     }
 
-    behind_tile = get_tile(behind_x, behind_y);
+    // Now push all objects in the chain from back to front
+    // Start from the end of the chain and work backwards
+    for (i = 0; i <= chain_length; i++) {
+        byte obj_x = x + dx * (chain_length - i);
+        byte obj_y = y + dy * (chain_length - i);
+        byte new_x = obj_x + dx;
+        byte new_y = obj_y + dy;
+        byte j;
 
-    // Special case: Key pushing into door
-    if (object_tile == TILE_KEY && behind_tile == TILE_DOOR) {
-        for (i = 0; i < game_state.num_objects; i++) {
-            if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
-                byte j;
-                // Restore the tile the key was on before it disappears
-                set_tile_and_draw(x, y, game_state.objects[i].under);
+        // Find the object at this position
+        for (j = 0; j < game_state.num_objects; j++) {
+            if (game_state.objects[j].x == obj_x && game_state.objects[j].y == obj_y) {
+                char tile_to_restore = game_state.objects[j].under;
+                char obj_type = game_state.objects[j].type;
 
-                // Remove this object by shifting array
-                for (j = i; j < game_state.num_objects - 1; j++) {
-                    game_state.objects[j] = game_state.objects[j + 1];
-                }
-                game_state.num_objects--;
+                // Get the tile at the new position BEFORE we modify anything
+                char new_under = get_tile(new_x, new_y);
+
+                // Update the object's position
+                game_state.objects[j].x = new_x;
+                game_state.objects[j].y = new_y;
+                game_state.objects[j].under = new_under;
+
+                // Restore the tile at the old position
+                set_tile_and_draw(obj_x, obj_y, tile_to_restore);
+
+                // Move the object to its new position
+                set_tile_and_draw(new_x, new_y, obj_type);
+
                 break;
             }
         }
-        handle_key_door(x, y, behind_x, behind_y);
-        return 1;
     }
 
-    // Check if space behind is passable
-    if (!is_passable(behind_tile)) {
-        return 0;  // Can't push into blocking tile
-    }
-
-    // Find the object being pushed to update it
-    for (i = 0; i < game_state.num_objects; i++) {
-        if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
-            // *** THE FIX IS HERE ***
-
-            // 1. Get the tile to restore from the object's OWN memory.
-            char tile_to_restore = game_state.objects[i].under;
-
-            // 2. Update the object's internal position and memory for its NEW tile.
-            game_state.objects[i].x = behind_x;
-            game_state.objects[i].y = behind_y;
-            game_state.objects[i].under = behind_tile; // Remembers the dynamic tile it moves onto.
-
-            // 3. Restore the tile at the object's OLD position using its saved memory.
-            set_tile_and_draw(x, y, tile_to_restore);
-
-            // 4. Move the object to its new position on the map.
-            set_tile_and_draw(behind_x, behind_y, object_tile);
-
-            return 1; // Push successful
-        }
-    }
-
-    return 0; // Should not be reached, but as a fallback
+    return 1;  // Push successful
 }
 
  /*

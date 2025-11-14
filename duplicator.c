@@ -89,6 +89,20 @@ const char* level_4[] = {
     "#################"
 };
 
+const char* level_5[] = {
+    "#################",
+    "##.............##",
+    "#####.#####.#####",
+    ".................",
+    "#################",
+    "##.....?d......##",
+    "#######5%3#######",
+    "p.k.k.d.d1..d...@",
+    "#####.#.#!#.#####",
+    "##......#......##",
+    "#################"
+};
+
 // Level definitions
 typedef struct {
     const char** data;
@@ -99,10 +113,11 @@ const LevelDef levels[] = {
     { level_1, 11 },
     { level_2, 11 },
     { level_3, 11 },
-    { level_4, 11 }
+    { level_4, 11 },
+    { level_5, 11 }
 };
 
-#define NUM_LEVELS 4
+#define NUM_LEVELS 5
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
