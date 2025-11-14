@@ -69,6 +69,9 @@ static Position flood_queue[32];  // Reduced from 64 to 32
 static byte queue_start;
 static byte queue_end;
 
+// Forward declaration
+void reset_duplication_tracking(void);
+
 void load_level(const char* level_data[], byte num_rows) {
     byte x, y;
     const char* row;
@@ -319,7 +322,6 @@ void update_gates(void) {
 // Static arrays to track previous 'under' state for duplication detection
 static char prev_player_under[MAX_PLAYERS];
 static char prev_object_under[MAX_OBJECTS];
-static byte tracking_initialized = 0;
 
 // Reset duplication tracking (call when loading a new level)
 void reset_duplication_tracking(void) {
@@ -340,13 +342,10 @@ void reset_duplication_tracking(void) {
     for (i = 0; i < game_state.num_objects; i++) {
         prev_object_under[i] = game_state.objects[i].under;
     }
-
-    tracking_initialized = 1;
 }
 
 // Optimized duplication handler
-// NOTE: This is called AFTER movement, so we need to track which objects
-// JUST ENTERED a hole this turn (not objects that were already on holes)
+// Only triggers if something ENTERED a hole (moved from non-hole to hole)
 void handle_duplication(void) {
     byte i, j, x, y;
     byte player_holeA = 0, player_holeB = 0;
@@ -354,12 +353,6 @@ void handle_duplication(void) {
     byte total_player_holeA = 0, total_player_holeB = 0;
     byte total_key_holeA = 0, total_key_holeB = 0;
     char current_under, previous_under;
-
-    // Safety check: if tracking not initialized, initialize it now
-    if (!tracking_initialized) {
-        reset_duplication_tracking();
-        return;  // Don't trigger duplication on first call
-    }
 
     // Count players that JUST ENTERED each hole type (not already on it)
     for (i = 0; i < game_state.num_players; i++) {
@@ -397,8 +390,7 @@ void handle_duplication(void) {
         }
     }
 
-    // Check if BOTH holes have players (for disappearing, check ALL players on holes)
-
+    // Count total objects on holes (for disappearing check)
     for (i = 0; i < game_state.num_players; i++) {
         if (game_state.players[i].under == TILE_HOLE_A) total_player_holeA++;
         if (game_state.players[i].under == TILE_HOLE_B) total_player_holeB++;
@@ -411,12 +403,14 @@ void handle_duplication(void) {
         }
     }
 
-    // If both holes have players, they disappear (win condition)
-    if (total_player_holeA > 0 && total_player_holeB > 0) {
+    // If a player just entered a hole AND both holes now have players, they disappear
+    if ((player_holeA > 0 || player_holeB > 0) && total_player_holeA > 0 && total_player_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_players; i++) {
             if (!is_hole(game_state.players[i].under)) {
-                game_state.players[j++] = game_state.players[i];
+                game_state.players[j] = game_state.players[i];
+                prev_player_under[j] = prev_player_under[i];
+                j++;
             } else {
                 set_tile_and_draw(game_state.players[i].x, game_state.players[i].y, game_state.players[i].under);
             }
@@ -428,17 +422,20 @@ void handle_duplication(void) {
         return;
     }
 
-    // If both holes have keys, they disappear
-    if (total_key_holeA > 0 && total_key_holeB > 0) {
+    // If a key just entered a hole AND both holes now have keys, they disappear
+    if ((key_holeA > 0 || key_holeB > 0) && total_key_holeA > 0 && total_key_holeB > 0) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].type != TILE_KEY || !is_hole(game_state.objects[i].under)) {
-                game_state.objects[j++] = game_state.objects[i];
+                game_state.objects[j] = game_state.objects[i];
+                prev_object_under[j] = prev_object_under[i];
+                j++;
             } else {
                 set_tile_and_draw(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
             }
         }
         game_state.num_objects = j;
+        return;
     }
 
     // Duplicate players
@@ -451,6 +448,7 @@ void handle_duplication(void) {
                     game_state.players[game_state.num_players].y = y;
                     game_state.players[game_state.num_players].under = TILE_HOLE_A;
                     set_tile_and_draw(x, y, TILE_PLAYER);
+                    prev_player_under[game_state.num_players] = TILE_HOLE_A;
                     game_state.num_players++;
                     player_holeA++;
                 }
@@ -459,6 +457,7 @@ void handle_duplication(void) {
                     game_state.players[game_state.num_players].y = y;
                     game_state.players[game_state.num_players].under = TILE_HOLE_B;
                     set_tile_and_draw(x, y, TILE_PLAYER);
+                    prev_player_under[game_state.num_players] = TILE_HOLE_B;
                     game_state.num_players++;
                     player_holeB++;
                 }
@@ -477,6 +476,7 @@ void handle_duplication(void) {
                     game_state.objects[game_state.num_objects].type = TILE_KEY;
                     game_state.objects[game_state.num_objects].under = TILE_HOLE_A;
                     set_tile_and_draw(x, y, TILE_KEY);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_A;
                     game_state.num_objects++;
                     key_holeA++;
                 }
@@ -486,6 +486,7 @@ void handle_duplication(void) {
                     game_state.objects[game_state.num_objects].type = TILE_KEY;
                     game_state.objects[game_state.num_objects].under = TILE_HOLE_B;
                     set_tile_and_draw(x, y, TILE_KEY);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_B;
                     game_state.num_objects++;
                     key_holeB++;
                 }
@@ -515,12 +516,14 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
     if (object_tile == TILE_KEY && behind_tile == TILE_DOOR) {
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
+                byte j;
                 // Restore the tile the key was on before it disappears
                 set_tile_and_draw(x, y, game_state.objects[i].under);
 
-                // Remove this object by shifting array
-                for (; i < game_state.num_objects - 1; i++) {
-                    game_state.objects[i] = game_state.objects[i + 1];
+                // Remove this object by shifting BOTH arrays
+                for (j = i; j < game_state.num_objects - 1; j++) {
+                    game_state.objects[j] = game_state.objects[j + 1];
+                    prev_object_under[j] = prev_object_under[j + 1];
                 }
                 game_state.num_objects--;
                 break;
