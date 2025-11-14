@@ -107,6 +107,20 @@ const char* level_5[] = {
     "#################"
 };
 
+const char* level_6[] = {
+    "########@########",
+    "########.########",
+    "##6222cg2%%%223##",
+    "##1....g.###..1##",
+    "##1..#######..1##",
+    "##1?2%%%%%%%2!1##",
+    "##1..#######..1##",
+    "p.1..#######..1##",
+    "##1....h......1##",
+    "##52222hb222224##",
+    "#################"
+};
+
 // Level definitions
 typedef struct {
     const char** data;
@@ -118,10 +132,11 @@ const LevelDef levels[] = {
     { level_2, 11 },
     { level_3, 11 },
     { level_4, 11 },
-    { level_5, 11 }
+    { level_5, 11 },
+    { level_6, 11 }
 };
 
-#define NUM_LEVELS 5
+#define NUM_LEVELS 6
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
@@ -2197,6 +2212,7 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
     byte end_x, end_y;
     char check_tile;
     char end_tile;
+    char tile_under_key;
 
     // Find the length of the chain
     // Start at the first object and walk forward
@@ -2243,12 +2259,11 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
 
         if (last_obj_tile == TILE_KEY) {
             // Remove the key that's hitting the door
-            char tile_under_key = TILE_FLOOR;
+            // Use background_map to get the correct tile under the key
+            tile_under_key = background_map[last_obj_y][last_obj_x];
+
             for (i = 0; i < game_state.num_objects; i++) {
                 if (game_state.objects[i].x == last_obj_x && game_state.objects[i].y == last_obj_y) {
-                    // Save the tile that was under the key
-                    tile_under_key = game_state.objects[i].under;
-
                     // Remove this object by shifting BOTH arrays
                     for (j = i; j < game_state.num_objects - 1; j++) {
                         game_state.objects[j] = game_state.objects[j + 1];
