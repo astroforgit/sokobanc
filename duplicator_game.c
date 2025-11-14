@@ -502,35 +502,9 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
     byte i, j;
     byte check_x, check_y;
     byte chain_length = 0;
-    char object_tile = get_tile(x, y);
+    byte end_x, end_y;
     char check_tile;
-
-    // Special case: Key pushing into door
-    check_x = x + dx;
-    check_y = y + dy;
-    if (check_x >= MAX_LEVEL_WIDTH || check_y >= MAX_LEVEL_HEIGHT) {
-        return 0;
-    }
-    check_tile = get_tile(check_x, check_y);
-
-    if (object_tile == TILE_KEY && check_tile == TILE_DOOR) {
-        for (i = 0; i < game_state.num_objects; i++) {
-            if (game_state.objects[i].x == x && game_state.objects[i].y == y) {
-                // Restore the tile the key was on before it disappears
-                set_tile_and_draw(x, y, game_state.objects[i].under);
-
-                // Remove this object by shifting BOTH arrays
-                for (j = i; j < game_state.num_objects - 1; j++) {
-                    game_state.objects[j] = game_state.objects[j + 1];
-                    prev_object_under[j] = prev_object_under[j + 1];
-                }
-                game_state.num_objects--;
-                break;
-            }
-        }
-        handle_key_door(x, y, check_x, check_y);
-        return 1;
-    }
+    char end_tile;
 
     // Find the length of the chain
     // Start at the first object and walk forward
@@ -554,37 +528,13 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
             check_x = next_x;
             check_y = next_y;
         }
-        // If the next tile is passable, we found the end - can push!
-        else if (is_passable(check_tile)) {
-            // Chain can be pushed - now push all objects from back to front
-            for (i = chain_length; i < 255; i--) {  // Count down (byte wraps at 0)
-                byte obj_x = x + dx * i;
-                byte obj_y = y + dy * i;
-                byte new_x = obj_x + dx;
-                byte new_y = obj_y + dy;
-
-                // Find the object at this position and move it
-                for (j = 0; j < game_state.num_objects; j++) {
-                    if (game_state.objects[j].x == obj_x && game_state.objects[j].y == obj_y) {
-                        char tile_to_restore = game_state.objects[j].under;
-                        char obj_type = game_state.objects[j].type;
-                        char new_under = get_tile(new_x, new_y);
-
-                        // Update object position
-                        game_state.objects[j].x = new_x;
-                        game_state.objects[j].y = new_y;
-                        game_state.objects[j].under = new_under;
-
-                        // Update map
-                        set_tile_and_draw(obj_x, obj_y, tile_to_restore);
-                        set_tile_and_draw(new_x, new_y, obj_type);
-                        break;
-                    }
-                }
-
-                if (i == 0) break;  // Prevent underflow
-            }
-            return 1;
+        // If the next tile is passable or a door, we found the end
+        else if (is_passable(check_tile) || check_tile == TILE_DOOR) {
+            // Found the end of the chain
+            end_x = next_x;
+            end_y = next_y;
+            end_tile = check_tile;
+            break;
         }
         // Otherwise, blocked
         else {
@@ -592,7 +542,101 @@ byte try_push(byte x, byte y, signed char dx, signed char dy) {
         }
     }
 
-    return 0;  // Chain too long or other issue
+    // Special case: If the END of the chain is hitting a door with a key
+    if (end_tile == TILE_DOOR) {
+        // Find the last object in the chain (the one that will hit the door)
+        byte last_obj_x = x + dx * chain_length;
+        byte last_obj_y = y + dy * chain_length;
+        char last_obj_tile = get_tile(last_obj_x, last_obj_y);
+
+        if (last_obj_tile == TILE_KEY) {
+            // Remove the key that's hitting the door
+            for (i = 0; i < game_state.num_objects; i++) {
+                if (game_state.objects[i].x == last_obj_x && game_state.objects[i].y == last_obj_y) {
+                    // Restore the tile the key was on
+                    set_tile_and_draw(last_obj_x, last_obj_y, game_state.objects[i].under);
+
+                    // Remove this object by shifting BOTH arrays
+                    for (j = i; j < game_state.num_objects - 1; j++) {
+                        game_state.objects[j] = game_state.objects[j + 1];
+                        prev_object_under[j] = prev_object_under[j + 1];
+                    }
+                    game_state.num_objects--;
+                    break;
+                }
+            }
+
+            // Open the door
+            handle_key_door(last_obj_x, last_obj_y, end_x, end_y);
+
+            // Now push the remaining objects in the chain (if any)
+            if (chain_length > 0) {
+                for (i = chain_length - 1; i < 255; i--) {  // Count down (byte wraps at 0)
+                    byte obj_x = x + dx * i;
+                    byte obj_y = y + dy * i;
+                    byte new_x = obj_x + dx;
+                    byte new_y = obj_y + dy;
+
+                    // Find the object at this position and move it
+                    for (j = 0; j < game_state.num_objects; j++) {
+                        if (game_state.objects[j].x == obj_x && game_state.objects[j].y == obj_y) {
+                            char tile_to_restore = game_state.objects[j].under;
+                            char obj_type = game_state.objects[j].type;
+                            char new_under = get_tile(new_x, new_y);
+
+                            // Update object position
+                            game_state.objects[j].x = new_x;
+                            game_state.objects[j].y = new_y;
+                            game_state.objects[j].under = new_under;
+
+                            // Update map
+                            set_tile_and_draw(obj_x, obj_y, tile_to_restore);
+                            set_tile_and_draw(new_x, new_y, obj_type);
+                            break;
+                        }
+                    }
+
+                    if (i == 0) break;  // Prevent underflow
+                }
+            }
+
+            return 1;
+        } else {
+            // Non-key object hitting door - can't push
+            return 0;
+        }
+    }
+
+    // Normal push (no door involved) - push all objects from back to front
+    for (i = chain_length; i < 255; i--) {  // Count down (byte wraps at 0)
+        byte obj_x = x + dx * i;
+        byte obj_y = y + dy * i;
+        byte new_x = obj_x + dx;
+        byte new_y = obj_y + dy;
+
+        // Find the object at this position and move it
+        for (j = 0; j < game_state.num_objects; j++) {
+            if (game_state.objects[j].x == obj_x && game_state.objects[j].y == obj_y) {
+                char tile_to_restore = game_state.objects[j].under;
+                char obj_type = game_state.objects[j].type;
+                char new_under = get_tile(new_x, new_y);
+
+                // Update object position
+                game_state.objects[j].x = new_x;
+                game_state.objects[j].y = new_y;
+                game_state.objects[j].under = new_under;
+
+                // Update map
+                set_tile_and_draw(obj_x, obj_y, tile_to_restore);
+                set_tile_and_draw(new_x, new_y, obj_type);
+                break;
+            }
+        }
+
+        if (i == 0) break;  // Prevent underflow
+    }
+
+    return 1;  // Push successful
 }
 
  /*
