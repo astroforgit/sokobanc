@@ -323,6 +323,11 @@ void update_gates(void) {
 static char prev_player_under[MAX_PLAYERS];
 static char prev_object_under[MAX_OBJECTS];
 
+// Track which holes had objects in the previous turn
+// This prevents duplication when objects move OUT of holes
+static byte prev_holeA_occupied = 0;
+static byte prev_holeB_occupied = 0;
+
 // Reset duplication tracking (call when loading a new level)
 void reset_duplication_tracking(void) {
     byte i;
@@ -342,10 +347,23 @@ void reset_duplication_tracking(void) {
     for (i = 0; i < game_state.num_objects; i++) {
         prev_object_under[i] = game_state.objects[i].under;
     }
+
+    // Check if holes are currently occupied
+    prev_holeA_occupied = 0;
+    prev_holeB_occupied = 0;
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under == TILE_HOLE_A) prev_holeA_occupied = 1;
+        if (game_state.players[i].under == TILE_HOLE_B) prev_holeB_occupied = 1;
+    }
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].under == TILE_HOLE_A) prev_holeA_occupied = 1;
+        if (game_state.objects[i].under == TILE_HOLE_B) prev_holeB_occupied = 1;
+    }
 }
 
 // Optimized duplication handler
 // Only triggers if something ENTERED a hole (moved from non-hole to hole)
+// AND the hole was empty in the previous turn
 void handle_duplication(void) {
     byte i, j, x, y;
     byte player_holeA = 0, player_holeB = 0;
@@ -354,18 +372,21 @@ void handle_duplication(void) {
     byte total_player_holeA = 0, total_player_holeB = 0;
     byte total_key_holeA = 0, total_key_holeB = 0;
     byte total_crate_holeA = 0, total_crate_holeB = 0;
+    byte curr_holeA_occupied = 0, curr_holeB_occupied = 0;
     char current_under, previous_under;
 
     // Count players that JUST ENTERED each hole type (not already on it)
+    // Only count if the hole was EMPTY in the previous turn
     for (i = 0; i < game_state.num_players; i++) {
         current_under = game_state.players[i].under;
         previous_under = prev_player_under[i];
 
         // Only count if player just moved ONTO a hole (wasn't on a hole before)
-        if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+        // AND the hole was empty in the previous turn
+        if (current_under == TILE_HOLE_A && !is_hole(previous_under) && !prev_holeA_occupied) {
             player_holeA++;
         }
-        if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+        if (current_under == TILE_HOLE_B && !is_hole(previous_under) && !prev_holeB_occupied) {
             player_holeB++;
         }
 
@@ -374,24 +395,27 @@ void handle_duplication(void) {
     }
 
     // Count keys and crates that JUST ENTERED each hole type (not already on it)
+    // Only count if the hole was EMPTY in the previous turn
     for (i = 0; i < game_state.num_objects; i++) {
         current_under = game_state.objects[i].under;
         previous_under = prev_object_under[i];
 
         if (game_state.objects[i].type == TILE_KEY) {
             // Only count if key just moved ONTO a hole (wasn't on a hole before)
-            if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+            // AND the hole was empty in the previous turn
+            if (current_under == TILE_HOLE_A && !is_hole(previous_under) && !prev_holeA_occupied) {
                 key_holeA++;
             }
-            if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+            if (current_under == TILE_HOLE_B && !is_hole(previous_under) && !prev_holeB_occupied) {
                 key_holeB++;
             }
         } else if (game_state.objects[i].type == TILE_CRATE) {
             // Only count if crate just moved ONTO a hole (wasn't on a hole before)
-            if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+            // AND the hole was empty in the previous turn
+            if (current_under == TILE_HOLE_A && !is_hole(previous_under) && !prev_holeA_occupied) {
                 crate_holeA++;
             }
-            if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+            if (current_under == TILE_HOLE_B && !is_hole(previous_under) && !prev_holeB_occupied) {
                 crate_holeB++;
             }
         }
@@ -551,6 +575,21 @@ void handle_duplication(void) {
             }
         }
     }
+
+    // Update hole occupation tracking for next turn
+    // Check if any holes are currently occupied
+    curr_holeA_occupied = 0;
+    curr_holeB_occupied = 0;
+    for (i = 0; i < game_state.num_players; i++) {
+        if (game_state.players[i].under == TILE_HOLE_A) curr_holeA_occupied = 1;
+        if (game_state.players[i].under == TILE_HOLE_B) curr_holeB_occupied = 1;
+    }
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].under == TILE_HOLE_A) curr_holeA_occupied = 1;
+        if (game_state.objects[i].under == TILE_HOLE_B) curr_holeB_occupied = 1;
+    }
+    prev_holeA_occupied = curr_holeA_occupied;
+    prev_holeB_occupied = curr_holeB_occupied;
 }
 /*
   Try to push an object at a position in a direction
