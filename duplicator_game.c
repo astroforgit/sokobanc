@@ -350,8 +350,10 @@ void handle_duplication(void) {
     byte i, j, x, y;
     byte player_holeA = 0, player_holeB = 0;
     byte key_holeA = 0, key_holeB = 0;
+    byte crate_holeA = 0, crate_holeB = 0;
     byte total_player_holeA = 0, total_player_holeB = 0;
     byte total_key_holeA = 0, total_key_holeB = 0;
+    byte total_crate_holeA = 0, total_crate_holeB = 0;
     char current_under, previous_under;
 
     // Count players that JUST ENTERED each hole type (not already on it)
@@ -371,12 +373,12 @@ void handle_duplication(void) {
         prev_player_under[i] = current_under;
     }
 
-    // Count keys that JUST ENTERED each hole type (not already on it)
+    // Count keys and crates that JUST ENTERED each hole type (not already on it)
     for (i = 0; i < game_state.num_objects; i++) {
-        if (game_state.objects[i].type == TILE_KEY) {
-            current_under = game_state.objects[i].under;
-            previous_under = prev_object_under[i];
+        current_under = game_state.objects[i].under;
+        previous_under = prev_object_under[i];
 
+        if (game_state.objects[i].type == TILE_KEY) {
             // Only count if key just moved ONTO a hole (wasn't on a hole before)
             if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
                 key_holeA++;
@@ -384,10 +386,18 @@ void handle_duplication(void) {
             if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
                 key_holeB++;
             }
-
-            // Update previous state for next turn
-            prev_object_under[i] = current_under;
+        } else if (game_state.objects[i].type == TILE_CRATE) {
+            // Only count if crate just moved ONTO a hole (wasn't on a hole before)
+            if (current_under == TILE_HOLE_A && !is_hole(previous_under)) {
+                crate_holeA++;
+            }
+            if (current_under == TILE_HOLE_B && !is_hole(previous_under)) {
+                crate_holeB++;
+            }
         }
+
+        // Update previous state for next turn
+        prev_object_under[i] = current_under;
     }
 
     // Count total objects on holes (for disappearing check)
@@ -400,6 +410,9 @@ void handle_duplication(void) {
         if (game_state.objects[i].type == TILE_KEY) {
             if (game_state.objects[i].under == TILE_HOLE_A) total_key_holeA++;
             if (game_state.objects[i].under == TILE_HOLE_B) total_key_holeB++;
+        } else if (game_state.objects[i].type == TILE_CRATE) {
+            if (game_state.objects[i].under == TILE_HOLE_A) total_crate_holeA++;
+            if (game_state.objects[i].under == TILE_HOLE_B) total_crate_holeB++;
         }
     }
 
@@ -427,6 +440,22 @@ void handle_duplication(void) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].type != TILE_KEY || !is_hole(game_state.objects[i].under)) {
+                game_state.objects[j] = game_state.objects[i];
+                prev_object_under[j] = prev_object_under[i];
+                j++;
+            } else {
+                set_tile_and_draw(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
+            }
+        }
+        game_state.num_objects = j;
+        return;
+    }
+
+    // If a crate just entered a hole AND both holes now have crates, they disappear
+    if ((crate_holeA > 0 || crate_holeB > 0) && total_crate_holeA > 0 && total_crate_holeB > 0) {
+        j = 0;
+        for (i = 0; i < game_state.num_objects; i++) {
+            if (game_state.objects[i].type != TILE_CRATE || !is_hole(game_state.objects[i].under)) {
                 game_state.objects[j] = game_state.objects[i];
                 prev_object_under[j] = prev_object_under[i];
                 j++;
@@ -489,6 +518,35 @@ void handle_duplication(void) {
                     prev_object_under[game_state.num_objects] = TILE_HOLE_B;
                     game_state.num_objects++;
                     key_holeB++;
+                }
+            }
+        }
+    }
+
+    // Duplicate crates
+    if (game_state.num_objects < MAX_OBJECTS) {
+        for (y = 0; y < game_state.level_height; y++) {
+            for (x = 0; x < game_state.level_width; x++) {
+                char tile = get_tile(x, y);
+                if (tile == TILE_HOLE_A && crate_holeB > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = TILE_CRATE;
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_A;
+                    set_tile_and_draw(x, y, TILE_CRATE);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_A;
+                    game_state.num_objects++;
+                    crate_holeA++;
+                }
+                else if (tile == TILE_HOLE_B && crate_holeA > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = TILE_CRATE;
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_B;
+                    set_tile_and_draw(x, y, TILE_CRATE);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_B;
+                    game_state.num_objects++;
+                    crate_holeB++;
                 }
             }
         }
