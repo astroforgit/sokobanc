@@ -369,9 +369,11 @@ void handle_duplication(void) {
     byte player_holeA = 0, player_holeB = 0;
     byte key_holeA = 0, key_holeB = 0;
     byte crate_holeA = 0, crate_holeB = 0;
+    byte enemy_holeA = 0, enemy_holeB = 0;
     byte total_player_holeA = 0, total_player_holeB = 0;
     byte total_key_holeA = 0, total_key_holeB = 0;
     byte total_crate_holeA = 0, total_crate_holeB = 0;
+    byte total_enemy_holeA = 0, total_enemy_holeB = 0;
     byte curr_holeA_occupied = 0, curr_holeB_occupied = 0;
     char current_under, previous_under;
 
@@ -394,7 +396,7 @@ void handle_duplication(void) {
         prev_player_under[i] = current_under;
     }
 
-    // Count keys and crates that JUST ENTERED each hole type (not already on it)
+    // Count keys, crates, and enemies that JUST ENTERED each hole type (not already on it)
     // Only count if the hole was EMPTY in the previous turn
     for (i = 0; i < game_state.num_objects; i++) {
         current_under = game_state.objects[i].under;
@@ -418,6 +420,15 @@ void handle_duplication(void) {
             if (current_under == TILE_HOLE_B && !is_hole(previous_under) && !prev_holeB_occupied) {
                 crate_holeB++;
             }
+        } else if (game_state.objects[i].type == TILE_ENEMY) {
+            // Only count if enemy just moved ONTO a hole (wasn't on a hole before)
+            // AND the hole was empty in the previous turn
+            if (current_under == TILE_HOLE_A && !is_hole(previous_under) && !prev_holeA_occupied) {
+                enemy_holeA++;
+            }
+            if (current_under == TILE_HOLE_B && !is_hole(previous_under) && !prev_holeB_occupied) {
+                enemy_holeB++;
+            }
         }
 
         // Update previous state for next turn
@@ -437,6 +448,9 @@ void handle_duplication(void) {
         } else if (game_state.objects[i].type == TILE_CRATE) {
             if (game_state.objects[i].under == TILE_HOLE_A) total_crate_holeA++;
             if (game_state.objects[i].under == TILE_HOLE_B) total_crate_holeB++;
+        } else if (game_state.objects[i].type == TILE_ENEMY) {
+            if (game_state.objects[i].under == TILE_HOLE_A) total_enemy_holeA++;
+            if (game_state.objects[i].under == TILE_HOLE_B) total_enemy_holeB++;
         }
     }
 
@@ -480,6 +494,22 @@ void handle_duplication(void) {
         j = 0;
         for (i = 0; i < game_state.num_objects; i++) {
             if (game_state.objects[i].type != TILE_CRATE || !is_hole(game_state.objects[i].under)) {
+                game_state.objects[j] = game_state.objects[i];
+                prev_object_under[j] = prev_object_under[i];
+                j++;
+            } else {
+                set_tile_and_draw(game_state.objects[i].x, game_state.objects[i].y, game_state.objects[i].under);
+            }
+        }
+        game_state.num_objects = j;
+        return;
+    }
+
+    // If an enemy just entered a hole AND both holes now have enemies, they disappear
+    if ((enemy_holeA > 0 || enemy_holeB > 0) && total_enemy_holeA > 0 && total_enemy_holeB > 0) {
+        j = 0;
+        for (i = 0; i < game_state.num_objects; i++) {
+            if (game_state.objects[i].type != TILE_ENEMY || !is_hole(game_state.objects[i].under)) {
                 game_state.objects[j] = game_state.objects[i];
                 prev_object_under[j] = prev_object_under[i];
                 j++;
@@ -576,6 +606,35 @@ void handle_duplication(void) {
         }
     }
 
+    // Duplicate enemies
+    if (game_state.num_objects < MAX_OBJECTS) {
+        for (y = 0; y < game_state.level_height; y++) {
+            for (x = 0; x < game_state.level_width; x++) {
+                char tile = get_tile(x, y);
+                if (tile == TILE_HOLE_A && enemy_holeB > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = TILE_ENEMY;
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_A;
+                    set_tile_and_draw(x, y, TILE_ENEMY);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_A;
+                    game_state.num_objects++;
+                    enemy_holeA++;
+                }
+                else if (tile == TILE_HOLE_B && enemy_holeA > 0 && game_state.num_objects < MAX_OBJECTS) {
+                    game_state.objects[game_state.num_objects].x = x;
+                    game_state.objects[game_state.num_objects].y = y;
+                    game_state.objects[game_state.num_objects].type = TILE_ENEMY;
+                    game_state.objects[game_state.num_objects].under = TILE_HOLE_B;
+                    set_tile_and_draw(x, y, TILE_ENEMY);
+                    prev_object_under[game_state.num_objects] = TILE_HOLE_B;
+                    game_state.num_objects++;
+                    enemy_holeB++;
+                }
+            }
+        }
+    }
+
     // Update hole occupation tracking for next turn
     // Check if any holes are currently occupied
     curr_holeA_occupied = 0;
@@ -591,6 +650,182 @@ void handle_duplication(void) {
     prev_holeA_occupied = curr_holeA_occupied;
     prev_holeB_occupied = curr_holeB_occupied;
 }
+
+/*
+  Check if enemy can see player in a straight line (line-of-sight)
+  Returns 1 if line-of-sight exists, 0 otherwise
+  Sets dx/dy to movement direction if line-of-sight exists
+*/
+byte has_line_of_sight(byte enemy_x, byte enemy_y, byte player_x, byte player_y, signed char* dx, signed char* dy) {
+    byte x, y;
+    char tile;
+
+    *dx = 0;
+    *dy = 0;
+
+    // Check vertical line-of-sight
+    if (enemy_x == player_x) {
+        if (enemy_y < player_y) {
+            // Check path downward
+            for (y = enemy_y + 1; y < player_y; y++) {
+                tile = get_tile(enemy_x, y);
+                // enemySeen = enemy or walls or door or gateA_closed or gateB_closed
+                if (!is_passable(tile) || tile == TILE_ENEMY || tile == TILE_DOOR ||
+                    tile == TILE_GATE_A || tile == TILE_GATE_B) {
+                    return 0;  // Path blocked
+                }
+            }
+            *dy = 1;  // Move down
+            return 1;
+        } else if (enemy_y > player_y) {
+            // Check path upward
+            for (y = player_y + 1; y < enemy_y; y++) {
+                tile = get_tile(enemy_x, y);
+                if (!is_passable(tile) || tile == TILE_ENEMY || tile == TILE_DOOR ||
+                    tile == TILE_GATE_A || tile == TILE_GATE_B) {
+                    return 0;  // Path blocked
+                }
+            }
+            *dy = -1;  // Move up
+            return 1;
+        }
+    }
+
+    // Check horizontal line-of-sight
+    if (enemy_y == player_y) {
+        if (enemy_x < player_x) {
+            // Check path rightward
+            for (x = enemy_x + 1; x < player_x; x++) {
+                tile = get_tile(x, enemy_y);
+                if (!is_passable(tile) || tile == TILE_ENEMY || tile == TILE_DOOR ||
+                    tile == TILE_GATE_A || tile == TILE_GATE_B) {
+                    return 0;  // Path blocked
+                }
+            }
+            *dx = 1;  // Move right
+            return 1;
+        } else if (enemy_x > player_x) {
+            // Check path leftward
+            for (x = player_x + 1; x < enemy_x; x++) {
+                tile = get_tile(x, enemy_y);
+                if (!is_passable(tile) || tile == TILE_ENEMY || tile == TILE_DOOR ||
+                    tile == TILE_GATE_A || tile == TILE_GATE_B) {
+                    return 0;  // Path blocked
+                }
+            }
+            *dx = -1;  // Move left
+            return 1;
+        }
+    }
+
+    return 0;  // No line-of-sight
+}
+
+/*
+  Move all enemies toward players using line-of-sight
+  Called after player movement. Matches PuzzleScript behavior.
+  Enemies move ALL THE WAY to the player or until blocked (simulates "again" rule).
+*/
+void move_enemies(void) {
+    byte i, j, k;
+    byte enemy_x, enemy_y;
+    signed char dx, dy;
+    byte new_x, new_y;
+    char new_tile;
+    byte can_see;
+    byte player_caught;
+
+    // Process each enemy
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].type != TILE_ENEMY) {
+            continue;  // Skip non-enemy objects
+        }
+
+        enemy_x = game_state.objects[i].x;
+        enemy_y = game_state.objects[i].y;
+
+        // Check line-of-sight to any player
+        can_see = 0;
+        for (j = 0; j < game_state.num_players; j++) {
+            if (has_line_of_sight(enemy_x, enemy_y,
+                                  game_state.players[j].x, game_state.players[j].y,
+                                  &dx, &dy)) {
+                can_see = 1;
+                break;  // Found a player in line-of-sight
+            }
+        }
+
+        // If enemy can see a player, move ALL THE WAY toward them (simulates "again")
+        if (can_see && (dx != 0 || dy != 0)) {
+            // Keep moving until blocked or reach player
+            while (1) {
+                new_x = enemy_x + dx;
+                new_y = enemy_y + dy;
+
+                // Check bounds
+                if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
+                    break;
+                }
+
+                new_tile = get_tile(new_x, new_y);
+
+                // Check if there's a player at this position
+                player_caught = 0;
+                for (k = 0; k < game_state.num_players; k++) {
+                    if (game_state.players[k].x == new_x && game_state.players[k].y == new_y) {
+                        player_caught = 1;
+
+                        // Remove the caught player (like disappearing in duplication)
+                        // Shift remaining players down
+                        for (j = k; j < game_state.num_players - 1; j++) {
+                            game_state.players[j] = game_state.players[j + 1];
+                            prev_player_under[j] = prev_player_under[j + 1];
+                        }
+                        game_state.num_players--;
+
+                        // Move enemy to player's position
+                        set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
+                        game_state.objects[i].x = new_x;
+                        game_state.objects[i].y = new_y;
+                        game_state.objects[i].under = new_tile;
+                        set_tile_and_draw(new_x, new_y, TILE_ENEMY);
+
+                        // Check if all players are dead
+                        if (game_state.num_players == 0) {
+                            game_state.level_complete = 2;  // Level failed
+                            return;
+                        }
+
+                        break;  // Stop moving this enemy
+                    }
+                }
+
+                if (player_caught) {
+                    break;  // Enemy reached player, stop moving
+                }
+
+                // enemystopper = crate or key or enemy or walls or door or gateA_closed or gateB_closed
+                // Check if blocked by enemystopper
+                if (!is_passable(new_tile) || new_tile == TILE_CRATE || new_tile == TILE_KEY ||
+                    new_tile == TILE_ENEMY || new_tile == TILE_DOOR ||
+                    new_tile == TILE_GATE_A || new_tile == TILE_GATE_B) {
+                    break;  // Blocked, stop moving
+                }
+
+                // Move enemy one step
+                set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
+                enemy_x = new_x;
+                enemy_y = new_y;
+                game_state.objects[i].x = new_x;
+                game_state.objects[i].y = new_y;
+                game_state.objects[i].under = new_tile;
+                set_tile_and_draw(new_x, new_y, TILE_ENEMY);
+            }
+        }
+        // If no line-of-sight, enemy doesn't move
+    }
+}
+
 /*
   Try to push an object at a position in a direction
   Handles chain pushing by checking the entire chain first
@@ -851,6 +1086,7 @@ byte try_move_player(signed char dx, signed char dy) {
     if (moved) {
         handle_duplication();
         update_gates();
+        move_enemies();  // Move enemies after player moves
     }
 
     return moved;

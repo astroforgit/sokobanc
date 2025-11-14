@@ -244,6 +244,15 @@ void update_gates(void);
 void handle_duplication(void);
 
 /*
+  Move all enemies toward the nearest player
+
+  Called after player movement. Each enemy tries to move one step
+  closer to the nearest player. If an enemy touches a player,
+  the level is lost.
+*/
+void move_enemies(void);
+
+/*
   Set tile in both level map and screen display
 
   Helper function that combines set_tile() and my_cputcxy() to update

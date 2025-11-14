@@ -578,7 +578,7 @@ start_level:
             }
         }
 
-        // Check win condition
+        // Check win/lose condition
         state = get_game_state();
         if (is_level_complete()) {
             // Wait a moment to show completion
@@ -586,6 +586,13 @@ start_level:
                 wait_vblank();
             }
 
+            // Check if level was completed successfully (1) or failed (2)
+            if (state->level_complete == 2) {
+                // Enemy caught player - restart current level
+                goto start_level;
+            }
+
+            // Level completed successfully
             // Check if there are more levels
             if (current_level < NUM_LEVELS - 1) {
                 // Go to next level
