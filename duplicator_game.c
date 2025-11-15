@@ -135,12 +135,12 @@ void load_level(const char* level_data[], byte num_rows) {
         for (x = 0; x < game_state.level_width; x++) {
             tile = level_map[y][x];
 
-            // Find player starting position
-            if (tile == TILE_PLAYER) {
-                game_state.players[0].x = x;
-                game_state.players[0].y = y;
-                game_state.players[0].under = background_map[y][x];
-                game_state.num_players = 1;
+            // Find player starting positions (support multiple players)
+            if (tile == TILE_PLAYER && game_state.num_players < MAX_PLAYERS) {
+                game_state.players[game_state.num_players].x = x;
+                game_state.players[game_state.num_players].y = y;
+                game_state.players[game_state.num_players].under = background_map[y][x];
+                game_state.num_players++;
                 level_map[y][x] = TILE_PLAYER;
             }
             // Track pushable objects (keys, crates, enemies)
@@ -725,6 +725,7 @@ byte has_line_of_sight(byte enemy_x, byte enemy_y, byte player_x, byte player_y,
   Move all enemies toward players using line-of-sight
   Called after player movement. Matches PuzzleScript behavior.
   Enemies move ALL THE WAY to the player or until blocked (simulates "again" rule).
+  After killing a player, enemy checks again for more players to kill (chain kills).
 */
 void move_enemies(void) {
     byte i, j, k;
@@ -734,6 +735,8 @@ void move_enemies(void) {
     char new_tile;
     byte can_see;
     byte player_caught;
+    byte keep_checking;
+    char tile_under_player;
 
     // Process each enemy
     for (i = 0; i < game_state.num_objects; i++) {
@@ -744,82 +747,96 @@ void move_enemies(void) {
         enemy_x = game_state.objects[i].x;
         enemy_y = game_state.objects[i].y;
 
-        // Check line-of-sight to any player
-        can_see = 0;
-        for (j = 0; j < game_state.num_players; j++) {
-            if (has_line_of_sight(enemy_x, enemy_y,
-                                  game_state.players[j].x, game_state.players[j].y,
-                                  &dx, &dy)) {
-                can_see = 1;
-                break;  // Found a player in line-of-sight
+        // Keep checking for players until no more are visible
+        keep_checking = 1;
+        while (keep_checking) {
+            keep_checking = 0;  // Assume no more players visible
+
+            // Check line-of-sight to any player
+            can_see = 0;
+            for (j = 0; j < game_state.num_players; j++) {
+                if (has_line_of_sight(enemy_x, enemy_y,
+                                      game_state.players[j].x, game_state.players[j].y,
+                                      &dx, &dy)) {
+                    can_see = 1;
+                    break;  // Found a player in line-of-sight
+                }
             }
-        }
 
-        // If enemy can see a player, move ALL THE WAY toward them (simulates "again")
-        if (can_see && (dx != 0 || dy != 0)) {
-            // Keep moving until blocked or reach player
-            while (1) {
-                new_x = enemy_x + dx;
-                new_y = enemy_y + dy;
+            // If enemy can see a player, move ALL THE WAY toward them (simulates "again")
+            if (can_see && (dx != 0 || dy != 0)) {
+                // Keep moving until blocked or reach player
+                while (1) {
+                    new_x = enemy_x + dx;
+                    new_y = enemy_y + dy;
 
-                // Check bounds
-                if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
-                    break;
-                }
-
-                new_tile = get_tile(new_x, new_y);
-
-                // Check if there's a player at this position
-                player_caught = 0;
-                for (k = 0; k < game_state.num_players; k++) {
-                    if (game_state.players[k].x == new_x && game_state.players[k].y == new_y) {
-                        player_caught = 1;
-
-                        // Remove the caught player (like disappearing in duplication)
-                        // Shift remaining players down
-                        for (j = k; j < game_state.num_players - 1; j++) {
-                            game_state.players[j] = game_state.players[j + 1];
-                            prev_player_under[j] = prev_player_under[j + 1];
-                        }
-                        game_state.num_players--;
-
-                        // Move enemy to player's position
-                        set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
-                        game_state.objects[i].x = new_x;
-                        game_state.objects[i].y = new_y;
-                        game_state.objects[i].under = new_tile;
-                        set_tile_and_draw(new_x, new_y, TILE_ENEMY);
-
-                        // Check if all players are dead
-                        if (game_state.num_players == 0) {
-                            game_state.level_complete = 2;  // Level failed
-                            return;
-                        }
-
-                        break;  // Stop moving this enemy
+                    // Check bounds
+                    if (new_x >= MAX_LEVEL_WIDTH || new_y >= MAX_LEVEL_HEIGHT) {
+                        break;
                     }
-                }
 
-                if (player_caught) {
-                    break;  // Enemy reached player, stop moving
-                }
+                    new_tile = get_tile(new_x, new_y);
 
-                // enemystopper = crate or key or enemy or walls or door or gateA_closed or gateB_closed
-                // Check if blocked by enemystopper
-                if (!is_passable(new_tile) || new_tile == TILE_CRATE || new_tile == TILE_KEY ||
-                    new_tile == TILE_ENEMY || new_tile == TILE_DOOR ||
-                    new_tile == TILE_GATE_A || new_tile == TILE_GATE_B) {
-                    break;  // Blocked, stop moving
-                }
+                    // Check if there's a player at this position
+                    player_caught = 0;
+                    for (k = 0; k < game_state.num_players; k++) {
+                        if (game_state.players[k].x == new_x && game_state.players[k].y == new_y) {
+                            player_caught = 1;
 
-                // Move enemy one step
-                set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
-                enemy_x = new_x;
-                enemy_y = new_y;
-                game_state.objects[i].x = new_x;
-                game_state.objects[i].y = new_y;
-                game_state.objects[i].under = new_tile;
-                set_tile_and_draw(new_x, new_y, TILE_ENEMY);
+                            // Save what was under the player (not the player itself!)
+                            tile_under_player = game_state.players[k].under;
+
+                            // Remove the caught player (like disappearing in duplication)
+                            // Shift remaining players down
+                            for (j = k; j < game_state.num_players - 1; j++) {
+                                game_state.players[j] = game_state.players[j + 1];
+                                prev_player_under[j] = prev_player_under[j + 1];
+                            }
+                            game_state.num_players--;
+
+                            // Move enemy to player's position
+                            set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
+                            enemy_x = new_x;
+                            enemy_y = new_y;
+                            game_state.objects[i].x = new_x;
+                            game_state.objects[i].y = new_y;
+                            game_state.objects[i].under = tile_under_player;  // Store what was under player
+                            set_tile_and_draw(new_x, new_y, TILE_ENEMY);
+
+                            // Check if all players are dead
+                            if (game_state.num_players == 0) {
+                                game_state.level_complete = 2;  // Level failed
+                                return;
+                            }
+
+                            // After killing a player, check again for more players
+                            keep_checking = 1;
+
+                            break;  // Stop moving this direction
+                        }
+                    }
+
+                    if (player_caught) {
+                        break;  // Enemy reached player, check for more players
+                    }
+
+                    // enemystopper = crate or key or enemy or walls or door or gateA_closed or gateB_closed
+                    // Check if blocked by enemystopper
+                    if (!is_passable(new_tile) || new_tile == TILE_CRATE || new_tile == TILE_KEY ||
+                        new_tile == TILE_ENEMY || new_tile == TILE_DOOR ||
+                        new_tile == TILE_GATE_A || new_tile == TILE_GATE_B) {
+                        break;  // Blocked, stop moving
+                    }
+
+                    // Move enemy one step
+                    set_tile_and_draw(enemy_x, enemy_y, game_state.objects[i].under);
+                    enemy_x = new_x;
+                    enemy_y = new_y;
+                    game_state.objects[i].x = new_x;
+                    game_state.objects[i].y = new_y;
+                    game_state.objects[i].under = new_tile;
+                    set_tile_and_draw(new_x, new_y, TILE_ENEMY);
+                }
             }
         }
         // If no line-of-sight, enemy doesn't move

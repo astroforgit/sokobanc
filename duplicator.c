@@ -430,15 +430,32 @@ typedef struct {
     byte rows;
 } LevelDef;
 
+// Test level with 2 players and enemy chain-kill mechanic
+// If enemy sees first player, it will kill them, then check for second player
+const char* level_6[] = {
+    "#################",
+    "#################",
+    "###e.p.....p....@",
+    "###.............@",
+    "###.............@",
+    "###.............@",
+    "###.............@",
+    "###.............@",
+    "###.............@",
+    "#################",
+    "#################"
+};
+
 const LevelDef levels[] = {
     { level_1, 11 },
     { level_2, 11 },
     { level_3, 11 },
     { level_4, 11 },
-    { level_5, 11 }
+    { level_5, 11 },
+    { level_6, 11 }
 };
 
-#define NUM_LEVELS 5
+#define NUM_LEVELS 6
 
 // Setup graphics with duplicator fonts
 void setup_duplicator_graphics(void) {
