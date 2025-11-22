@@ -40,3 +40,9 @@ void wait_vblank_16x16(void) {
     asm("beq %g", __wait);
 }
 
+// Provide my_cputcxy as a wrapper to my_cputcxy_16x16
+// This is needed because duplicator_game.c calls my_cputcxy
+void my_cputcxy(byte x, byte y, byte character) {
+    my_cputcxy_16x16(x, y, character);
+}
+

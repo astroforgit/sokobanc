@@ -1,3 +1,6 @@
+// Use RAM-based configuration instead of ROM cartridge for more space
+#define CFGFILE atari-xex.cfg
+
 // Link the 16x16 mode libraries
 //#link "duplicator_conio_16x16.c"
 //#link "duplicator_game.c"
@@ -5,14 +8,10 @@
 /*
   Duplicator Game - 16x16 Big Tile Mode
   20x12 tile grid (each tile is 2x2 characters)
-  
+
   This version displays each game tile as a 2x2 block of characters,
   making tiles 4x bigger and much easier to see!
 */
-
-#include "duplicator_font.h"
-#include "duplicator_game.h"
-#include "duplicator_conio_16x16.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -31,8 +30,16 @@ typedef unsigned short word;
 #define SCREEN_MEM  ((byte*)0x9000)
 #define ROM_CHARSET_ADDRESS 0xE000
 
-// Override the my_cputcxy function to use 16x16 tiles
+// Include 16x16 conio first
+#include "duplicator_conio_16x16.h"
+
+// Override the my_cputcxy function to use 16x16 tiles BEFORE including game logic
 #define my_cputcxy(x, y, c) my_cputcxy_16x16(x, y, c)
+
+// Now include the game files
+#include "duplicator_font.h"
+#include "atari_conio.h"
+#include "duplicator_game.h"
 
 // Level data from duplicator.txt
 // Note: 'z' = holeA and Player, 'y' = holeB and enemy, 'p' = Player
@@ -142,7 +149,7 @@ void setup_duplicator_graphics(void) {
 // Main function
 void main(void) {
     byte joy, last_joy = 0;
-    byte i;
+
     GameState* state;
     byte current_level = 0;
 
