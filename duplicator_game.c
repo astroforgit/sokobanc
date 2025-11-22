@@ -281,6 +281,16 @@ void update_gates(void) {
         }
     }
 
+    // Check if any movable object (key, crate, enemy) is on a plate
+    for (i = 0; i < game_state.num_objects; i++) {
+        if (game_state.objects[i].under == TILE_PLATE_A) {
+            plateA_has_object = 1;
+        }
+        if (game_state.objects[i].under == TILE_PLATE_B) {
+            plateB_has_object = 1;
+        }
+    }
+
     // Update gates based on plate states
     for (y = 0; y < game_state.level_height; y++) {
         for (x = 0; x < game_state.level_width; x++) {
