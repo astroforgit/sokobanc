@@ -39,12 +39,9 @@ typedef unsigned short word;
 #include "duplicator_graphics_16x16.h"  // Pre-scaled 16x16 graphics
 #include "duplicator_font_16x16.h"      // Character code definitions
 
-// Define the functions that duplicator_game.h expects but don't include atari_conio.h
-// (we provide our own implementations in duplicator_conio_16x16.c)
-void my_clrscr(void);
-void my_cputsxy(byte x, byte y, const char* str);
-void my_cprintf_status(byte b, byte t, byte m);
-void wait_vblank(void);
+// Prevent duplicator_game.c from including atari_conio.h
+// by defining the include guard
+#define ATARI_CONIO_H
 
 #include "duplicator_game.h"
 
