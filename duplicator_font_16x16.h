@@ -14,134 +14,136 @@
 #define DUPLICATOR_FONT_16X16_H
 
 // 16x16 Tile Character Mappings
-// Each tile uses 4 consecutive characters starting from 0x80 (128)
-// This avoids collision with ASCII characters
+// Each tile uses 4 consecutive characters
+// Using internal screen codes (not ATASCII)
+// Screen codes 0x00-0x3F map to character set 0x20-0x5F
+// We'll use screen codes starting from 0x00
 
-// Wall tile (0x80-0x83)
-#define TILE_WALL_TL      0x80
-#define TILE_WALL_TR      0x81
-#define TILE_WALL_BL      0x82
-#define TILE_WALL_BR      0x83
+// Wall tile (screen codes 0x00-0x03, charset 0x20-0x23)
+#define TILE_WALL_TL      0x00
+#define TILE_WALL_TR      0x01
+#define TILE_WALL_BL      0x02
+#define TILE_WALL_BR      0x03
 
-// Player tile (0x84-0x87)
-#define TILE_PLAYER_TL    0x84
-#define TILE_PLAYER_TR    0x85
-#define TILE_PLAYER_BL    0x86
-#define TILE_PLAYER_BR    0x87
+// Player tile (screen codes 0x04-0x07, charset 0x24-0x27)
+#define TILE_PLAYER_TL    0x04
+#define TILE_PLAYER_TR    0x05
+#define TILE_PLAYER_BL    0x06
+#define TILE_PLAYER_BR    0x07
 
-// Crate tile (0x88-0x8B)
-#define TILE_CRATE_TL     0x88
-#define TILE_CRATE_TR     0x89
-#define TILE_CRATE_BL     0x8A
-#define TILE_CRATE_BR     0x8B
+// Crate tile (screen codes 0x08-0x0B, charset 0x28-0x2B)
+#define TILE_CRATE_TL     0x08
+#define TILE_CRATE_TR     0x09
+#define TILE_CRATE_BL     0x0A
+#define TILE_CRATE_BR     0x0B
 
-// Key tile (0x8C-0x8F)
-#define TILE_KEY_TL       0x8C
-#define TILE_KEY_TR       0x8D
-#define TILE_KEY_BL       0x8E
-#define TILE_KEY_BR       0x8F
+// Key tile (screen codes 0x0C-0x0F, charset 0x2C-0x2F)
+#define TILE_KEY_TL       0x0C
+#define TILE_KEY_TR       0x0D
+#define TILE_KEY_BL       0x0E
+#define TILE_KEY_BR       0x0F
 
-// Door tile (0x90-0x93)
-#define TILE_DOOR_TL      0x90
-#define TILE_DOOR_TR      0x91
-#define TILE_DOOR_BL      0x92
-#define TILE_DOOR_BR      0x93
+// Door tile (screen codes 0x10-0x13, charset 0x30-0x33)
+#define TILE_DOOR_TL      0x10
+#define TILE_DOOR_TR      0x11
+#define TILE_DOOR_BL      0x12
+#define TILE_DOOR_BR      0x13
 
-// Enemy tile (0x94-0x97)
-#define TILE_ENEMY_TL     0x94
-#define TILE_ENEMY_TR     0x95
-#define TILE_ENEMY_BL     0x96
-#define TILE_ENEMY_BR     0x97
+// Enemy tile (screen codes 0x14-0x17, charset 0x34-0x37)
+#define TILE_ENEMY_TL     0x14
+#define TILE_ENEMY_TR     0x15
+#define TILE_ENEMY_BL     0x16
+#define TILE_ENEMY_BR     0x17
 
-// Hole A tile (0x98-0x9B)
-#define TILE_HOLE_A_TL    0x98
-#define TILE_HOLE_A_TR    0x99
-#define TILE_HOLE_A_BL    0x9A
-#define TILE_HOLE_A_BR    0x9B
+// Hole A tile (screen codes 0x18-0x1B, charset 0x38-0x3B)
+#define TILE_HOLE_A_TL    0x18
+#define TILE_HOLE_A_TR    0x19
+#define TILE_HOLE_A_BL    0x1A
+#define TILE_HOLE_A_BR    0x1B
 
-// Hole B tile (0x9C-0x9F)
-#define TILE_HOLE_B_TL    0x9C
-#define TILE_HOLE_B_TR    0x9D
-#define TILE_HOLE_B_BL    0x9E
-#define TILE_HOLE_B_BR    0x9F
+// Hole B tile (screen codes 0x1C-0x1F, charset 0x3C-0x3F)
+#define TILE_HOLE_B_TL    0x1C
+#define TILE_HOLE_B_TR    0x1D
+#define TILE_HOLE_B_BL    0x1E
+#define TILE_HOLE_B_BR    0x1F
 
-// Plate A tile (0xA0-0xA3)
-#define TILE_PLATE_A_TL   0xA0
-#define TILE_PLATE_A_TR   0xA1
-#define TILE_PLATE_A_BL   0xA2
-#define TILE_PLATE_A_BR   0xA3
+// Plate A tile (screen codes 0x20-0x23, charset 0x40-0x43)
+#define TILE_PLATE_A_TL   0x20
+#define TILE_PLATE_A_TR   0x21
+#define TILE_PLATE_A_BL   0x22
+#define TILE_PLATE_A_BR   0x23
 
-// Plate B tile (0xA4-0xA7)
-#define TILE_PLATE_B_TL   0xA4
-#define TILE_PLATE_B_TR   0xA5
-#define TILE_PLATE_B_BL   0xA6
-#define TILE_PLATE_B_BR   0xA7
+// Plate B tile (screen codes 0x24-0x27, charset 0x44-0x47)
+#define TILE_PLATE_B_TL   0x24
+#define TILE_PLATE_B_TR   0x25
+#define TILE_PLATE_B_BL   0x26
+#define TILE_PLATE_B_BR   0x27
 
-// Gate A tile (0xA8-0xAB)
-#define TILE_GATE_A_TL    0xA8
-#define TILE_GATE_A_TR    0xA9
-#define TILE_GATE_A_BL    0xAA
-#define TILE_GATE_A_BR    0xAB
+// Gate A tile (screen codes 0x28-0x2B, charset 0x48-0x4B)
+#define TILE_GATE_A_TL    0x28
+#define TILE_GATE_A_TR    0x29
+#define TILE_GATE_A_BL    0x2A
+#define TILE_GATE_A_BR    0x2B
 
-// Gate B tile (0xAC-0xAF)
-#define TILE_GATE_B_TL    0xAC
-#define TILE_GATE_B_TR    0xAD
-#define TILE_GATE_B_BL    0xAE
-#define TILE_GATE_B_BR    0xAF
+// Gate B tile (screen codes 0x2C-0x2F, charset 0x4C-0x4F)
+#define TILE_GATE_B_TL    0x2C
+#define TILE_GATE_B_TR    0x2D
+#define TILE_GATE_B_BL    0x2E
+#define TILE_GATE_B_BR    0x2F
 
-// Exit A tile (0xB0-0xB3)
-#define TILE_EXIT_A_TL    0xB0
-#define TILE_EXIT_A_TR    0xB1
-#define TILE_EXIT_A_BL    0xB2
-#define TILE_EXIT_A_BR    0xB3
+// Exit A tile (screen codes 0x30-0x33, charset 0x50-0x53)
+#define TILE_EXIT_A_TL    0x30
+#define TILE_EXIT_A_TR    0x31
+#define TILE_EXIT_A_BL    0x32
+#define TILE_EXIT_A_BR    0x33
 
-// Exit B tile (0xB4-0xB7)
-#define TILE_EXIT_B_TL    0xB4
-#define TILE_EXIT_B_TR    0xB5
-#define TILE_EXIT_B_BL    0xB6
-#define TILE_EXIT_B_BR    0xB7
+// Exit B tile (screen codes 0x34-0x37, charset 0x54-0x57)
+#define TILE_EXIT_B_TL    0x34
+#define TILE_EXIT_B_TR    0x35
+#define TILE_EXIT_B_BL    0x36
+#define TILE_EXIT_B_BR    0x37
 
-// Exit C tile (0xB8-0xBB)
-#define TILE_EXIT_C_TL    0xB8
-#define TILE_EXIT_C_TR    0xB9
-#define TILE_EXIT_C_BL    0xBA
-#define TILE_EXIT_C_BR    0xBB
+// Exit C tile (screen codes 0x38-0x3B, charset 0x58-0x5B)
+#define TILE_EXIT_C_TL    0x38
+#define TILE_EXIT_C_TR    0x39
+#define TILE_EXIT_C_BL    0x3A
+#define TILE_EXIT_C_BR    0x3B
 
-// Floor tile (0xBC-0xBF)
-#define TILE_FLOOR_TL     0xBC
-#define TILE_FLOOR_TR     0xBD
-#define TILE_FLOOR_BL     0xBE
-#define TILE_FLOOR_BR     0xBF
+// Floor tile (screen codes 0x3C-0x3F, charset 0x5C-0x5F)
+#define TILE_FLOOR_TL     0x3C
+#define TILE_FLOOR_TR     0x3D
+#define TILE_FLOOR_BL     0x3E
+#define TILE_FLOOR_BR     0x3F
 
-// Gate A Open tile (0xC0-0xC3)
-#define TILE_GATE_A_OPEN_TL  0xC0
-#define TILE_GATE_A_OPEN_TR  0xC1
-#define TILE_GATE_A_OPEN_BL  0xC2
-#define TILE_GATE_A_OPEN_BR  0xC3
+// Gate A Open tile (screen codes 0x40-0x43, charset 0x00-0x03 inverse)
+#define TILE_GATE_A_OPEN_TL  0x40
+#define TILE_GATE_A_OPEN_TR  0x41
+#define TILE_GATE_A_OPEN_BL  0x42
+#define TILE_GATE_A_OPEN_BR  0x43
 
-// Gate B Open tile (0xC4-0xC7)
-#define TILE_GATE_B_OPEN_TL  0xC4
-#define TILE_GATE_B_OPEN_TR  0xC5
-#define TILE_GATE_B_OPEN_BL  0xC6
-#define TILE_GATE_B_OPEN_BR  0xC7
+// Gate B Open tile (screen codes 0x44-0x47, charset 0x04-0x07 inverse)
+#define TILE_GATE_B_OPEN_TL  0x44
+#define TILE_GATE_B_OPEN_TR  0x45
+#define TILE_GATE_B_OPEN_BL  0x46
+#define TILE_GATE_B_OPEN_BR  0x47
 
-// Door Open tile (0xC8-0xCB)
-#define TILE_DOOR_OPEN_TL    0xC8
-#define TILE_DOOR_OPEN_TR    0xC9
-#define TILE_DOOR_OPEN_BL    0xCA
-#define TILE_DOOR_OPEN_BR    0xCB
+// Door Open tile (screen codes 0x48-0x4B, charset 0x08-0x0B inverse)
+#define TILE_DOOR_OPEN_TL    0x48
+#define TILE_DOOR_OPEN_TR    0x49
+#define TILE_DOOR_OPEN_BL    0x4A
+#define TILE_DOOR_OPEN_BR    0x4B
 
-// Hole A Filled tile (0xCC-0xCF)
-#define TILE_HOLE_A_FILL_TL  0xCC
-#define TILE_HOLE_A_FILL_TR  0xCD
-#define TILE_HOLE_A_FILL_BL  0xCE
-#define TILE_HOLE_A_FILL_BR  0xCF
+// Hole A Filled tile (screen codes 0x4C-0x4F, charset 0x0C-0x0F inverse)
+#define TILE_HOLE_A_FILL_TL  0x4C
+#define TILE_HOLE_A_FILL_TR  0x4D
+#define TILE_HOLE_A_FILL_BL  0x4E
+#define TILE_HOLE_A_FILL_BR  0x4F
 
-// Hole B Filled tile (0xD0-0xD3)
-#define TILE_HOLE_B_FILL_TL  0xD0
-#define TILE_HOLE_B_FILL_TR  0xD1
-#define TILE_HOLE_B_FILL_BL  0xD2
-#define TILE_HOLE_B_FILL_BR  0xD3
+// Hole B Filled tile (screen codes 0x50-0x53, charset 0x10-0x13 inverse)
+#define TILE_HOLE_B_FILL_TL  0x50
+#define TILE_HOLE_B_FILL_TR  0x51
+#define TILE_HOLE_B_FILL_BL  0x52
+#define TILE_HOLE_B_FILL_BR  0x53
 
 #endif // DUPLICATOR_FONT_16X16_H
 
