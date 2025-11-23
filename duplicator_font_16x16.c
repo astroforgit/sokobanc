@@ -1,8 +1,5 @@
-/*
-  duplicator_font_16x16.c - 16x16 tile graphics for Duplicator game
-
-  Runtime scaling of 8x8 graphics to 16x16 by doubling each pixel
-*/
+/* duplicator_font_16x16.c - 16x16 tile graphics for Duplicator game */
+/* Runtime scaling of 8x8 graphics to 16x16 by doubling each pixel */
 
 #include <stdlib.h>
 #include <string.h>
@@ -10,11 +7,11 @@
 
 typedef unsigned char byte;
 
-// Scale one 8x8 tile (8 bytes) to 16x16 (32 bytes = 4 chars)
-// Each pixel becomes 2x2 pixels
+/* Scale one 8x8 tile (8 bytes) to 16x16 (32 bytes = 4 chars) */
+/* Each pixel becomes 2x2 pixels */
 void scale_8x8_to_16x16(const byte* src_8x8, byte* dest_16x16) {
     byte row, bit;
-    byte scaled_row_top, scaled_row_bottom;
+
     byte* tl = dest_16x16;       // Top-left char (8 bytes)
     byte* tr = dest_16x16 + 8;   // Top-right char (8 bytes)
     byte* bl = dest_16x16 + 16;  // Bottom-left char (8 bytes)
