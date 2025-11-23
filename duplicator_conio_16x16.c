@@ -25,11 +25,21 @@ void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {
     word offset_bl = (word)(char_y + 1) * CHAR_COLS + char_x;     // Bottom-left
     word offset_br = (word)(char_y + 1) * CHAR_COLS + char_x + 1; // Bottom-right
 
-    // Write the same character 4 times to create a 2x2 block
-    SCREEN_MEM[offset_tl] = tile_char;
-    SCREEN_MEM[offset_tr] = tile_char;
-    SCREEN_MEM[offset_bl] = tile_char;
-    SCREEN_MEM[offset_br] = tile_char;
+    // Write 4 DIFFERENT consecutive characters to create a 16x16 tile
+    // tile_char is the top-left character code
+    // The other 3 are consecutive: tile_char+1, tile_char+2, tile_char+3
+    if (tile_char == 0 || tile_char == ' ') {
+        // Empty space - write spaces
+        SCREEN_MEM[offset_tl] = 0;
+        SCREEN_MEM[offset_tr] = 0;
+        SCREEN_MEM[offset_bl] = 0;
+        SCREEN_MEM[offset_br] = 0;
+    } else {
+        SCREEN_MEM[offset_tl] = tile_char;      // Top-left
+        SCREEN_MEM[offset_tr] = tile_char + 1;  // Top-right
+        SCREEN_MEM[offset_bl] = tile_char + 2;  // Bottom-left
+        SCREEN_MEM[offset_br] = tile_char + 3;  // Bottom-right
+    }
 }
 
 void wait_vblank_16x16(void) {
