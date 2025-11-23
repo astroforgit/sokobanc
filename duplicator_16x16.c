@@ -90,50 +90,58 @@ void setup_duplicator_graphics(void) {
     word screen_addr = (word)SCREEN_MEM;
     byte i;
 
-    // Copy ROM font to RAM
-    memcpy(CHARSET_MEM, (byte*)ROM_CHARSET_ADDRESS, 1024);
-
-    // Set character set pointer (CHBAS at 756)
-    POKE(756, (byte)(charset_addr >> 8));
-
-    // Install pre-scaled 16x16 graphics
-    // The duplicator_graphics_16x16 array contains all tiles already scaled
-    // Each tile is 32 bytes (4 characters x 8 bytes)
-    // Tiles are in order: Player, Wall, Crate, Key, Door, Enemy, etc.
-
-    // Copy all graphics at once
-    // Player starts at character 0x84, which is offset 0x84 * 8 = 0x420 in charset
-    // We have 21 tiles * 32 bytes = 672 bytes total
-    memcpy(CHARSET_MEM + (0x80 * 8), duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
-    
     // Create custom display list
     // 3 blank lines at top
     DLIST_MEM[0] = 0x70;
     DLIST_MEM[1] = 0x70;
     DLIST_MEM[2] = 0x70;
-    
+
     // First line with LMS (Load Memory Scan) - points to screen memory
     DLIST_MEM[3] = 0x42;
     DLIST_MEM[4] = (byte)screen_addr;
     DLIST_MEM[5] = (byte)(screen_addr >> 8);
-    
+
     // 23 more lines of mode 2 (text mode, 40 columns)
     for (i = 0; i < 23; ++i) {
         DLIST_MEM[6 + i] = 0x02;
     }
-    
+
     // Jump back to start of display list
     DLIST_MEM[29] = 0x41;
     DLIST_MEM[30] = (byte)dlist_addr;
     DLIST_MEM[31] = (byte)(dlist_addr >> 8);
-    
+
+    // Set character set pointer (CHBAS at 756) - BEFORE copying graphics
+    POKE(756, (byte)(charset_addr >> 8));
+
+    // Copy ROM font to RAM
+    memcpy(CHARSET_MEM, (byte*)ROM_CHARSET_ADDRESS, 1024);
+
+    // TEST: Create a simple test pattern for character 0x80
+    // Make it a checkerboard pattern so we can see if it's being used
+    CHARSET_MEM[0x80 * 8 + 0] = 0xAA;  // 10101010
+    CHARSET_MEM[0x80 * 8 + 1] = 0x55;  // 01010101
+    CHARSET_MEM[0x80 * 8 + 2] = 0xAA;  // 10101010
+    CHARSET_MEM[0x80 * 8 + 3] = 0x55;  // 01010101
+    CHARSET_MEM[0x80 * 8 + 4] = 0xAA;  // 10101010
+    CHARSET_MEM[0x80 * 8 + 5] = 0x55;  // 01010101
+    CHARSET_MEM[0x80 * 8 + 6] = 0xAA;  // 10101010
+    CHARSET_MEM[0x80 * 8 + 7] = 0x55;  // 01010101
+
+    // Install pre-scaled 16x16 graphics
+    // Copy all graphics at once
+    // Wall starts at character 0x80, which is offset 0x80 * 8 = 0x400 in charset
+    // We have 21 tiles * 32 bytes = 672 bytes total
+    // DISABLED FOR NOW - using test pattern above
+    // memcpy(CHARSET_MEM + (0x80 * 8), duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
+
     // Set colors
     POKE(709, 0);   // Background color (black)
     POKE(710, 14);  // Foreground color (light blue)
-    
+
     // Set display list pointer (SDLSTL/SDLSTH at 560/561)
     POKEW(560, dlist_addr);
-    
+
     // Turn off cursor
     POKE(752, 1);
 }
@@ -153,6 +161,10 @@ void main(void) {
 
     // Clear screen
     my_clrscr_16x16();
+
+    // TEST: Draw a wall tile directly using the tile code
+    // This bypasses the mapping function to test if graphics work at all
+    my_cputcxy_16x16(10, 10, 0x80);  // Draw wall at position 10,10
 
     // Load first level
     load_level(levels[current_level], 11);
