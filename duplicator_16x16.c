@@ -4,7 +4,7 @@
 // Link the 16x16 mode libraries
 //#link "duplicator_conio_16x16.c"
 //#link "duplicator_tile_map_16x16.c"
-//#link "duplicator_game_16x16.c"
+//#link "duplicator_game.c"
 
 /*
   Duplicator Game - 16x16 Big Tile Mode
