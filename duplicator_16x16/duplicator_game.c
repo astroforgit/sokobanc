@@ -1,10 +1,15 @@
 /*
   duplicator_game.c - Game logic for Duplicator game
-  Implementation file
+  Implementation file (16x16 version)
 */
 
 #include "duplicator_game.h"
-#include "atari_conio.h"
+
+/* For 16x16 mode, we need the conio declarations */
+/* Include duplicator_conio_16x16.h to get the function declarations */
+#ifndef DUPLICATOR_CONIO_16X16_H
+#include "duplicator_conio_16x16.h"
+#endif
 
 // Game state
 static GameState game_state;
