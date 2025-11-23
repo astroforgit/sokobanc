@@ -4,13 +4,7 @@
 */
 
 #include "duplicator_game.h"
-
-/* Include the appropriate conio header based on mode */
-/* Check if duplicator_conio_16x16.h was already included */
-#ifndef DUPLICATOR_CONIO_16X16_H
-/* Not in 16x16 mode - use regular atari_conio.h */
-#include "atari_conio.h"
-#endif
+#include "atari_conio_compat.h"
 
 // Game state
 static GameState game_state;
