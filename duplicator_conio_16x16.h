@@ -29,5 +29,8 @@ void my_clrscr_16x16(void);
 void my_cputcxy_16x16(byte tx, byte ty, byte tile_char);
 void wait_vblank_16x16(void);
 
+// Tile mapping function (defined in duplicator_16x16.c)
+byte map_tile_to_16x16(byte tile);
+
 #endif
 

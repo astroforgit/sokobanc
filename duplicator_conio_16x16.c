@@ -52,7 +52,9 @@ void wait_vblank_16x16(void) {
 
 // Provide my_cputcxy as a wrapper to my_cputcxy_16x16
 // This is needed because duplicator_game.c calls my_cputcxy
+// Maps game tile characters to 16x16 tile codes
 void my_cputcxy(byte x, byte y, byte character) {
-    my_cputcxy_16x16(x, y, character);
+    byte tile_code = map_tile_to_16x16(character);
+    my_cputcxy_16x16(x, y, tile_code);
 }
 
