@@ -1,9 +1,6 @@
 // Use RAM-based configuration instead of ROM cartridge for more space
 #define CFGFILE atari-xex.cfg
 
-// Define 16x16 mode before including anything
-#define DUPLICATOR_16X16_MODE
-
 // Link the 16x16 mode libraries
 //#link "duplicator_conio_16x16.c"
 //#link "duplicator_tile_map_16x16.c"

@@ -5,9 +5,10 @@
 
 #include "duplicator_game.h"
 
-/* Only include atari_conio.h if we're not in 16x16 mode */
-/* In 16x16 mode, duplicator_conio_16x16.h provides the functions */
-#ifndef DUPLICATOR_16X16_MODE
+/* Include the appropriate conio header based on mode */
+/* Check if duplicator_conio_16x16.h was already included */
+#ifndef DUPLICATOR_CONIO_16X16_H
+/* Not in 16x16 mode - use regular atari_conio.h */
 #include "atari_conio.h"
 #endif
 
