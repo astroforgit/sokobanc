@@ -117,23 +117,11 @@ void setup_duplicator_graphics(void) {
     // Copy ROM font to RAM
     memcpy(CHARSET_MEM, (byte*)ROM_CHARSET_ADDRESS, 1024);
 
-    // TEST: Create a simple test pattern for character 0x80
-    // Make it a checkerboard pattern so we can see if it's being used
-    CHARSET_MEM[0x80 * 8 + 0] = 0xAA;  // 10101010
-    CHARSET_MEM[0x80 * 8 + 1] = 0x55;  // 01010101
-    CHARSET_MEM[0x80 * 8 + 2] = 0xAA;  // 10101010
-    CHARSET_MEM[0x80 * 8 + 3] = 0x55;  // 01010101
-    CHARSET_MEM[0x80 * 8 + 4] = 0xAA;  // 10101010
-    CHARSET_MEM[0x80 * 8 + 5] = 0x55;  // 01010101
-    CHARSET_MEM[0x80 * 8 + 6] = 0xAA;  // 10101010
-    CHARSET_MEM[0x80 * 8 + 7] = 0x55;  // 01010101
-
     // Install pre-scaled 16x16 graphics
-    // Copy all graphics at once
-    // Wall starts at character 0x80, which is offset 0x80 * 8 = 0x400 in charset
+    // Copy directly to charset position 0x00
+    // Screen code 0x00 maps to charset 0x00 (not 0x20!)
     // We have 21 tiles * 32 bytes = 672 bytes total
-    // DISABLED FOR NOW - using test pattern above
-    // memcpy(CHARSET_MEM + (0x80 * 8), duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
+    memcpy(CHARSET_MEM, duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
 
     // Set colors
     POKE(709, 0);   // Background color (black)
@@ -161,10 +149,6 @@ void main(void) {
 
     // Clear screen
     my_clrscr_16x16();
-
-    // TEST: Draw a wall tile directly using the tile code
-    // This bypasses the mapping function to test if graphics work at all
-    my_cputcxy_16x16(10, 10, 0x80);  // Draw wall at position 10,10
 
     // Load first level
     load_level(levels[current_level], 11);
