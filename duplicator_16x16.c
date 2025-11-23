@@ -3,7 +3,6 @@
 
 // Link the 16x16 mode libraries
 //#link "duplicator_conio_16x16.c"
-//#link "duplicator_font_16x16.c"
 //#link "duplicator_tile_map_16x16.c"
 //#link "duplicator_game.c"
 
@@ -32,18 +31,22 @@ typedef unsigned short word;
 #define SCREEN_MEM  ((byte*)0x9000)
 #define ROM_CHARSET_ADDRESS 0xE000
 
-// Include 16x16 conio first
+// Include 16x16 conio first (this provides my_cputcxy wrapper)
 #include "duplicator_conio_16x16.h"
 
 // Now include the game files
-// NOTE: We will provide our own my_cputcxy() wrapper function later
-#include "duplicator_font.h"
-#include "duplicator_font_16x16.h"
-#include "atari_conio.h"
-#include "duplicator_game.h"
+// NOTE: duplicator_conio_16x16.h provides my_cputcxy, so we DON'T include atari_conio.h
+#include "duplicator_graphics_16x16.h"  // Pre-scaled 16x16 graphics
+#include "duplicator_font_16x16.h"      // Character code definitions
 
-// Include the scaling function
-extern void scale_8x8_to_16x16(const byte* src_8x8, byte* dest_16x16);
+// Define the functions that duplicator_game.h expects but don't include atari_conio.h
+// (we provide our own implementations in duplicator_conio_16x16.c)
+void my_clrscr(void);
+void my_cputsxy(byte x, byte y, const char* str);
+void my_cprintf_status(byte b, byte t, byte m);
+void wait_vblank(void);
+
+#include "duplicator_game.h"
 
 // Level data from duplicator.txt
 // Note: 'z' = holeA and Player, 'y' = holeB and enemy, 'p' = Player
@@ -92,7 +95,6 @@ void setup_duplicator_graphics(void) {
     word dlist_addr = (word)DLIST_MEM;
     word screen_addr = (word)SCREEN_MEM;
     byte i;
-    byte temp_16x16[32];  // Temporary buffer for scaled graphics
 
     // Copy ROM font to RAM
     memcpy(CHARSET_MEM, (byte*)ROM_CHARSET_ADDRESS, 1024);
@@ -100,92 +102,15 @@ void setup_duplicator_graphics(void) {
     // Set character set pointer (CHBAS at 756)
     POKE(756, (byte)(charset_addr >> 8));
 
-    // Scale and install 16x16 graphics
-    // Each tile uses 4 consecutive character codes (32 bytes total)
+    // Install pre-scaled 16x16 graphics
+    // The duplicator_graphics_16x16 array contains all tiles already scaled
+    // Each tile is 32 bytes (4 characters x 8 bytes)
+    // Tiles are in order: Player, Wall, Crate, Key, Door, Enemy, etc.
 
-    // Wall (0x80-0x83) - from duplicator_graphics[8]
-    scale_8x8_to_16x16(&duplicator_graphics[8], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_WALL_TL * 8), temp_16x16, 32);
-
-    // Player (0x84-0x87) - from duplicator_graphics[0]
-    scale_8x8_to_16x16(&duplicator_graphics[0], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_PLAYER_TL * 8), temp_16x16, 32);
-
-    // Crate (0x88-0x8B) - from duplicator_graphics[16]
-    scale_8x8_to_16x16(&duplicator_graphics[16], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_CRATE_TL * 8), temp_16x16, 32);
-
-    // Key (0x8C-0x8F) - from duplicator_graphics[24]
-    scale_8x8_to_16x16(&duplicator_graphics[24], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_KEY_TL * 8), temp_16x16, 32);
-
-    // Door (0x90-0x93) - from duplicator_graphics[32]
-    scale_8x8_to_16x16(&duplicator_graphics[32], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_DOOR_TL * 8), temp_16x16, 32);
-
-    // Enemy (0x94-0x97) - from duplicator_graphics[40]
-    scale_8x8_to_16x16(&duplicator_graphics[40], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_ENEMY_TL * 8), temp_16x16, 32);
-
-    // Hole A (0x98-0x9B) - from duplicator_graphics[48]
-    scale_8x8_to_16x16(&duplicator_graphics[48], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_HOLE_A_TL * 8), temp_16x16, 32);
-
-    // Hole B (0x9C-0x9F) - from duplicator_graphics[56]
-    scale_8x8_to_16x16(&duplicator_graphics[56], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_HOLE_B_TL * 8), temp_16x16, 32);
-
-    // Plate A (0xA0-0xA3) - from duplicator_graphics[64]
-    scale_8x8_to_16x16(&duplicator_graphics[64], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_PLATE_A_TL * 8), temp_16x16, 32);
-
-    // Plate B (0xA4-0xA7) - from duplicator_graphics[72]
-    scale_8x8_to_16x16(&duplicator_graphics[72], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_PLATE_B_TL * 8), temp_16x16, 32);
-
-    // Gate A (0xA8-0xAB) - from duplicator_graphics[80]
-    scale_8x8_to_16x16(&duplicator_graphics[80], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_GATE_A_TL * 8), temp_16x16, 32);
-
-    // Gate B (0xAC-0xAF) - from duplicator_graphics[88]
-    scale_8x8_to_16x16(&duplicator_graphics[88], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_GATE_B_TL * 8), temp_16x16, 32);
-
-    // Exit A (0xB0-0xB3) - from duplicator_graphics[96]
-    scale_8x8_to_16x16(&duplicator_graphics[96], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_EXIT_A_TL * 8), temp_16x16, 32);
-
-    // Exit B (0xB4-0xB7) - from duplicator_graphics[104]
-    scale_8x8_to_16x16(&duplicator_graphics[104], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_EXIT_B_TL * 8), temp_16x16, 32);
-
-    // Exit C (0xB8-0xBB) - from duplicator_graphics[208]
-    scale_8x8_to_16x16(&duplicator_graphics[208], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_EXIT_C_TL * 8), temp_16x16, 32);
-
-    // Floor (0xBC-0xBF) - from duplicator_graphics[112]
-    scale_8x8_to_16x16(&duplicator_graphics[112], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_FLOOR_TL * 8), temp_16x16, 32);
-
-    // Gate A Open (0xC0-0xC3) - from duplicator_graphics[216]
-    scale_8x8_to_16x16(&duplicator_graphics[216], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_GATE_A_OPEN_TL * 8), temp_16x16, 32);
-
-    // Gate B Open (0xC4-0xC7) - from duplicator_graphics[224]
-    scale_8x8_to_16x16(&duplicator_graphics[224], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_GATE_B_OPEN_TL * 8), temp_16x16, 32);
-
-    // Door Open (0xC8-0xCB) - from duplicator_graphics[232]
-    scale_8x8_to_16x16(&duplicator_graphics[232], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_DOOR_OPEN_TL * 8), temp_16x16, 32);
-
-    // Hole A Filled (0xCC-0xCF) - from duplicator_graphics[240]
-    scale_8x8_to_16x16(&duplicator_graphics[240], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_HOLE_A_FILL_TL * 8), temp_16x16, 32);
-
-    // Hole B Filled (0xD0-0xD3) - from duplicator_graphics[248]
-    scale_8x8_to_16x16(&duplicator_graphics[248], temp_16x16);
-    memcpy(CHARSET_MEM + (TILE_HOLE_B_FILL_TL * 8), temp_16x16, 32);
+    // Copy all graphics at once
+    // Player starts at character 0x84, which is offset 0x84 * 8 = 0x420 in charset
+    // We have 21 tiles * 32 bytes = 672 bytes total
+    memcpy(CHARSET_MEM + (0x80 * 8), duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
     
     // Create custom display list
     // 3 blank lines at top

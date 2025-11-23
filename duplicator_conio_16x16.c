@@ -58,3 +58,23 @@ void my_cputcxy(byte x, byte y, byte character) {
     my_cputcxy_16x16(x, y, tile_code);
 }
 
+// Wrapper for my_clrscr
+void my_clrscr(void) {
+    my_clrscr_16x16();
+}
+
+// Stub for my_cputsxy (not used in duplicator game)
+void my_cputsxy(byte x, byte y, const char* str) {
+    x = x; y = y; str = str; // Suppress warnings
+}
+
+// Stub for my_cprintf_status (not used in duplicator game)
+void my_cprintf_status(byte b, byte t, byte m) {
+    b = b; t = t; m = m; // Suppress warnings
+}
+
+// Wrapper for wait_vblank
+void wait_vblank(void) {
+    wait_vblank_16x16();
+}
+
