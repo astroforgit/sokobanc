@@ -1,6 +1,9 @@
 // Use RAM-based configuration instead of ROM cartridge for more space
 #define CFGFILE atari-xex.cfg
 
+// Define 16x16 mode before including anything
+#define DUPLICATOR_16X16_MODE
+
 // Link the 16x16 mode libraries
 //#link "duplicator_conio_16x16.c"
 //#link "duplicator_tile_map_16x16.c"
@@ -36,12 +39,9 @@ typedef unsigned short word;
 
 // Now include the game files
 // NOTE: duplicator_conio_16x16.h provides my_cputcxy, so we DON'T include atari_conio.h
+// The DUPLICATOR_16X16_MODE macro prevents duplicator_game.c from including atari_conio.h
 #include "duplicator_graphics_16x16.h"  // Pre-scaled 16x16 graphics
 #include "duplicator_font_16x16.h"      // Character code definitions
-
-// Prevent duplicator_game.c from including atari_conio.h
-// by defining the include guard
-#define ATARI_CONIO_H
 
 #include "duplicator_game.h"
 
