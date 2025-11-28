@@ -28,6 +28,19 @@ byte map_tile_to_16x16(byte tile) {
         case 'D':  return TILE_DOOR_OPEN_TL;
         case '[':  return TILE_HOLE_A_FILL_TL;
         case ']':  return TILE_HOLE_B_FILL_TL;
+        // Wall lines
+        case '$':  return TILE_WALL_LINE_A_TL;
+        case '%':  return TILE_WALL_LINE_B_TL;
+        case '&':  return TILE_WALL_LINE_G_TL;
+        // Lines
+        case '1':  return TILE_LINE_A_TL;
+        case '2':  return TILE_LINE_B_TL;
+        case '3':  return TILE_LINE_C_TL;
+        case '4':  return TILE_LINE_D_TL;
+        case '5':  return TILE_LINE_E_TL;
+        case '6':  return TILE_LINE_F_TL;
+        case '7':  return TILE_LINE_G_TL;
+        case '8':  return TILE_LINE_H_TL;
         case ' ':  return 0;  // Empty space
         default:   return 0;  // Unknown - treat as empty
     }

@@ -145,5 +145,71 @@
 #define TILE_HOLE_B_FILL_BL  0x52
 #define TILE_HOLE_B_FILL_BR  0x53
 
+// Wall Line A tile (screen codes 0x54-0x57)
+#define TILE_WALL_LINE_A_TL  0x54
+#define TILE_WALL_LINE_A_TR  0x55
+#define TILE_WALL_LINE_A_BL  0x56
+#define TILE_WALL_LINE_A_BR  0x57
+
+// Wall Line B tile (screen codes 0x58-0x5B)
+#define TILE_WALL_LINE_B_TL  0x58
+#define TILE_WALL_LINE_B_TR  0x59
+#define TILE_WALL_LINE_B_BL  0x5A
+#define TILE_WALL_LINE_B_BR  0x5B
+
+// Wall Line G tile (screen codes 0x5C-0x5F)
+#define TILE_WALL_LINE_G_TL  0x5C
+#define TILE_WALL_LINE_G_TR  0x5D
+#define TILE_WALL_LINE_G_BL  0x5E
+#define TILE_WALL_LINE_G_BR  0x5F
+
+// Line A tile (screen codes 0x60-0x63)
+#define TILE_LINE_A_TL       0x60
+#define TILE_LINE_A_TR       0x61
+#define TILE_LINE_A_BL       0x62
+#define TILE_LINE_A_BR       0x63
+
+// Line B tile (screen codes 0x64-0x67)
+#define TILE_LINE_B_TL       0x64
+#define TILE_LINE_B_TR       0x65
+#define TILE_LINE_B_BL       0x66
+#define TILE_LINE_B_BR       0x67
+
+// Line C tile (screen codes 0x68-0x6B)
+#define TILE_LINE_C_TL       0x68
+#define TILE_LINE_C_TR       0x69
+#define TILE_LINE_C_BL       0x6A
+#define TILE_LINE_C_BR       0x6B
+
+// Line D tile (screen codes 0x6C-0x6F)
+#define TILE_LINE_D_TL       0x6C
+#define TILE_LINE_D_TR       0x6D
+#define TILE_LINE_D_BL       0x6E
+#define TILE_LINE_D_BR       0x6F
+
+// Line E tile (screen codes 0x70-0x73)
+#define TILE_LINE_E_TL       0x70
+#define TILE_LINE_E_TR       0x71
+#define TILE_LINE_E_BL       0x72
+#define TILE_LINE_E_BR       0x73
+
+// Line F tile (screen codes 0x74-0x77)
+#define TILE_LINE_F_TL       0x74
+#define TILE_LINE_F_TR       0x75
+#define TILE_LINE_F_BL       0x76
+#define TILE_LINE_F_BR       0x77
+
+// Line G tile (screen codes 0x78-0x7B)
+#define TILE_LINE_G_TL       0x78
+#define TILE_LINE_G_TR       0x79
+#define TILE_LINE_G_BL       0x7A
+#define TILE_LINE_G_BR       0x7B
+
+// Line H tile (screen codes 0x7C-0x7F)
+#define TILE_LINE_H_TL       0x7C
+#define TILE_LINE_H_TR       0x7D
+#define TILE_LINE_H_BL       0x7E
+#define TILE_LINE_H_BR       0x7F
+
 #endif // DUPLICATOR_FONT_16X16_H
 
