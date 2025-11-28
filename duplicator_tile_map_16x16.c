@@ -15,8 +15,8 @@ byte map_tile_to_16x16(byte tile) {
         case 'e':  return TILE_ENEMY_TL;
         case '?':  return TILE_HOLE_A_TL;
         case '!':  return TILE_HOLE_B_TL;
-        case 'b':  return TILE_PLATE_A_TL;
-        case 'c':  return TILE_PLATE_B_TL;
+        case 'b':  return TILE_PLATE_A_TL;  // Plate A graphics
+        case 'c':  return TILE_PLATE_A_TL;  // Plate B uses same graphics as Plate A
         case 'g':  return TILE_GATE_A_TL;
         case 'h':  return TILE_GATE_B_TL;
         case '@':  return TILE_EXIT_A_TL;
