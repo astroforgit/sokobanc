@@ -456,13 +456,10 @@ void setup_duplicator_graphics(void) {
     // Set character set pointer (CHBAS at 756) - BEFORE copying graphics
     POKE(756, (byte)(charset_addr >> 8));
 
-    // Copy ROM font to RAM
-    memcpy(CHARSET_MEM, (byte*)ROM_CHARSET_ADDRESS, 1024);
-
     // Install pre-scaled 16x16 graphics
     // Copy directly to charset position 0x00
-    // Screen code 0x00 maps to charset 0x00 (not 0x20!)
-    // We have 21 tiles * 32 bytes = 672 bytes total
+    // Screen code 0x00 maps to charset 0x00
+    // We have 32 tiles * 32 bytes = 1024 bytes total (fills entire character set)
     memcpy(CHARSET_MEM, duplicator_graphics_16x16, sizeof(duplicator_graphics_16x16));
 
     // Set colors
