@@ -15,6 +15,7 @@
             --grid-line: #ff4444;
             --danger: #e74c3c;
             --success: #27ae60;
+            --warning: #f39c12;
         }
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -157,7 +158,6 @@
 
         .map-grid-container {
             display: grid;
-            /* Columns set dynamically in JS */
             background: #000; gap: 1px; border: 4px solid #555;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
@@ -190,16 +190,44 @@
         button.secondary { background: #444; }
         button.danger { background: var(--danger); }
         button.success { background: var(--success); }
+        button.warning { background: var(--warning); color: #222; }
         button.icon-btn { width: auto; padding: 8px 15px; margin: 0; }
 
-        /* --- LIST & IMPORT STYLES (Keep existing) --- */
-        #tileList { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; width: 100%; max-width: 1000px; }
-        .tile-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
+        .mini-btn {
+            font-size: 0.75em; padding: 4px 8px; width: auto; margin: 0;
+            border-radius: 3px;
+        }
+
+        /* --- LIST & IMPORT STYLES --- */
+        #tileList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; width: 100%; max-width: 1000px; }
+
+        .tile-card {
+            background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+            padding: 10px; display: flex; align-items: center; cursor: pointer; transition: 0.2s;
+        }
         .tile-card:hover { transform: translateY(-2px); border-color: var(--accent); background: #333; }
+
         .tile-preview { width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid #555; background: #000; margin-right: 15px; }
-        .tile-info { flex-grow: 1; }
+
+        .tile-info { flex-grow: 1; overflow: hidden; }
         .tile-name { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; }
         .tile-key { font-family: monospace; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+        .card-actions {
+            display: flex; flex-direction: column; gap: 5px; margin-left: 10px;
+        }
+
+        /* --- IMPORT STYLES --- */
+        .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; width: 100%; }
+
+        .candidate-card {
+            border: 1px solid #444; padding: 8px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center;
+            position: relative; background: #222; border-radius: 4px;
+        }
+        .candidate-card.selected { border-color: var(--accent); background: #333; }
+        .candidate-card:hover { background: #333; }
+        .candidate-card canvas { width: 32px; height: 32px; border: 1px solid #000; image-rendering: pixelated; margin-bottom: 5px;}
 
         /* --- CODE EXPORT --- */
         .code-container { width: 100%; max-width: 900px; height: 100%; display: flex; flex-direction: column; }
@@ -208,15 +236,22 @@
         .tab.active { background: #111; color: var(--accent); font-weight: bold; border-bottom: 1px solid #111; }
         textarea { flex-grow: 1; background: #111; color: #0f0; font-family: 'Consolas', monospace; border: 1px solid var(--border); padding: 20px; resize: none; white-space: pre; font-size: 0.9em; }
 
-        /* --- IMPORT STYLES --- */
-        .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 10px; width: 100%; }
-        .candidate-card { border: 1px solid #444; padding: 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; position: relative; }
-        .candidate-card.selected { border-color: var(--accent); background: #333; }
-        .candidate-card canvas { width: 32px; height: 32px; border: 1px solid #000; image-rendering: pixelated; }
+        /* Floating Feedback */
+        #feedbackToast {
+            position: fixed; top: 20px; right: 20px;
+            background: var(--success); color: white;
+            padding: 10px 20px; border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            transform: translateY(-100px); transition: 0.3s;
+            z-index: 1000; font-weight: bold;
+        }
+        #feedbackToast.show { transform: translateY(0); }
 
     </style>
 </head>
 <body>
+
+<div id="feedbackToast">Action Successful</div>
 
 <main>
 
@@ -285,14 +320,9 @@
         <h2>Import from PNG</h2>
         <div class="editor-controls" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
             <input type="file" id="fileInput" accept="image/png" onchange="handleFileSelect(event)">
-            <p>Upload a PNG sprite sheet. Click tiles below to add them to your game.</p>
+            <p>1. Upload PNG. 2. "Copy Img" from list below. 3. Go to List and "Paste Img".</p>
         </div>
-        <div id="importSelectionPanel" style="display:none; background: var(--panel); padding: 20px; border-radius: 8px; margin-bottom: 20px; align-items:center; gap: 20px;">
-            <canvas id="importCanvasPreview" width="16" height="16" style="width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid #fff;"></canvas>
-            <input type="text" id="importName" placeholder="NAME" style="width: 150px;">
-            <input type="text" id="importKey" placeholder="k" maxlength="1" style="width: 50px; text-align: center;">
-            <button class="success" onclick="confirmImport()" style="width: auto;">Add Tile</button>
-        </div>
+
         <div id="candidatesList" class="import-grid"></div>
     </div>
 
@@ -341,6 +371,7 @@
     // --- State ---
     let editingIndex = -1;
     let currentGrid = new Array(256).fill(0);
+    let clipboardGrid = null; // Stores copied graphic data
     let isDrawing = false;
     let currentCodeTab = 'levels';
 
@@ -349,9 +380,6 @@
     let selectedPaletteKey = '#';
     let isPaintingMap = false;
 
-    // Import State
-    let selectedCandidateIndex = -1;
-
     // --- DOM Elements ---
     const gridEl = document.getElementById('grid');
     const tileListEl = document.getElementById('tileList');
@@ -359,6 +387,7 @@
     const nameInput = document.getElementById('tileName');
     const keyInput = document.getElementById('tileKey');
     const saveBtn = document.getElementById('saveBtn');
+    const toast = document.getElementById('feedbackToast');
 
     // Map DOM
     const mapGridEl = document.getElementById('mapGrid');
@@ -369,10 +398,6 @@
 
     // Import DOM
     const candidatesListEl = document.getElementById('candidatesList');
-    const importPanelEl = document.getElementById('importSelectionPanel');
-    const importPreviewCvs = document.getElementById('importCanvasPreview');
-    const importNameInput = document.getElementById('importName');
-    const importKeyInput = document.getElementById('importKey');
 
     // --- Initialization ---
     function init() {
@@ -391,6 +416,13 @@
         importInitialLevels();
     }
 
+    function showToast(msg, type="success") {
+        toast.innerText = msg;
+        toast.style.background = type === "success" ? "var(--success)" : "var(--warning)";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
     // --- Navigation ---
     function switchView(viewName) {
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -405,7 +437,31 @@
     }
 
     // ==========================================
-    // LIST VIEW LOGIC (RESTORED)
+    // CLIPBOARD LOGIC (NEW)
+    // ==========================================
+
+    function copyGridToClipboard(e, data) {
+        e.stopPropagation();
+        clipboardGrid = [...data];
+        showToast("Graphic Copied to Clipboard!");
+    }
+
+    function pasteGridToTile(e, index) {
+        e.stopPropagation();
+        if(!clipboardGrid) {
+            showToast("Clipboard is empty! Copy from Import first.", "warn");
+            return;
+        }
+
+        if(confirm(`Overwrite graphic for ${tiles[index].name}?`)) {
+            tiles[index].data = [...clipboardGrid];
+            renderList();
+            showToast("Graphic Pasted!");
+        }
+    }
+
+    // ==========================================
+    // LIST VIEW LOGIC
     // ==========================================
     function renderList() {
         tileListEl.innerHTML = '';
@@ -423,13 +479,23 @@
             info.className = 'tile-info';
             info.innerHTML = `<div class="tile-name">${t.name}</div><div class="tile-key">${t.key}</div>`;
 
+            const actions = document.createElement('div');
+            actions.className = 'card-actions';
+
+            // Paste Button
+            const pasteBtn = document.createElement('button');
+            pasteBtn.className = 'mini-btn warning';
+            pasteBtn.innerText = 'Paste Img';
+            pasteBtn.onclick = (e) => pasteGridToTile(e, i);
+
+            // Delete Button
             const delBtn = document.createElement('button');
-            delBtn.className = 'danger';
-            delBtn.style = 'width: auto; padding: 5px 10px; margin: 0;';
-            delBtn.innerText = 'X';
+            delBtn.className = 'mini-btn danger';
+            delBtn.innerText = 'Delete';
             delBtn.onclick = (e) => deleteTile(e, i);
 
-            div.append(cvs, info, delBtn);
+            actions.append(pasteBtn, delBtn);
+            div.append(cvs, info, actions);
             tileListEl.appendChild(div);
         });
     }
@@ -440,6 +506,104 @@
             tiles.splice(index, 1);
             renderList();
         }
+    }
+
+    // ==========================================
+    // IMPORT LOGIC (PNG)
+    // ==========================================
+    function handleFileSelect(evt) {
+        const file = evt.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() { processImage(img); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function processImage(img) {
+        candidates = [];
+        const cvs = document.createElement('canvas');
+        cvs.width = img.width; cvs.height = img.height;
+        const ctx = cvs.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const cols = Math.floor(img.width / 16);
+        const rows = Math.floor(img.height / 16);
+
+        for(let y=0; y<rows; y++) {
+            for(let x=0; x<cols; x++) {
+                const imgData = ctx.getImageData(x*16, y*16, 16, 16);
+                const tileData = convertImageDataToBinary(imgData);
+                candidates.push(tileData);
+            }
+        }
+        renderCandidates();
+    }
+
+    function convertImageDataToBinary(imgData) {
+        const grid = new Array(256).fill(0);
+        const data = imgData.data;
+        for(let i=0; i<256; i++) {
+            const r = data[i*4], g = data[i*4+1], b = data[i*4+2], a = data[i*4+3];
+            // Simple threshold
+            if(a > 100 && (r+g+b)/3 > 100) grid[i] = 1;
+        }
+        return grid;
+    }
+
+    function renderCandidates() {
+        candidatesListEl.innerHTML = '';
+
+        if(candidates.length === 0) {
+            candidatesListEl.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:#666;">No tiles loaded.</div>`;
+            return;
+        }
+
+        candidates.forEach((data, i) => {
+            const div = document.createElement('div');
+            div.className = 'candidate-card';
+
+            const cvs = document.createElement('canvas');
+            cvs.width = 16; cvs.height = 16;
+            drawTileToCanvas(data, cvs);
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'mini-btn secondary';
+            copyBtn.style.marginTop = "5px";
+            copyBtn.innerText = "Copy Img";
+            copyBtn.onclick = (e) => copyGridToClipboard(e, data);
+
+            // Add Candidate to list button
+            const addBtn = document.createElement('button');
+            addBtn.className = 'mini-btn success';
+            addBtn.style.marginTop = "2px";
+            addBtn.innerText = "+ Add";
+            addBtn.onclick = (e) => {
+                e.stopPropagation();
+                const newName = prompt("Enter Tile Name:");
+                if(!newName) return;
+                const newKey = prompt("Enter Map Key:");
+                if(!newKey) return;
+                tiles.push({ name: newName.toUpperCase(), key: newKey, data: [...data] });
+                showToast("Tile Added!");
+            }
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'mini-btn danger';
+            delBtn.style.marginTop = "2px";
+            delBtn.innerText = "X";
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
+                candidates.splice(i, 1);
+                renderCandidates();
+            };
+
+            div.append(cvs, copyBtn, addBtn, delBtn);
+            candidatesListEl.appendChild(div);
+        });
     }
 
     // ==========================================
@@ -456,7 +620,6 @@
     function renderPalette() {
         mapPaletteEl.innerHTML = '';
 
-        // Add "Eraser/Empty"
         const eraseDiv = document.createElement('div');
         eraseDiv.className = `palette-item ${selectedPaletteKey === ' ' ? 'active' : ''}`;
         eraseDiv.onclick = () => selectPaletteItem(' ');
@@ -483,7 +646,7 @@
 
     function selectPaletteItem(key) {
         selectedPaletteKey = key;
-        renderPalette(); // refresh active class
+        renderPalette();
     }
 
     function updateLevelSelect() {
@@ -504,7 +667,6 @@
             height: 11,
             data: new Array(17 * 11).fill(' ')
         };
-        // Default border walls
         for(let x=0; x<17; x++) { newLvl.data[x] = '#'; newLvl.data[(10*17)+x] = '#'; }
         for(let y=0; y<11; y++) { newLvl.data[y*17] = '#'; newLvl.data[y*17+16] = '#'; }
 
@@ -527,17 +689,15 @@
     function loadLevel(index) {
         currentLevelIndex = parseInt(index);
         const lvl = levels[currentLevelIndex];
-
         lvlW.value = lvl.width;
         lvlH.value = lvl.height;
-
         renderMapGrid();
     }
 
     function resizeLevel() {
         const w = parseInt(lvlW.value);
         const h = parseInt(lvlH.value);
-        if(w < 5 || h < 5 || w > 40 || h > 40) return; // limits
+        if(w < 5 || h < 5 || w > 40 || h > 40) return;
 
         const lvl = levels[currentLevelIndex];
         const oldData = lvl.data;
@@ -545,7 +705,6 @@
 
         const newData = new Array(w * h).fill(' ');
 
-        // Copy old data
         for(let y=0; y<Math.min(h, lvl.height); y++) {
             for(let x=0; x<Math.min(w, lvl.width); x++) {
                 newData[y*w+x] = oldData[y*oldW+x];
@@ -563,13 +722,12 @@
         mapGridEl.innerHTML = '';
         mapGridEl.style.gridTemplateColumns = `repeat(${lvl.width}, 32px)`;
         mapGridEl.style.gridTemplateRows = `repeat(${lvl.height}, 32px)`;
-        mapGridEl.style.width = `${lvl.width * 33}px`; // + gap
+        mapGridEl.style.width = `${lvl.width * 33}px`;
 
         lvl.data.forEach((charKey, i) => {
             const cell = document.createElement('div');
             cell.className = 'map-cell';
 
-            // Find tile graphic
             const tile = tiles.find(t => t.key === charKey);
 
             if(tile) {
@@ -581,14 +739,10 @@
                 cell.innerText = charKey;
             }
 
-            // Mouse Events
             cell.onmousedown = (e) => {
                 isPaintingMap = true;
-                if(e.button === 2) { // Right click erase
-                    applyPaint(i, ' ');
-                } else {
-                    applyPaint(i, selectedPaletteKey);
-                }
+                if(e.button === 2) applyPaint(i, ' ');
+                else applyPaint(i, selectedPaletteKey);
             };
             cell.onmouseenter = (e) => {
                 if(isPaintingMap) applyPaint(i, selectedPaletteKey);
@@ -653,96 +807,6 @@
         renderEditorGrid();
         saveBtn.innerText = "Save / Update";
         switchView('editor');
-    }
-
-    // ==========================================
-    // IMPORT LOGIC (PNG)
-    // ==========================================
-    function handleFileSelect(evt) {
-        const file = evt.target.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() { processImage(img); };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function processImage(img) {
-        candidates = [];
-        const cvs = document.createElement('canvas');
-        cvs.width = img.width; cvs.height = img.height;
-        const ctx = cvs.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-
-        const cols = Math.floor(img.width / 16);
-        const rows = Math.floor(img.height / 16);
-
-        for(let y=0; y<rows; y++) {
-            for(let x=0; x<cols; x++) {
-                const imgData = ctx.getImageData(x*16, y*16, 16, 16);
-                const tileData = convertImageDataToBinary(imgData);
-                candidates.push(tileData);
-            }
-        }
-        renderCandidates();
-    }
-
-    function convertImageDataToBinary(imgData) {
-        const grid = new Array(256).fill(0);
-        const data = imgData.data;
-        for(let i=0; i<256; i++) {
-            const r = data[i*4], g = data[i*4+1], b = data[i*4+2], a = data[i*4+3];
-            if(a > 100 && (r+g+b)/3 > 100) grid[i] = 1;
-        }
-        return grid;
-    }
-
-    function renderCandidates() {
-        candidatesListEl.innerHTML = '';
-        importPanelEl.style.display = 'none';
-
-        candidates.forEach((data, i) => {
-            const div = document.createElement('div');
-            div.className = 'candidate-card';
-            if(i === selectedCandidateIndex) div.classList.add('selected');
-            div.onclick = () => selectCandidate(i);
-
-            const cvs = document.createElement('canvas');
-            cvs.width = 16; cvs.height = 16;
-            drawTileToCanvas(data, cvs);
-            div.appendChild(cvs);
-            candidatesListEl.appendChild(div);
-        });
-    }
-
-    function selectCandidate(index) {
-        selectedCandidateIndex = index;
-        document.querySelectorAll('.candidate-card').forEach((el, i) => {
-            if(i === index) el.classList.add('selected');
-            else el.classList.remove('selected');
-        });
-        importPanelEl.style.display = 'flex';
-        drawTileToCanvas(candidates[index], importPreviewCvs);
-        importNameInput.value = ""; importKeyInput.value = ""; importNameInput.focus();
-    }
-
-    function confirmImport() {
-        if(selectedCandidateIndex === -1) return;
-        const name = importNameInput.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
-        const key = importKeyInput.value;
-        if(!name || !key) { alert("Name and Key required"); return; }
-        const newTile = { name: name, key: key, data: [...candidates[selectedCandidateIndex]] };
-        tiles.push(newTile);
-        deleteCandidate(selectedCandidateIndex);
-    }
-
-    function deleteCandidate(index) {
-        candidates.splice(index, 1);
-        selectedCandidateIndex = -1;
-        renderCandidates();
     }
 
     // ==========================================
@@ -816,11 +880,9 @@
         ctx.fillStyle='#000'; ctx.fillRect(0,0,16,16); ctx.fillStyle='#fff';
         for(let i=0; i<256; i++) if(data[i]) ctx.fillRect(i%16, Math.floor(i/16), 1, 1);
     }
-    function copyToClipboard() { outputEl.select(); document.execCommand('copy'); alert("Copied!"); }
+    function copyToClipboard() { outputEl.select(); document.execCommand('copy'); showToast("Copied to Clipboard!"); }
 
-    // --- INITIAL DATA LOADERS ---
-
-    // 1. TILES
+    // --- INITIAL DATA ---
     function importInitialData() {
         const raw = [
             0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
