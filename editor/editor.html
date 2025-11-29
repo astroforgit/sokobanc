@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duplicator 16 Tile & Map Studio</title>
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --panel: #2d2d2d;
+            --text: #e0e0e0;
+            --accent: #4a90e2;
+            --accent-hover: #357abd;
+            --border: #444;
+            --grid-line: #ff4444;
+            --danger: #e74c3c;
+            --success: #27ae60;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 0;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- MAIN STAGE --- */
+        main {
+            flex-grow: 1;
+            position: relative;
+            height: 100%;
+            overflow: hidden;
+            background: #181818;
+        }
+
+        .view {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            padding: 20px;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            overflow-y: auto;
+            align-items: center;
+        }
+
+        .view.active {
+            display: flex;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 {
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            margin-top: 0;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        /* --- SIDEBAR NAVIGATION --- */
+        nav {
+            width: 80px;
+            background: var(--panel);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            width: 60px; height: 60px;
+            background: #333;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: #aaa;
+            cursor: pointer;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 0.75em; transition: 0.2s;
+        }
+
+        .nav-btn span { font-size: 1.8em; margin-bottom: 4px; display: block; }
+        .nav-btn:hover { background: #444; color: #fff; }
+
+        .nav-btn.active {
+            background: var(--accent); color: white;
+            border-color: rgba(255,255,255,0.3);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+        }
+
+        /* --- EDITOR VIEW STYLES --- */
+        .editor-container {
+            display: flex; gap: 40px; align-items: flex-start; margin-top: 20px;
+        }
+
+        .grid-wrapper {
+            width: 400px; height: 400px;
+            background: #000;
+            border: 4px solid var(--panel);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(16, 1fr);
+            grid-template-rows: repeat(16, 1fr);
+            width: 100%; height: 100%;
+            gap: 1px; background: #444;
+        }
+
+        .pixel { background: #000; cursor: crosshair; }
+        .pixel.active { background: #fff; }
+        .pixel:nth-child(16n+9) { border-left: 2px solid var(--grid-line); }
+        .pixel:nth-child(n+129):nth-child(-n+144) { border-top: 2px solid var(--grid-line); }
+
+        .editor-controls {
+            width: 300px; background: var(--panel); padding: 20px;
+            border-radius: 8px; border: 1px solid var(--border);
+        }
+
+        /* --- MAP EDITOR STYLES --- */
+        .map-layout {
+            display: flex; gap: 20px; width: 100%; max-width: 1200px; height: 100%;
+        }
+
+        .map-sidebar {
+            width: 200px; display: flex; flex-direction: column; gap: 10px;
+            background: var(--panel); padding: 10px; border-radius: 8px;
+            height: fit-content; max-height: 80vh; overflow-y: auto;
+        }
+
+        .palette-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 5px; background: #333; border: 2px solid transparent;
+            cursor: pointer; border-radius: 4px;
+        }
+        .palette-item:hover { background: #444; }
+        .palette-item.active { border-color: var(--accent); background: #222; }
+        .palette-preview { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #000; }
+
+        .map-workspace {
+            flex-grow: 1; display: flex; flex-direction: column; gap: 10px;
+            align-items: center;
+        }
+
+        .map-toolbar {
+            display: flex; gap: 10px; background: var(--panel); padding: 10px;
+            border-radius: 8px; width: 100%; justify-content: center;
+            align-items: center;
+        }
+
+        .map-grid-container {
+            display: grid;
+            /* Columns set dynamically in JS */
+            background: #000; gap: 1px; border: 4px solid #555;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .map-cell {
+            width: 32px; height: 32px; background: #222;
+            image-rendering: pixelated; cursor: crosshair;
+            display: flex; align-items: center; justify-content: center;
+            color: #555; font-size: 10px; font-family: monospace;
+            background-size: cover;
+        }
+        .map-cell:hover { border: 1px solid #fff; }
+
+        /* --- GENERIC FORM & BUTTONS --- */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="text"], input[type="number"], select {
+            width: 100%; padding: 10px; background: #1a1a1a;
+            border: 1px solid var(--border); color: white;
+            box-sizing: border-box; font-size: 1em; font-family: monospace; border-radius: 4px;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+        button {
+            width: 100%; padding: 12px; margin-top: 5px; cursor: pointer;
+            background: var(--accent); color: white; border: none; font-weight: bold;
+            border-radius: 4px; font-size: 1em;
+        }
+        button:hover { background: var(--accent-hover); }
+        button.secondary { background: #444; }
+        button.danger { background: var(--danger); }
+        button.success { background: var(--success); }
+        button.icon-btn { width: auto; padding: 8px 15px; margin: 0; }
+
+        /* --- LIST & IMPORT STYLES (Keep existing) --- */
+        #tileList { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; width: 100%; max-width: 1000px; }
+        .tile-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; }
+        .tile-card:hover { transform: translateY(-2px); border-color: var(--accent); background: #333; }
+        .tile-preview { width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid #555; background: #000; margin-right: 15px; }
+        .tile-info { flex-grow: 1; }
+        .tile-name { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; }
+        .tile-key { font-family: monospace; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+        /* --- CODE EXPORT --- */
+        .code-container { width: 100%; max-width: 900px; height: 100%; display: flex; flex-direction: column; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 0; }
+        .tab { padding: 12px 25px; background: var(--panel); cursor: pointer; border: 1px solid var(--border); border-bottom: none; color: #aaa; border-radius: 6px 6px 0 0; }
+        .tab.active { background: #111; color: var(--accent); font-weight: bold; border-bottom: 1px solid #111; }
+        textarea { flex-grow: 1; background: #111; color: #0f0; font-family: 'Consolas', monospace; border: 1px solid var(--border); padding: 20px; resize: none; white-space: pre; font-size: 0.9em; }
+
+        /* --- IMPORT STYLES --- */
+        .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 10px; width: 100%; }
+        .candidate-card { border: 1px solid #444; padding: 5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .candidate-card.selected { border-color: var(--accent); background: #333; }
+        .candidate-card canvas { width: 32px; height: 32px; border: 1px solid #000; image-rendering: pixelated; }
+
+    </style>
+</head>
+<body>
+
+<main>
+
+    <!-- VIEW 1: EDITOR -->
+    <div id="view-editor" class="view active">
+        <h2>Tile Editor</h2>
+        <div class="editor-container">
+            <div class="grid-wrapper">
+                <div class="grid-container" id="grid"></div>
+            </div>
+            <div class="editor-controls">
+                <div class="form-group">
+                    <label>Variable Name</label>
+                    <input type="text" id="tileName" placeholder="PLAYER">
+                </div>
+                <div class="form-group">
+                    <label>Map Key Character</label>
+                    <input type="text" id="tileKey" placeholder="p" maxlength="1" style="text-align: center; font-size: 1.5em;">
+                </div>
+                <div style="height: 20px;"></div>
+                <button onclick="addOrUpdateTile()" id="saveBtn">Save / Update</button>
+                <button class="secondary" onclick="createNewTile()">Clear / New</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: LIST -->
+    <div id="view-list" class="view">
+        <h2>Game Tiles</h2>
+        <div id="tileList"></div>
+    </div>
+
+    <!-- VIEW 3: MAP EDITOR -->
+    <div id="view-map" class="view">
+        <h2>Map Editor</h2>
+        <div class="map-layout">
+            <!-- Palette -->
+            <div class="map-sidebar">
+                <label>Palette (Select Tile)</label>
+                <div id="mapPalette"></div>
+            </div>
+
+            <!-- Workspace -->
+            <div class="map-workspace">
+                <div class="map-toolbar">
+                    <select id="levelSelect" onchange="loadLevel(this.value)" style="width: 150px;"></select>
+                    <button class="icon-btn success" onclick="createNewLevel()">+ New</button>
+                    <button class="icon-btn danger" onclick="deleteLevel()">Delete</button>
+                    <span style="border-left: 1px solid #555; height: 30px; margin: 0 10px;"></span>
+                    <label style="margin:0;">W:</label>
+                    <input type="number" id="levelWidth" value="17" style="width: 50px;" onchange="resizeLevel()">
+                    <label style="margin:0;">H:</label>
+                    <input type="number" id="levelHeight" value="11" style="width: 50px;" onchange="resizeLevel()">
+                </div>
+
+                <div id="mapGrid" class="map-grid-container">
+                    <!-- Grid generated by JS -->
+                </div>
+                <p style="color: #666; font-size: 0.9em;">Left Click: Paint | Right Click: Erase (Empty)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 4: IMPORT -->
+    <div id="view-import" class="view">
+        <h2>Import from PNG</h2>
+        <div class="editor-controls" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
+            <input type="file" id="fileInput" accept="image/png" onchange="handleFileSelect(event)">
+            <p>Upload a PNG sprite sheet. Click tiles below to add them to your game.</p>
+        </div>
+        <div id="importSelectionPanel" style="display:none; background: var(--panel); padding: 20px; border-radius: 8px; margin-bottom: 20px; align-items:center; gap: 20px;">
+            <canvas id="importCanvasPreview" width="16" height="16" style="width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid #fff;"></canvas>
+            <input type="text" id="importName" placeholder="NAME" style="width: 150px;">
+            <input type="text" id="importKey" placeholder="k" maxlength="1" style="width: 50px; text-align: center;">
+            <button class="success" onclick="confirmImport()" style="width: auto;">Add Tile</button>
+        </div>
+        <div id="candidatesList" class="import-grid"></div>
+    </div>
+
+    <!-- VIEW 5: EXPORT -->
+    <div id="view-export" class="view">
+        <h2>C Code Export</h2>
+        <div class="code-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchCodeTab('levels')">levels.c</div>
+                <div class="tab" onclick="switchCodeTab('graphics')">graphics.h</div>
+                <div class="tab" onclick="switchCodeTab('map')">map.c</div>
+                <div class="tab" onclick="switchCodeTab('enum')">font.h</div>
+            </div>
+            <textarea id="output" readonly></textarea>
+            <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy Code to Clipboard</button>
+        </div>
+    </div>
+
+</main>
+
+<!-- RIGHT NAVIGATION BAR -->
+<nav>
+    <div class="nav-btn active" onclick="switchView('editor')" title="Draw">
+        <span>✎</span> Draw
+    </div>
+    <div class="nav-btn" onclick="switchView('list')" title="Game Tiles">
+        <span>☰</span> List
+    </div>
+    <div class="nav-btn" onclick="switchView('map')" title="Map Editor">
+        <span>▦</span> Map
+    </div>
+    <div class="nav-btn" onclick="switchView('import')" title="Import PNG">
+        <span>⭳</span> Import
+    </div>
+    <div class="nav-btn" onclick="switchView('export')" title="Get Code">
+        <span>⬇</span> Code
+    </div>
+</nav>
+
+<script>
+    // --- Data Storage ---
+    let tiles = [];
+    let levels = [];
+    let candidates = [];
+
+    // --- State ---
+    let editingIndex = -1;
+    let currentGrid = new Array(256).fill(0);
+    let isDrawing = false;
+    let currentCodeTab = 'levels';
+
+    // Map Editor State
+    let currentLevelIndex = 0;
+    let selectedPaletteKey = '#';
+    let isPaintingMap = false;
+
+    // Import State
+    let selectedCandidateIndex = -1;
+
+    // --- DOM Elements ---
+    const gridEl = document.getElementById('grid');
+    const tileListEl = document.getElementById('tileList');
+    const outputEl = document.getElementById('output');
+    const nameInput = document.getElementById('tileName');
+    const keyInput = document.getElementById('tileKey');
+    const saveBtn = document.getElementById('saveBtn');
+
+    // Map DOM
+    const mapGridEl = document.getElementById('mapGrid');
+    const mapPaletteEl = document.getElementById('mapPalette');
+    const levelSelectEl = document.getElementById('levelSelect');
+    const lvlW = document.getElementById('levelWidth');
+    const lvlH = document.getElementById('levelHeight');
+
+    // Import DOM
+    const candidatesListEl = document.getElementById('candidatesList');
+    const importPanelEl = document.getElementById('importSelectionPanel');
+    const importPreviewCvs = document.getElementById('importCanvasPreview');
+    const importNameInput = document.getElementById('importName');
+    const importKeyInput = document.getElementById('importKey');
+
+    // --- Initialization ---
+    function init() {
+        // Build Editor Grid
+        for(let i=0; i<256; i++) {
+            let p = document.createElement('div');
+            p.className = 'pixel';
+            p.onmousedown = (e) => { if(e.button === 0) { isDrawing = true; togglePixel(i); } };
+            p.onmouseenter = () => { if(isDrawing) togglePixel(i, true); };
+            gridEl.appendChild(p);
+        }
+        document.onmouseup = () => { isDrawing = false; isPaintingMap = false; };
+
+        // Import Data
+        importInitialData();
+        importInitialLevels();
+    }
+
+    // --- Navigation ---
+    function switchView(viewName) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+        document.getElementById(`view-${viewName}`).classList.add('active');
+        document.querySelector(`.nav-btn[onclick="switchView('${viewName}')"]`).classList.add('active');
+
+        if(viewName === 'list') renderList();
+        if(viewName === 'map') initMapEditor();
+        if(viewName === 'export') generateCode();
+    }
+
+    // ==========================================
+    // LIST VIEW LOGIC (RESTORED)
+    // ==========================================
+    function renderList() {
+        tileListEl.innerHTML = '';
+        tiles.forEach((t, i) => {
+            const div = document.createElement('div');
+            div.className = 'tile-card';
+            div.onclick = () => loadTile(i);
+
+            const cvs = document.createElement('canvas');
+            cvs.width = 16; cvs.height = 16;
+            cvs.className = 'tile-preview';
+            drawTileToCanvas(t.data, cvs);
+
+            const info = document.createElement('div');
+            info.className = 'tile-info';
+            info.innerHTML = `<div class="tile-name">${t.name}</div><div class="tile-key">${t.key}</div>`;
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'danger';
+            delBtn.style = 'width: auto; padding: 5px 10px; margin: 0;';
+            delBtn.innerText = 'X';
+            delBtn.onclick = (e) => deleteTile(e, i);
+
+            div.append(cvs, info, delBtn);
+            tileListEl.appendChild(div);
+        });
+    }
+
+    function deleteTile(e, index) {
+        e.stopPropagation();
+        if(confirm('Delete tile?')) {
+            tiles.splice(index, 1);
+            renderList();
+        }
+    }
+
+    // ==========================================
+    // MAP EDITOR LOGIC
+    // ==========================================
+
+    function initMapEditor() {
+        renderPalette();
+        updateLevelSelect();
+        if(levels.length > 0) loadLevel(currentLevelIndex);
+        else createNewLevel();
+    }
+
+    function renderPalette() {
+        mapPaletteEl.innerHTML = '';
+
+        // Add "Eraser/Empty"
+        const eraseDiv = document.createElement('div');
+        eraseDiv.className = `palette-item ${selectedPaletteKey === ' ' ? 'active' : ''}`;
+        eraseDiv.onclick = () => selectPaletteItem(' ');
+        eraseDiv.innerHTML = `<div class="palette-preview" style="background:#000;"></div><span>Empty</span>`;
+        mapPaletteEl.appendChild(eraseDiv);
+
+        tiles.forEach(t => {
+            const div = document.createElement('div');
+            div.className = `palette-item ${selectedPaletteKey === t.key ? 'active' : ''}`;
+            div.onclick = () => selectPaletteItem(t.key);
+
+            const cvs = document.createElement('canvas');
+            cvs.width = 16; cvs.height = 16;
+            cvs.className = 'palette-preview';
+            drawTileToCanvas(t.data, cvs);
+
+            const span = document.createElement('span');
+            span.innerText = `${t.name} (${t.key})`;
+
+            div.append(cvs, span);
+            mapPaletteEl.appendChild(div);
+        });
+    }
+
+    function selectPaletteItem(key) {
+        selectedPaletteKey = key;
+        renderPalette(); // refresh active class
+    }
+
+    function updateLevelSelect() {
+        levelSelectEl.innerHTML = '';
+        levels.forEach((lvl, i) => {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.text = `Level ${i+1}`;
+            if(i === currentLevelIndex) opt.selected = true;
+            levelSelectEl.appendChild(opt);
+        });
+    }
+
+    function createNewLevel() {
+        const newLvl = {
+            name: `level_${levels.length + 1}`,
+            width: 17,
+            height: 11,
+            data: new Array(17 * 11).fill(' ')
+        };
+        // Default border walls
+        for(let x=0; x<17; x++) { newLvl.data[x] = '#'; newLvl.data[(10*17)+x] = '#'; }
+        for(let y=0; y<11; y++) { newLvl.data[y*17] = '#'; newLvl.data[y*17+16] = '#'; }
+
+        levels.push(newLvl);
+        currentLevelIndex = levels.length - 1;
+        updateLevelSelect();
+        loadLevel(currentLevelIndex);
+    }
+
+    function deleteLevel() {
+        if(levels.length <= 1) { alert("Cannot delete the only level."); return; }
+        if(confirm("Delete current level?")) {
+            levels.splice(currentLevelIndex, 1);
+            currentLevelIndex = Math.max(0, currentLevelIndex - 1);
+            updateLevelSelect();
+            loadLevel(currentLevelIndex);
+        }
+    }
+
+    function loadLevel(index) {
+        currentLevelIndex = parseInt(index);
+        const lvl = levels[currentLevelIndex];
+
+        lvlW.value = lvl.width;
+        lvlH.value = lvl.height;
+
+        renderMapGrid();
+    }
+
+    function resizeLevel() {
+        const w = parseInt(lvlW.value);
+        const h = parseInt(lvlH.value);
+        if(w < 5 || h < 5 || w > 40 || h > 40) return; // limits
+
+        const lvl = levels[currentLevelIndex];
+        const oldData = lvl.data;
+        const oldW = lvl.width;
+
+        const newData = new Array(w * h).fill(' ');
+
+        // Copy old data
+        for(let y=0; y<Math.min(h, lvl.height); y++) {
+            for(let x=0; x<Math.min(w, lvl.width); x++) {
+                newData[y*w+x] = oldData[y*oldW+x];
+            }
+        }
+
+        lvl.width = w;
+        lvl.height = h;
+        lvl.data = newData;
+        renderMapGrid();
+    }
+
+    function renderMapGrid() {
+        const lvl = levels[currentLevelIndex];
+        mapGridEl.innerHTML = '';
+        mapGridEl.style.gridTemplateColumns = `repeat(${lvl.width}, 32px)`;
+        mapGridEl.style.gridTemplateRows = `repeat(${lvl.height}, 32px)`;
+        mapGridEl.style.width = `${lvl.width * 33}px`; // + gap
+
+        lvl.data.forEach((charKey, i) => {
+            const cell = document.createElement('div');
+            cell.className = 'map-cell';
+
+            // Find tile graphic
+            const tile = tiles.find(t => t.key === charKey);
+
+            if(tile) {
+                const cvs = document.createElement('canvas');
+                cvs.width=16; cvs.height=16;
+                drawTileToCanvas(tile.data, cvs);
+                cell.style.backgroundImage = `url(${cvs.toDataURL()})`;
+            } else if (charKey !== ' ') {
+                cell.innerText = charKey;
+            }
+
+            // Mouse Events
+            cell.onmousedown = (e) => {
+                isPaintingMap = true;
+                if(e.button === 2) { // Right click erase
+                    applyPaint(i, ' ');
+                } else {
+                    applyPaint(i, selectedPaletteKey);
+                }
+            };
+            cell.onmouseenter = (e) => {
+                if(isPaintingMap) applyPaint(i, selectedPaletteKey);
+            };
+            cell.oncontextmenu = (e) => e.preventDefault();
+
+            mapGridEl.appendChild(cell);
+        });
+    }
+
+    function applyPaint(index, key) {
+        levels[currentLevelIndex].data[index] = key;
+        const cell = mapGridEl.children[index];
+        const tile = tiles.find(t => t.key === key);
+
+        if(tile) {
+            const cvs = document.createElement('canvas');
+            cvs.width=16; cvs.height=16;
+            drawTileToCanvas(tile.data, cvs);
+            cell.style.backgroundImage = `url(${cvs.toDataURL()})`;
+            cell.innerText = '';
+        } else {
+            cell.style.backgroundImage = '';
+            cell.innerText = key === ' ' ? '' : key;
+        }
+    }
+
+
+    // ==========================================
+    // EDITOR & TILE LOGIC
+    // ==========================================
+    function togglePixel(index, forceDraw = false) {
+        if(!forceDraw) currentGrid[index] = currentGrid[index] ? 0 : 1;
+        else currentGrid[index] = 1;
+        renderEditorGrid();
+    }
+    function renderEditorGrid() {
+        Array.from(gridEl.children).forEach((div, i) => {
+            div.className = currentGrid[i] ? 'pixel active' : 'pixel';
+        });
+    }
+    function createNewTile() {
+        currentGrid.fill(0); nameInput.value = ''; keyInput.value = ''; editingIndex = -1;
+        saveBtn.innerText = "Add New Tile"; renderEditorGrid();
+        switchView('editor');
+    }
+    function addOrUpdateTile() {
+        const name = nameInput.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+        const key = keyInput.value;
+        if(!name || !key) { alert("Please set Name and Key"); return; }
+        const tileObj = { name: name, key: key, data: [...currentGrid] };
+        if(editingIndex > -1) { tiles[editingIndex] = tileObj; saveBtn.innerText = "Updated!"; }
+        else { tiles.push(tileObj); editingIndex = tiles.length - 1; saveBtn.innerText = "Added!"; }
+        setTimeout(() => saveBtn.innerText = "Save / Update", 1000);
+    }
+    function loadTile(index) {
+        editingIndex = index;
+        const t = tiles[index];
+        currentGrid = [...t.data];
+        nameInput.value = t.name;
+        keyInput.value = t.key;
+        renderEditorGrid();
+        saveBtn.innerText = "Save / Update";
+        switchView('editor');
+    }
+
+    // ==========================================
+    // IMPORT LOGIC (PNG)
+    // ==========================================
+    function handleFileSelect(evt) {
+        const file = evt.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() { processImage(img); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function processImage(img) {
+        candidates = [];
+        const cvs = document.createElement('canvas');
+        cvs.width = img.width; cvs.height = img.height;
+        const ctx = cvs.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const cols = Math.floor(img.width / 16);
+        const rows = Math.floor(img.height / 16);
+
+        for(let y=0; y<rows; y++) {
+            for(let x=0; x<cols; x++) {
+                const imgData = ctx.getImageData(x*16, y*16, 16, 16);
+                const tileData = convertImageDataToBinary(imgData);
+                candidates.push(tileData);
+            }
+        }
+        renderCandidates();
+    }
+
+    function convertImageDataToBinary(imgData) {
+        const grid = new Array(256).fill(0);
+        const data = imgData.data;
+        for(let i=0; i<256; i++) {
+            const r = data[i*4], g = data[i*4+1], b = data[i*4+2], a = data[i*4+3];
+            if(a > 100 && (r+g+b)/3 > 100) grid[i] = 1;
+        }
+        return grid;
+    }
+
+    function renderCandidates() {
+        candidatesListEl.innerHTML = '';
+        importPanelEl.style.display = 'none';
+
+        candidates.forEach((data, i) => {
+            const div = document.createElement('div');
+            div.className = 'candidate-card';
+            if(i === selectedCandidateIndex) div.classList.add('selected');
+            div.onclick = () => selectCandidate(i);
+
+            const cvs = document.createElement('canvas');
+            cvs.width = 16; cvs.height = 16;
+            drawTileToCanvas(data, cvs);
+            div.appendChild(cvs);
+            candidatesListEl.appendChild(div);
+        });
+    }
+
+    function selectCandidate(index) {
+        selectedCandidateIndex = index;
+        document.querySelectorAll('.candidate-card').forEach((el, i) => {
+            if(i === index) el.classList.add('selected');
+            else el.classList.remove('selected');
+        });
+        importPanelEl.style.display = 'flex';
+        drawTileToCanvas(candidates[index], importPreviewCvs);
+        importNameInput.value = ""; importKeyInput.value = ""; importNameInput.focus();
+    }
+
+    function confirmImport() {
+        if(selectedCandidateIndex === -1) return;
+        const name = importNameInput.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+        const key = importKeyInput.value;
+        if(!name || !key) { alert("Name and Key required"); return; }
+        const newTile = { name: name, key: key, data: [...candidates[selectedCandidateIndex]] };
+        tiles.push(newTile);
+        deleteCandidate(selectedCandidateIndex);
+    }
+
+    function deleteCandidate(index) {
+        candidates.splice(index, 1);
+        selectedCandidateIndex = -1;
+        renderCandidates();
+    }
+
+    // ==========================================
+    // EXPORT LOGIC
+    // ==========================================
+    function switchCodeTab(tabName) {
+        currentCodeTab = tabName;
+        document.querySelectorAll('.tab').forEach(t => t.className = 'tab');
+        document.querySelector(`.tab[onclick="switchCodeTab('${tabName}')"]`).classList.add('active');
+        generateCode();
+    }
+
+    function generateCode() {
+        let txt = '';
+
+        if(currentCodeTab === 'levels') {
+            txt += `#include "levels.h"\n\n`;
+            let arrayNames = [];
+            levels.forEach((lvl, i) => {
+                const name = `level_${i+1}`;
+                arrayNames.push(name);
+                txt += `const char* ${name}[] = {\n`;
+                for(let y=0; y<lvl.height; y++) {
+                    let rowStr = "";
+                    for(let x=0; x<lvl.width; x++) rowStr += lvl.data[y*lvl.width + x];
+                    txt += `    "${rowStr}"${y < lvl.height-1 ? ',' : ''}\n`;
+                }
+                txt += `};\n\n`;
+            });
+            txt += `const char** levels[] = {\n    ` + arrayNames.join(',\n    ') + `\n};\n\n`;
+            txt += `const unsigned char NUM_LEVELS = ${levels.length};\n`;
+        }
+        else if(currentCodeTab === 'graphics') {
+            txt += `#ifndef DUPLICATOR_GRAPHICS_16X16_H\n#define DUPLICATOR_GRAPHICS_16X16_H\n\n`;
+            txt += `static unsigned char duplicator_graphics_16x16[] = {\n`;
+            tiles.forEach(t => {
+                txt += `    /* ${t.name} */\n    ${generateHexArray(t.data).join(',')},\n\n`;
+            });
+            txt += `};\n#endif\n`;
+        }
+        else if(currentCodeTab === 'map') {
+            txt += `byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
+            tiles.forEach(t => txt += `        case '${t.key}': return TILE_ID_${t.name};\n`);
+            txt += `        default: return 0;\n    }\n}\n`;
+        }
+        else if(currentCodeTab === 'enum') {
+            txt += `enum TileBaseID {\n`;
+            if(tiles.length>0) {
+                txt += `    TILE_ID_${tiles[0].name} = 0x00,\n`;
+                for(let i=1; i<tiles.length; i++) txt += `    TILE_ID_${tiles[i].name} = TILE_ID_${tiles[i-1].name} + 4,\n`;
+            }
+            txt += `    TILE_ID_EMPTY = 0\n};\n`;
+        }
+        outputEl.value = txt;
+    }
+
+    // Helpers
+    function getByte(pixels, offset) {
+        let b = 0;
+        for(let i=0; i<8; i++) { if(pixels[offset + i]) b |= (1 << (7-i)); }
+        return '0x' + b.toString(16).toUpperCase().padStart(2, '0');
+    }
+    function generateHexArray(grid) {
+        let tl=[], tr=[], bl=[], br=[];
+        for(let y=0; y<8; y++) { tl.push(getByte(grid, y*16)); tr.push(getByte(grid, y*16 + 8)); }
+        for(let y=8; y<16; y++) { bl.push(getByte(grid, y*16)); br.push(getByte(grid, y*16 + 8)); }
+        return [...tl, ...tr, ...bl, ...br];
+    }
+    function drawTileToCanvas(data, cvs) {
+        const ctx = cvs.getContext('2d');
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,16,16); ctx.fillStyle='#fff';
+        for(let i=0; i<256; i++) if(data[i]) ctx.fillRect(i%16, Math.floor(i/16), 1, 1);
+    }
+    function copyToClipboard() { outputEl.select(); document.execCommand('copy'); alert("Copied!"); }
+
+    // --- INITIAL DATA LOADERS ---
+
+    // 1. TILES
+    function importInitialData() {
+        const raw = [
+            0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF, 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+            0x00,0x00,0x0F,0x0F,0x0F,0x0F,0x3F,0x3F, 0x00,0x00,0xC0,0xC0,0xC0,0xC0,0xF0,0xF0, 0x0F,0x0F,0x0C,0x0C,0x00,0x00,0x00,0x00, 0xC0,0xC0,0xC0,0xC0,0x00,0x00,0x00,0x00,
+            0x00,0x07,0x0A,0x15,0x3F,0x20,0x2A,0x2A, 0x00,0xFF,0xAB,0x57,0xFD,0x07,0xAD,0x0D, 0x28,0x38,0x28,0x28,0x2A,0x20,0x3F,0x00, 0x0D,0x0D,0x0D,0x2F,0x2D,0x06,0xFC,0x00,
+            0x00,0x00,0x00,0x00,0x3F,0x3F,0x33,0x33, 0x00,0x00,0x00,0x00,0x30,0x30,0xF0,0xF0, 0x3F,0x3F,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x0C,0x0C,0x0C,0x0C,0x0C,0x0C, 0x00,0x00,0xC0,0xC0,0xC0,0xC0,0xC0,0xC0, 0x0C,0x0C,0x0C,0x0C,0x00,0x00,0x00,0x00, 0xC0,0xC0,0xC0,0xC0,0x00,0x00,0x00,0x00,
+            0x00,0x04,0x19,0x33,0x77,0x7F,0x3E,0x1C, 0x00,0x20,0x98,0xCC,0xEE,0xFE,0x7C,0x38, 0x1F,0x07,0x63,0x31,0x10,0x00,0x00,0x00, 0xF8,0xE0,0xC6,0x8C,0x08,0x00,0x00,0x00,
+            0x00,0x03,0x0C,0x11,0x21,0x22,0x7F,0x4C, 0x00,0xC0,0xB0,0x88,0x84,0x44,0xFE,0x32, 0x46,0x4F,0x34,0x38,0x18,0x0C,0x03,0x00, 0x62,0xF2,0x2C,0x1C,0x18,0x30,0xC0,0x00,
+            0x00,0x03,0x0C,0x11,0x21,0x22,0x7F,0x4C, 0x00,0xC0,0xB0,0x88,0x84,0x44,0xFE,0x32, 0x46,0x4F,0x34,0x38,0x18,0x0C,0x03,0x00, 0x62,0xF2,0x2C,0x1C,0x18,0x30,0xC0,0x00,
+            0x00,0x00,0x3F,0x3F,0x3C,0x3C,0x30,0x30, 0x00,0x00,0xF0,0xF0,0xF0,0xF0,0x30,0x30, 0x3C,0x3C,0x3F,0x3F,0x00,0x00,0x00,0x00, 0xF0,0xF0,0xF0,0xF0,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x3F,0x3F,0x3C,0x3C,0x30,0x30, 0x00,0x00,0xF0,0xF0,0xF0,0xF0,0x30,0x30, 0x3C,0x3C,0x3F,0x3F,0x00,0x00,0x00,0x00, 0xF0,0xF0,0xF0,0xF0,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x0C,0x0C,0x3F,0x3F,0x0F,0x0F, 0x00,0x00,0xC0,0xC0,0xF0,0xF0,0xC0,0xC0, 0x3F,0x3F,0x0C,0x0C,0x00,0x00,0x00,0x00, 0xF0,0xF0,0xC0,0xC0,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x0C,0x0C,0x3F,0x3F,0x0F,0x0F, 0x00,0x00,0xC0,0xC0,0xF0,0xF0,0xC0,0xC0, 0x3F,0x3F,0x0C,0x0C,0x00,0x00,0x00,0x00, 0xF0,0xF0,0xC0,0xC0,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x00,0x00,0x30,0x30,0x0C,0x0C, 0x00,0x00,0x00,0x00,0xC0,0xC0,0x30,0x30, 0x30,0x30,0x00,0x00,0x00,0x00,0x00,0x00, 0xC0,0xC0,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x03,0x03,0x0C,0x0C,0x00,0x00, 0x00,0x00,0x00,0x00,0xC0,0xC0,0x00,0x00, 0x03,0x03,0x0C,0x0C,0x00,0x00,0x00,0x00, 0x00,0x00,0xC0,0xC0,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x00,0x00,0x0C,0x0C,0x30,0x30, 0x00,0x00,0x00,0x00,0x0C,0x0C,0xC0,0xC0, 0x0C,0x0C,0x00,0x00,0x00,0x00,0x00,0x00, 0x0C,0x0C,0x00,0x00,0x00,0x00,0x00,0x00,
+            0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+        ];
+        const metas = [
+            {n:"WALL",k:"#"}, {n:"PLAYER",k:"p"}, {n:"CRATE",k:"*"}, {n:"KEY",k:"k"}, {n:"DOOR",k:"d"}, {n:"ENEMY",k:"e"}, {n:"HOLE_A",k:"?"}, {n:"HOLE_B",k:"!"},
+            {n:"PLATE_A",k:"b"}, {n:"PLATE_B",k:"c"}, {n:"GATE_A",k:"g"}, {n:"GATE_B",k:"h"}, {n:"EXIT_A",k:"@"}, {n:"EXIT_B",k:":"}, {n:"EXIT_C",k:";"}, {n:"FLOOR",k:"."}
+        ];
+
+        metas.forEach((m, i) => {
+            const start = i*32;
+            const bytes = raw.slice(start, start+32);
+            if(bytes.length < 32) return;
+            const grid = new Array(256).fill(0);
+
+            const processChunk = (bytes, rowStart, colStart) => {
+                for(let r=0; r<8; r++) {
+                    const val = bytes[r];
+                    for(let bit=0; bit<8; bit++) if(val & (1<<(7-bit))) grid[(rowStart+r)*16 + colStart+bit] = 1;
+                }
+            };
+            processChunk(bytes.slice(0,8),0,0); processChunk(bytes.slice(8,16),0,8);
+            processChunk(bytes.slice(16,24),8,0); processChunk(bytes.slice(24,32),8,8);
+            tiles.push({ name: m.n, key: m.k, data: grid });
+        });
+    }
+
+    // 2. LEVELS
+    function importInitialLevels() {
+        const rawLvls = [
+            ["########:########","########.########","########.########","########.########","########.########","########.########","#######...#...###","#######.p.#.e.###","#######...#...###","############.####","############.####"],
+            ["#################","#################","###...#...#...###","###.!2%2?...b.###","###...#...#.1.###","####.#######$####","####.##...##$####","####........g...@","#######...#######","########.########","########p########"],
+            ["#################","#################","###...#...#...###","###.!2%2?...b.###","###...#...#.1.###","####.#######$####","###.......##$####","p.......c2h.g...@","###.......#######","#################","#################"],
+            ["############.####","############.####","###...#...#...###","###.!2%2?.#......","###...#...#...###","####.###.########","###...#...d.d.###","p.....#.k.d.d...@","###...#...d.d.###","#################","#################"],
+            ["########@########","########.########","##6222cg2%%%223##","##1....g.###..1##","##1..#######..1##","##1?2%%%%%%%2!1##","##1..#######..1##","p.1..#######..1##","##1....h......1##","##52222hb222224##","#################"],
+            ["########@########","########g########","###622%24.#...###","###1..#.......###","###1..#...#...###","###$!%%%2%%%?####","###1..#...#...###","###5b.#...#.*.###","###...#...#...###","########.########","########p########"],
+            ["###@#############","###.#############","###.d...d..*!k.##","###.d...d6224..##","#########$####.##","###......?.*.#.##","###............##","###............##","###............##","########.########","########p########"],
+            ["#################","##...##...##...##","##.!....k......##","##.1.##...##...##","###$####.####.###","###$####.####.###","##.1.##...##...##","##.?.##.e......d@","##...##...##...##","###.#############","###p#############"],
+            ["#################","##.....###.....##","##......*...e..##","##.....###.....##","##......*...e..##","##.....###.....##","##......*...e..##","p......###......@","#################","#################","#################"],
+            ["#################","#######...h2223.@","#######.!.####$##","#######.1.####$##","########$#####$##","#####...1....e5c#","#####.##$##.#####","p..bg...?...#####","#################","#################","#################"],
+            ["########@########","p..hh23..########","#..###$##########","#..?2%&!.########","#....#$..########","######c..########","#################",".................","#################",".................","#################"],
+            ["#################","#################","#####......######","##..g....*6?...b#","##*##.....1####h#","##*#######$####1@","##*##622227%%%%h#","##.ch4...*5!....#","##.##......######","##.##############","##p##############"],
+            ["#############@###","####e.....###.###","####.###..###.###","#b..!222362g..###","#$##.###11#######","p5222%%%74#######","##.*....?...#####","##...############","##.*.############","##...############","#################"],
+            ["#################","#.........#######","#eke......#######","#.........#######","#...###...#######","#...###...#######","#...###....bg.d.#","#.........###.#.#","#.......!2%%?.#.#","#.........###.#.@","#############p###"],
+            ["#################","#.....!.?...ed.d#","#.....524....d.d#","#............d.d#","#............d.d#","#.e..........d.d#","#............d.d@","#............d.d#","######.k.########","p...ch...########","#################"],
+            ["#################","############..d.@","############..d##","###6222%223##g###","###1...#.#!##g%b#","###1...#.#....#.#","p..1...h........#","###?.c2h.....k..#","###############.#","###############e#","#################"],
+            ["#################","p.ch....?...62g.@","####6%%%7%%%4####","####1###53#######","####1#...1##.####","####1...e522!####","####1##....#.####","####$##.*###.####","####1###*###.####","#b224........####","#################"],
+            ["#############@###","p.ch.....?236g###","#####****.*11.###","#####......11.###","#####......11.###","#####......11.###","#####......11.###","#####......11.###","#####......57!###","#####eeeee..5b###","#################"],
+            ["#################","#################","#################","#################","#################","#################","#################",";....g.....!hc###","#####$#######.###",";....gb....?#.###","#############p###"],
+            ["########.########","...hh23..########","#..###$##########","#..?2%&!.########","#....#$..########","######c..########","#################",";...............p","#################",";...............p","#################"],
+            ["#################","####........#####","####........#####",";.##........#####","#.##....##.*#####","#.......##..#####","####.ee.##..#####","##########......p","##########..#####","##########......p","#################"],
+            ["#################","##.............##","#####.#####.#####",";...............p","#################","##.....?d......##","#######5%3#######","..k.k.d.d1..d....","#####.#.#!#.#####","##......#......##","#################"],
+            ["############@####","############.####","###...#...#...###","###.!2%2?.#.....p","###...#...#...###","####.###.########","###...#...d.d.###","......#.k.d.d....","###...#...d.d.###","#################","#################"],
+            ["############@####","############.####","############.####","############.####","############.####","############.####","############.####","############.####","############.####","############.####","############p####"],
+            ["########@########","########.########","########.########","########.########","########.########","########.########","#######...#...###","#######.?.#.!e###","#######...#...###","############.####","############p####"]
+        ];
+
+        rawLvls.forEach((rows, i) => {
+            let width = rows[0].length;
+            let height = rows.length;
+            let data = [];
+            rows.forEach(r => {
+                for(let c of r) data.push(c);
+            });
+            levels.push({ name: `level_${i+1}`, width, height, data });
+        });
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
