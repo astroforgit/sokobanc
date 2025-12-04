@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atari 16x16 Game Studio</title>
+    <style>
+        :root {
+            --bg: #1e1e1e;
+            --panel: #2d2d2d;
+            --text: #e0e0e0;
+            --accent: #4a90e2;
+            --accent-hover: #357abd;
+            --border: #444;
+            --grid-line: #ff4444;
+            --danger: #e74c3c;
+            --success: #27ae60;
+            --warning: #f39c12;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            margin: 0; padding: 0; height: 100vh; display: flex; overflow: hidden;
+        }
+
+        /* --- MAIN STAGE --- */
+        main { flex-grow: 1; position: relative; height: 100%; overflow: hidden; background: #181818; }
+
+        .view {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; padding: 20px;
+            display: none; flex-direction: column; overflow-y: auto; align-items: center;
+        }
+        .view.active { display: flex; animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; width: 100%; max-width: 1100px; }
+
+        /* --- SIDEBAR --- */
+        nav {
+            width: 80px; background: var(--panel); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 20px; z-index: 10;
+        }
+        .nav-btn {
+            width: 60px; height: 60px; background: #333; border: 2px solid transparent; border-radius: 10px;
+            color: #aaa; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-size: 0.75em; transition: 0.2s;
+        }
+        .nav-btn span { font-size: 1.8em; margin-bottom: 4px; display: block; }
+        .nav-btn:hover { background: #444; color: #fff; }
+        .nav-btn.active { background: var(--accent); color: white; border-color: rgba(255,255,255,0.3); }
+
+        /* --- EDITOR --- */
+        .editor-container { display: flex; gap: 40px; align-items: flex-start; margin-top: 20px; }
+        .grid-wrapper { width: 400px; height: 400px; background: #000; border: 4px solid var(--panel); }
+        .grid-container { display: grid; grid-template-columns: repeat(16, 1fr); grid-template-rows: repeat(16, 1fr); width: 100%; height: 100%; gap: 1px; background: #444; }
+        .pixel { background: #000; cursor: crosshair; }
+        .pixel.active { background: #fff; }
+        .pixel:nth-child(16n+9) { border-left: 2px solid var(--grid-line); }
+        .pixel:nth-child(n+129):nth-child(-n+144) { border-top: 2px solid var(--grid-line); }
+        .editor-controls { width: 300px; background: var(--panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+
+        /* --- MAP --- */
+        .map-layout { display: flex; gap: 20px; width: 100%; max-width: 1200px; height: 100%; }
+        .map-sidebar { width: 200px; display: flex; flex-direction: column; gap: 10px; background: var(--panel); padding: 10px; border-radius: 8px; height: fit-content; max-height: 80vh; overflow-y: auto; }
+        .palette-item { display: flex; align-items: center; gap: 10px; padding: 5px; background: #333; cursor: pointer; border-radius: 4px; border: 2px solid transparent; }
+        .palette-item.active { border-color: var(--accent); background: #222; }
+        .palette-preview { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #000; }
+        .map-workspace { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+        .map-toolbar { display: flex; gap: 10px; background: var(--panel); padding: 10px; border-radius: 8px; width: 100%; justify-content: center; align-items: center; }
+        .map-grid-container { display: grid; background: #000; gap: 1px; border: 4px solid #555; }
+        .map-cell { width: 32px; height: 32px; background: #222; image-rendering: pixelated; cursor: crosshair; display: flex; align-items: center; justify-content: center; color: #555; font-size: 10px; font-family: monospace; background-size: cover; }
+
+        /* --- UI --- */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-size: 0.85em; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid var(--border); color: white; box-sizing: border-box; font-size: 1em; font-family: monospace; border-radius: 4px; }
+        input:focus { outline: none; border-color: var(--accent); }
+        button { width: 100%; padding: 12px; margin-top: 5px; cursor: pointer; background: var(--accent); color: white; border: none; font-weight: bold; border-radius: 4px; font-size: 1em; }
+        button:hover { background: var(--accent-hover); }
+        button.secondary { background: #444; }
+        button.danger { background: var(--danger); }
+        button.success { background: var(--success); }
+        button.icon-btn { width: auto; padding: 8px 15px; margin: 0; }
+        .mini-btn { font-size: 0.75em; padding: 4px 8px; width: auto; margin: 0; border-radius: 3px; }
+
+        /* --- LIST & IMPORT --- */
+        #tileList { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; width: 100%; max-width: 1000px; }
+        .tile-card { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 10px; display: flex; align-items: center; cursor: pointer; }
+        .tile-card:hover { transform: translateY(-2px); border-color: var(--accent); background: #333; }
+        .tile-preview { width: 48px; height: 48px; image-rendering: pixelated; border: 2px solid #555; background: #000; margin-right: 15px; }
+        .tile-info { flex-grow: 1; }
+        .tile-name { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; }
+        .tile-key { font-family: monospace; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .card-actions { display: flex; flex-direction: column; gap: 5px; margin-left: 10px; }
+        .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; width: 100%; }
+        .candidate-card { border: 1px solid #444; padding: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; background: #222; border-radius: 4px; }
+        .candidate-card.selected { border-color: var(--accent); background: #333; }
+        .candidate-card canvas { width: 32px; height: 32px; border: 1px solid #000; image-rendering: pixelated; margin-bottom: 5px;}
+
+        /* --- EXPORT --- */
+        .code-container { width: 100%; max-width: 900px; height: 100%; display: flex; flex-direction: column; }
+        .tabs { display: flex; gap: 5px; margin-bottom: 0; }
+        .tab { padding: 12px 25px; background: var(--panel); cursor: pointer; border: 1px solid var(--border); border-bottom: none; color: #aaa; border-radius: 6px 6px 0 0; }
+        .tab.active { background: #111; color: var(--accent); font-weight: bold; border-bottom: 1px solid #111; }
+        textarea { flex-grow: 1; background: #111; color: #0f0; font-family: 'Consolas', monospace; border: 1px solid var(--border); padding: 20px; resize: none; white-space: pre; font-size: 0.9em; }
+
+        #feedbackToast { position: fixed; top: 20px; right: 20px; background: var(--success); color: white; padding: 10px 20px; border-radius: 4px; transform: translateY(-100px); transition: 0.3s; z-index: 1000; font-weight: bold; }
+        #feedbackToast.show { transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+<div id="feedbackToast">Action Successful</div>
+
+<main>
+    <!-- VIEW 1: EDITOR -->
+    <div id="view-editor" class="view active">
+        <h2>Tile Editor</h2>
+        <div class="editor-container">
+            <div class="grid-wrapper"><div class="grid-container" id="grid"></div></div>
+            <div class="editor-controls">
+                <div class="form-group"><label>Variable Name</label><input type="text" id="tileName" placeholder="PLAYER"></div>
+                <div class="form-group"><label>Map Key</label><input type="text" id="tileKey" placeholder="p" maxlength="1" style="text-align: center; font-size: 1.5em;"></div>
+                <div style="height: 20px;"></div>
+                <button onclick="addOrUpdateTile()" id="saveBtn">Save / Update</button>
+                <button class="secondary" onclick="createNewTile()">Clear / New</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 2: LIST -->
+    <div id="view-list" class="view">
+        <h2>Game Tiles</h2>
+        <div id="tileList"></div>
+    </div>
+
+    <!-- VIEW 3: MAP EDITOR -->
+    <div id="view-map" class="view">
+        <h2>Map Editor</h2>
+        <div class="map-layout">
+            <div class="map-sidebar"><label>Palette</label><div id="mapPalette"></div></div>
+            <div class="map-workspace">
+                <div class="map-toolbar">
+                    <select id="levelSelect" onchange="loadLevel(this.value)" style="width: 150px;"></select>
+                    <button class="icon-btn success" onclick="createNewLevel()">+ New</button>
+                    <button class="icon-btn danger" onclick="deleteLevel()">Del</button>
+                    <span style="border-left: 1px solid #555; height: 30px; margin: 0 10px;"></span>
+                    <label style="margin:0;">W:</label><input type="number" id="levelWidth" value="17" style="width: 50px;" onchange="resizeLevel()">
+                    <label style="margin:0;">H:</label><input type="number" id="levelHeight" value="11" style="width: 50px;" onchange="resizeLevel()">
+                </div>
+                <div id="mapGrid" class="map-grid-container"></div>
+                <p style="color: #666; font-size: 0.9em;">Left Click: Paint | Right Click: Erase</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 4: IMPORT -->
+    <div id="view-import" class="view">
+        <h2>Import PNG</h2>
+        <div class="editor-controls" style="width: 100%; max-width: 600px; margin-bottom: 20px;">
+            <input type="file" id="fileInput" accept="image/png" onchange="handleFileSelect(event)">
+            <p>1. Upload PNG. 2. "Copy Img". 3. Go to List -> "Paste Img".</p>
+        </div>
+        <div id="candidatesList" class="import-grid"></div>
+    </div>
+
+    <!-- VIEW 5: EXPORT -->
+    <div id="view-export" class="view">
+        <h2>Export Game Code</h2>
+        <div class="editor-controls" style="width: 100%; max-width: 900px; margin-bottom: 20px; flex-direction: row; display: flex; align-items: flex-end; gap: 20px;">
+            <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                <label>Game Name (Filename prefix)</label>
+                <input type="text" id="gameName" value="duplicator" placeholder="mygame">
+            </div>
+            <button class="success" style="width: auto; margin: 0;" onclick="exportFullGame()">EXPORT FULL GAME PACKAGE</button>
+        </div>
+
+        <div class="code-container">
+            <div class="tabs">
+                <div class="tab active" onclick="switchCodeTab('full')">Full Package</div>
+                <div class="tab" onclick="switchCodeTab('levels')">levels.c</div>
+                <div class="tab" onclick="switchCodeTab('graphics')">graphics.h</div>
+            </div>
+            <textarea id="output" readonly></textarea>
+            <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy Code to Clipboard</button>
+        </div>
+    </div>
+</main>
+
+<nav>
+    <div class="nav-btn active" onclick="switchView('editor')"><span>✎</span>Draw</div>
+    <div class="nav-btn" onclick="switchView('list')"><span>☰</span>List</div>
+    <div class="nav-btn" onclick="switchView('map')"><span>▦</span>Map</div>
+    <div class="nav-btn" onclick="switchView('import')"><span>⭳</span>Import</div>
+    <div class="nav-btn" onclick="switchView('export')"><span>⬇</span>Export</div>
+</nav>
+
+<script>
+    // --- Data & State ---
+    let tiles = [];
+    let levels = [];
+    let candidates = [];
+    let editingIndex = -1;
+    let currentGrid = new Array(256).fill(0);
+    let clipboardGrid = null;
+    let isDrawing = false;
+    let currentCodeTab = 'full';
+    let currentLevelIndex = 0;
+    let selectedPaletteKey = '#';
+    let isPaintingMap = false;
+
+    // --- DOM ---
+    const gridEl = document.getElementById('grid');
+    const tileListEl = document.getElementById('tileList');
+    const outputEl = document.getElementById('output');
+    const nameInput = document.getElementById('tileName');
+    const keyInput = document.getElementById('tileKey');
+    const saveBtn = document.getElementById('saveBtn');
+    const toast = document.getElementById('feedbackToast');
+    const mapGridEl = document.getElementById('mapGrid');
+    const mapPaletteEl = document.getElementById('mapPalette');
+    const levelSelectEl = document.getElementById('levelSelect');
+    const lvlW = document.getElementById('levelWidth');
+    const lvlH = document.getElementById('levelHeight');
+    const candidatesListEl = document.getElementById('candidatesList');
+    const gameNameInput = document.getElementById('gameName');
+
+    // --- Init ---
+    window.onload = function() {
+        for(let i=0; i<256; i++) {
+            let p = document.createElement('div');
+            p.className = 'pixel';
+            p.onmousedown = (e) => { if(e.button === 0) { isDrawing = true; togglePixel(i); } };
+            p.onmouseenter = () => { if(isDrawing) togglePixel(i, true); };
+            gridEl.appendChild(p);
+        }
+        document.onmouseup = () => { isDrawing = false; isPaintingMap = false; };
+        importInitialData();
+        importInitialLevels();
+    };
+
+    function showToast(msg, type="success") {
+        toast.innerText = msg;
+        toast.style.background = type === "success" ? "var(--success)" : "var(--warning)";
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${viewName}`).classList.add('active');
+        document.querySelector(`.nav-btn[onclick="switchView('${viewName}')"]`).classList.add('active');
+        if(viewName === 'list') renderList();
+        if(viewName === 'map') initMapEditor();
+        if(viewName === 'export') exportFullGame();
+    }
+
+    // --- Editor ---
+    function togglePixel(index, forceDraw = false) {
+        if(!forceDraw) currentGrid[index] = currentGrid[index] ? 0 : 1; else currentGrid[index] = 1;
+        renderEditorGrid();
+    }
+    function renderEditorGrid() {
+        Array.from(gridEl.children).forEach((div, i) => { div.className = currentGrid[i] ? 'pixel active' : 'pixel'; });
+    }
+    function createNewTile() {
+        currentGrid.fill(0); nameInput.value = ''; keyInput.value = ''; editingIndex = -1;
+        saveBtn.innerText = "Add New Tile"; renderEditorGrid();
+    }
+    function addOrUpdateTile() {
+        const name = nameInput.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
+        const key = keyInput.value;
+        if(!name || !key) { showToast("Name and Key required", "warn"); return; }
+        const tileObj = { name: name, key: key, data: [...currentGrid] };
+        if(editingIndex > -1) { tiles[editingIndex] = tileObj; showToast("Updated!"); }
+        else { tiles.push(tileObj); editingIndex = tiles.length - 1; showToast("Added!"); }
+        setTimeout(() => saveBtn.innerText = "Save / Update", 1000);
+    }
+    function loadTile(index) {
+        editingIndex = index; const t = tiles[index]; currentGrid = [...t.data];
+        nameInput.value = t.name; keyInput.value = t.key;
+        renderEditorGrid(); saveBtn.innerText = "Save / Update"; switchView('editor');
+    }
+
+    // --- List & Clipboard ---
+    function copyGridToClipboard(e, data) { e.stopPropagation(); clipboardGrid = [...data]; showToast("Image Copied!"); }
+    function pasteGridToTile(e, index) {
+        e.stopPropagation();
+        if(!clipboardGrid) { showToast("Clipboard Empty", "warn"); return; }
+        if(confirm(`Overwrite ${tiles[index].name}?`)) { tiles[index].data = [...clipboardGrid]; renderList(); showToast("Pasted!"); }
+    }
+    function deleteTile(e, index) { e.stopPropagation(); if(confirm('Delete?')) { tiles.splice(index, 1); renderList(); } }
+
+    function renderList() {
+        tileListEl.innerHTML = '';
+        tiles.forEach((t, i) => {
+            const div = document.createElement('div'); div.className = 'tile-card'; div.onclick = () => loadTile(i);
+            const cvs = document.createElement('canvas'); cvs.width = 16; cvs.height = 16; cvs.className = 'tile-preview';
+            drawTileToCanvas(t.data, cvs);
+            const info = document.createElement('div'); info.className = 'tile-info';
+            info.innerHTML = `<div class="tile-name">${t.name}</div><div class="tile-key">${t.key}</div>`;
+            const actions = document.createElement('div'); actions.className = 'card-actions';
+            const pasteBtn = document.createElement('button'); pasteBtn.className = 'mini-btn warning'; pasteBtn.innerText = 'Paste Img'; pasteBtn.onclick = (e) => pasteGridToTile(e, i);
+            const delBtn = document.createElement('button'); delBtn.className = 'mini-btn danger'; delBtn.innerText = 'Del'; delBtn.onclick = (e) => deleteTile(e, i);
+            actions.append(pasteBtn, delBtn); div.append(cvs, info, actions); tileListEl.appendChild(div);
+        });
+    }
+
+    // --- Import ---
+    function handleFileSelect(evt) {
+        const file = evt.target.files[0]; if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => { const img = new Image(); img.onload = () => processImage(img); img.src = e.target.result; };
+        reader.readAsDataURL(file);
+    }
+    function processImage(img) {
+        candidates = []; const cvs = document.createElement('canvas'); cvs.width = img.width; cvs.height = img.height;
+        const ctx = cvs.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const cols = Math.floor(img.width / 16); const rows = Math.floor(img.height / 16);
+        for(let y=0; y<rows; y++) {
+            for(let x=0; x<cols; x++) {
+                const imgData = ctx.getImageData(x*16, y*16, 16, 16);
+                const grid = new Array(256).fill(0); const d = imgData.data;
+                for(let i=0; i<256; i++) if(d[i*4+3] > 100 && (d[i*4]+d[i*4+1]+d[i*4+2])/3 > 100) grid[i]=1;
+                candidates.push(grid);
+            }
+        }
+        renderCandidates();
+    }
+    function renderCandidates() {
+        candidatesListEl.innerHTML = '';
+        candidates.forEach((data, i) => {
+            const div = document.createElement('div'); div.className = 'candidate-card';
+            const cvs = document.createElement('canvas'); cvs.width = 16; cvs.height = 16; drawTileToCanvas(data, cvs);
+            const copyBtn = document.createElement('button'); copyBtn.className = 'mini-btn secondary'; copyBtn.innerText = "Copy Img"; copyBtn.onclick = (e) => copyGridToClipboard(e, data);
+            div.append(cvs, copyBtn); candidatesListEl.appendChild(div);
+        });
+    }
+
+    // --- Map ---
+    function initMapEditor() { renderPalette(); updateLevelSelect(); if(levels.length > 0) loadLevel(currentLevelIndex); else createNewLevel(); }
+    function renderPalette() {
+        mapPaletteEl.innerHTML = '';
+        const eraseDiv = document.createElement('div'); eraseDiv.className = `palette-item ${selectedPaletteKey === ' ' ? 'active' : ''}`;
+        eraseDiv.onclick = () => { selectedPaletteKey = ' '; renderPalette(); };
+        eraseDiv.innerHTML = `<div class="palette-preview" style="background:#000;"></div><span>Empty</span>`;
+        mapPaletteEl.appendChild(eraseDiv);
+        tiles.forEach(t => {
+            const div = document.createElement('div'); div.className = `palette-item ${selectedPaletteKey === t.key ? 'active' : ''}`;
+            div.onclick = () => { selectedPaletteKey = t.key; renderPalette(); };
+            const cvs = document.createElement('canvas'); cvs.width = 16; cvs.height = 16; cvs.className = 'palette-preview'; drawTileToCanvas(t.data, cvs);
+            const span = document.createElement('span'); span.innerText = `${t.name} (${t.key})`;
+            div.append(cvs, span); mapPaletteEl.appendChild(div);
+        });
+    }
+    function createNewLevel() {
+        const newLvl = { name: `level_${levels.length + 1}`, width: 17, height: 11, data: new Array(17*11).fill(' ') };
+        for(let x=0; x<17; x++) { newLvl.data[x]='#'; newLvl.data[(10*17)+x]='#'; }
+        for(let y=0; y<11; y++) { newLvl.data[y*17]='#'; newLvl.data[y*17+16]='#'; }
+        levels.push(newLvl); currentLevelIndex = levels.length - 1; updateLevelSelect(); loadLevel(currentLevelIndex);
+    }
+    function updateLevelSelect() { levelSelectEl.innerHTML = ''; levels.forEach((lvl, i) => { const opt = document.createElement('option'); opt.value = i; opt.text = `Level ${i+1}`; if(i === currentLevelIndex) opt.selected = true; levelSelectEl.appendChild(opt); }); }
+    function loadLevel(index) { currentLevelIndex = parseInt(index); const lvl = levels[currentLevelIndex]; lvlW.value = lvl.width; lvlH.value = lvl.height; renderMapGrid(); }
+    function deleteLevel() { if(levels.length<=1) return; if(confirm("Delete level?")) { levels.splice(currentLevelIndex, 1); currentLevelIndex = Math.max(0, currentLevelIndex-1); updateLevelSelect(); loadLevel(currentLevelIndex); } }
+    function resizeLevel() {
+        const w = parseInt(lvlW.value), h = parseInt(lvlH.value); if(w<5||h<5||w>40||h>40) return;
+        const lvl = levels[currentLevelIndex]; const oldD = lvl.data; const oldW = lvl.width;
+        const newD = new Array(w*h).fill(' ');
+        for(let y=0; y<Math.min(h, lvl.height); y++) for(let x=0; x<Math.min(w, lvl.width); x++) newD[y*w+x] = oldD[y*oldW+x];
+        lvl.width = w; lvl.height = h; lvl.data = newD; renderMapGrid();
+    }
+    function renderMapGrid() {
+        const lvl = levels[currentLevelIndex]; mapGridEl.innerHTML = '';
+        mapGridEl.style.gridTemplateColumns = `repeat(${lvl.width}, 32px)`; mapGridEl.style.gridTemplateRows = `repeat(${lvl.height}, 32px)`; mapGridEl.style.width = `${lvl.width*33}px`;
+        lvl.data.forEach((k, i) => {
+            const cell = document.createElement('div'); cell.className = 'map-cell';
+            const tile = tiles.find(t => t.key === k);
+            if(tile) { const cvs = document.createElement('canvas'); cvs.width=16; cvs.height=16; drawTileToCanvas(tile.data, cvs); cell.style.backgroundImage = `url(${cvs.toDataURL()})`; } else if(k !== ' ') cell.innerText = k;
+            cell.onmousedown = (e) => { isPaintingMap = true; if(e.button === 2) applyPaint(i, ' '); else applyPaint(i, selectedPaletteKey); };
+            cell.onmouseenter = (e) => { if(isPaintingMap) applyPaint(i, selectedPaletteKey); };
+            cell.oncontextmenu = (e) => e.preventDefault();
+            mapGridEl.appendChild(cell);
+        });
+    }
+    function applyPaint(i, k) {
+        levels[currentLevelIndex].data[i] = k;
+        const cell = mapGridEl.children[i]; const tile = tiles.find(t => t.key === k);
+        if(tile) { const cvs = document.createElement('canvas'); cvs.width=16; cvs.height=16; drawTileToCanvas(tile.data, cvs); cell.style.backgroundImage = `url(${cvs.toDataURL()})`; cell.innerText=''; }
+        else { cell.style.backgroundImage=''; cell.innerText = k===' '?'':k; }
+    }
+
+    // --- Export ---
+    function switchCodeTab(tabName) {
+        currentCodeTab = tabName;
+        document.querySelectorAll('.tab').forEach(t => t.className = 'tab');
+        document.querySelector(`.tab[onclick="switchCodeTab('${tabName}')"]`).classList.add('active');
+        if(tabName === 'full') exportFullGame(); else generateCode();
+    }
+
+    function getByte(pixels, offset) { let b=0; for(let i=0; i<8; i++) if(pixels[offset+i]) b |= (1<<(7-i)); return '0x'+b.toString(16).toUpperCase().padStart(2,'0'); }
+    function generateHexArray(grid) {
+        let tl=[], tr=[], bl=[], br=[];
+        for(let y=0; y<8; y++) { tl.push(getByte(grid, y*16)); tr.push(getByte(grid, y*16+8)); }
+        for(let y=8; y<16; y++) { bl.push(getByte(grid, y*16)); br.push(getByte(grid, y*16+8)); }
+        return [...tl, ...tr, ...bl, ...br];
+    }
+    function drawTileToCanvas(data, cvs) {
+        const ctx = cvs.getContext('2d'); ctx.fillStyle='#000'; ctx.fillRect(0,0,16,16); ctx.fillStyle='#fff';
+        for(let i=0; i<256; i++) if(data[i]) ctx.fillRect(i%16, Math.floor(i/16), 1, 1);
+    }
+    function copyToClipboard() { outputEl.select(); document.execCommand('copy'); showToast("Copied Code!"); }
+
+    function generateCode() {
+        let txt = '';
+        const gameName = gameNameInput.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || "game";
+
+        if(currentCodeTab === 'levels') {
+            txt += `#include "${gameName}_levels.h"\n\n`;
+            let arrayNames = [];
+            levels.forEach((lvl, i) => {
+                const name = `${gameName}_level_${i+1}`; arrayNames.push(name);
+                txt += `const char* ${name}[] = {\n`;
+                for(let y=0; y<lvl.height; y++) {
+                    let rowStr = ""; for(let x=0; x<lvl.width; x++) rowStr += lvl.data[y*lvl.width+x];
+                    txt += `    "${rowStr}"${y < lvl.height-1 ? ',' : ''}\n`;
+                }
+                txt += `};\n\n`;
+            });
+            txt += `const char** ${gameName}_levels[] = {\n    ` + arrayNames.join(',\n    ') + `\n};\n\n`;
+            txt += `const unsigned char NUM_LEVELS = ${levels.length};\n`;
+        }
+        else if(currentCodeTab === 'graphics') {
+            txt += `#ifndef ${gameName.toUpperCase()}_GRAPHICS_H\n#define ${gameName.toUpperCase()}_GRAPHICS_H\n\n`;
+            txt += `static unsigned char ${gameName}_graphics[] = {\n`;
+            tiles.forEach(t => { txt += `    /* ${t.name} */\n    ${generateHexArray(t.data).join(',')},\n\n`; });
+            txt += `};\n#endif\n`;
+        }
+        outputEl.value = txt;
+    }
+
+    function exportFullGame() {
+        const gameName = gameNameInput.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || "game";
+        const capsName = gameName.toUpperCase();
+        let out = "";
+
+        const separator = (fname) => `\n/* -----------------------------------------------------------------------\n * File: ${fname}\n * ----------------------------------------------------------------------- */\n`;
+
+        // 1. GRAPHICS.H
+        out += separator(`${gameName}_graphics.h`);
+        out += `#ifndef ${capsName}_GRAPHICS_H\n#define ${capsName}_GRAPHICS_H\n\n`;
+        out += `static unsigned char ${gameName}_graphics[] = {\n`;
+        tiles.forEach(t => out += `    /* ${t.name} */\n    ${generateHexArray(t.data).join(',')},\n`);
+        out += `};\n#endif\n`;
+
+        // 2. FONT.H (Enums)
+        out += separator(`${gameName}_font.h`);
+        out += `#ifndef ${capsName}_FONT_H\n#define ${capsName}_FONT_H\n\nenum TileBaseID {\n`;
+        if(tiles.length > 0) {
+            out += `    TILE_ID_${tiles[0].name} = 0x00,\n`;
+            for(let i=1; i<tiles.length; i++) out += `    TILE_ID_${tiles[i].name} = TILE_ID_${tiles[i-1].name} + 4,\n`;
+        }
+        out += `    TILE_ID_EMPTY = 0\n};\n#endif\n`;
+
+        // 3. MAP.C (Mapping Logic)
+        out += separator(`${gameName}_map.c`);
+        out += `#include "${gameName}_font.h"\ntypedef unsigned char byte;\n\n`;
+        out += `byte map_tile_to_id(byte tile) {\n    switch (tile) {\n`;
+        tiles.forEach(t => out += `        case '${t.key}': return TILE_ID_${t.name};\n`);
+        out += `        default: return 0;\n    }\n}\n`;
+
+        // 4. LEVELS.H
+        out += separator(`${gameName}_levels.h`);
+        out += `#ifndef ${capsName}_LEVELS_H\n#define ${capsName}_LEVELS_H\n\nextern const char** ${gameName}_levels[];\nextern const unsigned char NUM_LEVELS;\n#endif\n`;
+
+        // 5. LEVELS.C
+        out += separator(`${gameName}_levels.c`);
+        out += `#include "${gameName}_levels.h"\n\n`;
+        let lvlNames = [];
+        levels.forEach((lvl, i) => {
+            const lname = `${gameName}_level_${i+1}`; lvlNames.push(lname);
+            out += `const char* ${lname}[] = {\n`;
+            for(let y=0; y<lvl.height; y++) {
+                let row = ""; for(let x=0; x<lvl.width; x++) row += lvl.data[y*lvl.width+x];
+                out += `    "${row}"${y<lvl.height-1?',':''}\n`;
+            }
+            out += `};\n`;
+        });
+        out += `\nconst char** ${gameName}_levels[] = {\n    ${lvlNames.join(',\n    ')}\n};\n`;
+        out += `const unsigned char NUM_LEVELS = ${levels.length};\n`;
+
+        // 6. CONIO.H (Simple Display)
+        out += separator(`${gameName}_conio.h`);
+        out += `#ifndef ${capsName}_CONIO_H\n#define ${capsName}_CONIO_H\n#include <string.h>\n#define SCREEN_MEM ((unsigned char*)0x9000)\nvoid setup_screen(void);\nvoid draw_tile_at(unsigned char x, unsigned char y, unsigned char tile_char);\nvoid clear_screen(void);\nvoid wait_vblank(void);\n#endif\n`;
+
+        // 7. CONIO.C
+        out += separator(`${gameName}_conio.c`);
+        out += `#include "${gameName}_conio.h"\n#include <peekpoke.h>\n\n`;
+        out += `static const unsigned short row_offsets[] = {\n    0,40,80,120,160,200,240,280,320,360,400,440,480,520,560,600,640,680,720,760,800,840,880,920\n};\n\n`;
+        out += `void setup_screen(void) {\n    unsigned char i;\n    POKE(756, 0x70); // Charset at 0x7000\n    POKEW(560, 0x8000); // DLIST at 0x8000\n    // Simple DL Setup omitted for brevity, assumes standard lib or custom DL setup\n}\n\n`;
+        out += `void draw_tile_at(unsigned char x, unsigned char y, unsigned char tile_char) {\n`;
+        out += `    unsigned char* scr = SCREEN_MEM + row_offsets[y*2] + (x*2);\n    if(tile_char==0) { scr[0]=0; scr[1]=0; scr[40]=0; scr[41]=0; } \n`;
+        out += `    else { scr[0]=tile_char; scr[1]=tile_char+1; scr[40]=tile_char+2; scr[41]=tile_char+3; }\n}\n\n`;
+        out += `void clear_screen(void) { memset(SCREEN_MEM, 0, 960); }\n`;
+        out += `void wait_vblank(void) { asm("lda $14"); asm("cmp $14"); asm("beq %g", -4); }\n`;
+
+        // 8. MAIN.C (Simplified Logic)
+        out += separator(`${gameName}_main.c`);
+        out += `#include <stdlib.h>\n#include <string.h>\n#include <conio.h>\n#include <joystick.h>\n#include <peekpoke.h>\n\n`;
+        out += `#include "${gameName}_graphics.h"\n#include "${gameName}_font.h"\n#include "${gameName}_levels.h"\n#include "${gameName}_conio.h"\n\n`;
+        out += `// Extern from map.c\nunsigned char map_tile_to_id(unsigned char tile);\n\n`;
+        out += `// State\nunsigned char p_x, p_y, cur_level=0;\nchar level_map[12][20];\n\n`;
+        out += `void load_current_level() {\n    unsigned char x, y;\n    const char** lvl_data = (const char**)(${gameName}_levels[cur_level]);\n    clear_screen();\n    for(y=0; y<11; y++) {\n        for(x=0; x<17; x++) {\n            char t = lvl_data[y][x];\n            if(t == 'p') { p_x=x; p_y=y; t = '.'; } // Player start\n            level_map[y][x] = t;\n            draw_tile_at(x, y+2, map_tile_to_id(t));\n        }\n    }\n    draw_tile_at(p_x, p_y+2, TILE_ID_PLAYER);\n}\n\n`;
+        out += `void try_move(signed char dx, signed char dy) {\n    unsigned char nx = p_x + dx; unsigned char ny = p_y + dy;\n    char t = level_map[ny][nx];\n`;
+        out += `    if(t != '#') {\n        // Erase old player\n        draw_tile_at(p_x, p_y+2, map_tile_to_id(level_map[p_y][p_x]));\n        p_x = nx; p_y = ny;\n        // Draw new player\n        draw_tile_at(p_x, p_y+2, TILE_ID_PLAYER);\n        // Exit check (assuming @ is exit)\n        if(t == '@') {\n            cur_level++;\n            if(cur_level >= NUM_LEVELS) cur_level=0;\n            load_current_level();\n        }\n    }\n}\n\n`;
+        out += `void main(void) {\n    unsigned char joy, last_joy=0;\n    joy_install(joy_static_stddrv);\n    // Init Graphics RAM\n    memcpy((char*)0x7000, ${gameName}_graphics, sizeof(${gameName}_graphics));\n    \n    // Simple Display List (Manual Pokes for simplicity)\n    // This requires proper DLIST setup usually found in setup_graphics()\n    POKE(756, 0x70); POKE(709,0); POKE(710,14);\n    \n    load_current_level();\n\n    while(1) {\n        joy = joy_read(0);\n        if(joy && !last_joy) {\n            if(JOY_UP(joy)) try_move(0, -1);\n            else if(JOY_DOWN(joy)) try_move(0, 1);\n            else if(JOY_LEFT(joy)) try_move(-1, 0);\n            else if(JOY_RIGHT(joy)) try_move(1, 0);\n        }\n        last_joy = joy;\n        wait_vblank();\n    }\n}\n`;
+
+        outputEl.value = out;
+    }
+
+    // --- Data Loaders ---
+    function importInitialData() {
+        // (Shortened for brevity - reuse previous raw data logic)
+        const raw=[0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x0,0x0,0xF,0xF,0xF,0xF,0x3F,0x3F,0x0,0x0,0xC0,0xC0,0xC0,0xC0,0xF0,0xF0,0xF,0xF,0xC,0xC,0x0,0x0,0x0,0x0,0xC0,0xC0,0xC0,0xC0,0x0,0x0,0x0,0x0];
+        const metas=[{n:"WALL",k:"#"},{n:"PLAYER",k:"p"}];
+        // Only loading 2 basic tiles to show it works, user can use Import tab for rest
+        metas.forEach((m, i) => {
+            const grid = new Array(256).fill(0);
+            const bytes = raw.slice(i*32, i*32+32);
+            const proc = (b, rS, cS) => { for(let r=0;r<8;r++) for(let bit=0;bit<8;bit++) if(b[r]&(1<<(7-bit))) grid[(rS+r)*16+cS+bit]=1; };
+            proc(bytes.slice(0,8),0,0); proc(bytes.slice(8,16),0,8); proc(bytes.slice(16,24),8,0); proc(bytes.slice(24,32),8,8);
+            tiles.push({name:m.n, key:m.k, data:grid});
+        });
+    }
+    function importInitialLevels() {
+        levels.push({ name: "level_1", width: 10, height: 10, data: "##########"+"#........#"+"#........#"+"#...p....#"+"#........#"+"#......@.#"+"#........#"+"#........#"+"#........#"+"##########".split('').map(c=>c) });
+    }
+</script>
+</body>
+</html>

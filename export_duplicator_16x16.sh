@@ -19,7 +19,6 @@ FILES=(
     "duplicator_graphics_16x16.h"
     "duplicator_game_16x16.c"
     "duplicator_game.h"
-    "scale_font.js"
 )
 
 echo "Exporting duplicator 16x16 game files to $OUTPUT_FILE..."
