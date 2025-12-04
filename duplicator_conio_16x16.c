@@ -26,8 +26,10 @@ void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {
     word offset_br = (word)(char_y + 1) * CHAR_COLS + char_x + 1; // Bottom-right
 
     // Write 4 DIFFERENT consecutive characters to create a 16x16 tile
-    // tile_char is the top-left character code
-    // The other 3 are consecutive: tile_char+1, tile_char+2, tile_char+3
+    // tile_char is the base tile code (e.g., TILE_WALL)
+    // The 4 corners are: tile_char+TILE_TL, +TILE_TR, +TILE_BL, +TILE_BR
+    // Since TILE_TL=0, TILE_TR=1, TILE_BL=2, TILE_BR=3, this simplifies to:
+    // tile_char+0, tile_char+1, tile_char+2, tile_char+3
     if (tile_char == 0) {
         // Empty space - write zeros
         SCREEN_MEM[offset_tl] = 0;
@@ -35,10 +37,10 @@ void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {
         SCREEN_MEM[offset_bl] = 0;
         SCREEN_MEM[offset_br] = 0;
     } else {
-        SCREEN_MEM[offset_tl] = tile_char;      // Top-left
-        SCREEN_MEM[offset_tr] = tile_char + 1;  // Top-right
-        SCREEN_MEM[offset_bl] = tile_char + 2;  // Bottom-left
-        SCREEN_MEM[offset_br] = tile_char + 3;  // Bottom-right
+        SCREEN_MEM[offset_tl] = tile_char + TILE_TL;  // Top-left (tile_char+0)
+        SCREEN_MEM[offset_tr] = tile_char + TILE_TR;  // Top-right (tile_char+1)
+        SCREEN_MEM[offset_bl] = tile_char + TILE_BL;  // Bottom-left (tile_char+2)
+        SCREEN_MEM[offset_br] = tile_char + TILE_BR;  // Bottom-right (tile_char+3)
     }
 }
 
