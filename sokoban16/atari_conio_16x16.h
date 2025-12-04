@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "atari_font_16x16.h"  // For TILE_TL, TILE_TR, TILE_BL, TILE_BR
 
 // Data types for clarity
 typedef unsigned char byte;

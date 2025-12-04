@@ -26,43 +26,29 @@ typedef unsigned short word;
 #define ROM_CHARSET_ADDRESS 0xE000
 
 // 16x16 Tile Character Mappings
-// Each tile uses 4 consecutive characters
+// Each tile uses 4 consecutive characters (TL, TR, BL, BR)
 
-// Wall tile (uses characters 0x40-0x43)
-#define TILE_WALL_TL  0x40  // Top-Left
-#define TILE_WALL_TR  0x41  // Top-Right
-#define TILE_WALL_BL  0x42  // Bottom-Left
-#define TILE_WALL_BR  0x43  // Bottom-Right
+// Tile corner offsets - add these to the base tile code
+#define TILE_TL  0  // Top-Left
+#define TILE_TR  1  // Top-Right
+#define TILE_BL  2  // Bottom-Left
+#define TILE_BR  3  // Bottom-Right
 
-// Box tile (uses characters 0x44-0x47)
-#define TILE_BOX_TL   0x44
-#define TILE_BOX_TR   0x45
-#define TILE_BOX_BL   0x46
-#define TILE_BOX_BR   0x47
+// Base tile codes (each tile occupies 4 consecutive character codes)
+#define TILE_WALL        0x40  // Wall tile (uses characters 0x40-0x43)
+#define TILE_BOX         0x44  // Box tile (uses characters 0x44-0x47)
+#define TILE_GOAL        0x48  // Goal tile (uses characters 0x48-0x4B)
+#define TILE_BOXGOAL     0x4C  // Box on Goal tile (uses characters 0x4C-0x4F)
+#define TILE_PLAYER      0x50  // Player tile (uses characters 0x50-0x53)
+#define TILE_PLAYERGOAL  0x54  // Player on Goal tile (uses characters 0x54-0x57)
 
-// Goal tile (uses characters 0x48-0x4B)
-#define TILE_GOAL_TL  0x48
-#define TILE_GOAL_TR  0x49
-#define TILE_GOAL_BL  0x4A
-#define TILE_GOAL_BR  0x4B
-
-// Box on Goal tile (uses characters 0x4C-0x4F)
-#define TILE_BOXGOAL_TL  0x4C
-#define TILE_BOXGOAL_TR  0x4D
-#define TILE_BOXGOAL_BL  0x4E
-#define TILE_BOXGOAL_BR  0x4F
-
-// Player tile (uses characters 0x50-0x53)
-#define TILE_PLAYER_TL  0x50
-#define TILE_PLAYER_TR  0x51
-#define TILE_PLAYER_BL  0x52
-#define TILE_PLAYER_BR  0x53
-
-// Player on Goal tile (uses characters 0x54-0x57)
-#define TILE_PLAYERGOAL_TL  0x54
-#define TILE_PLAYERGOAL_TR  0x55
-#define TILE_PLAYERGOAL_BL  0x56
-#define TILE_PLAYERGOAL_BR  0x57
+// Legacy compatibility - old _TL definitions point to base tile codes
+#define TILE_WALL_TL        TILE_WALL
+#define TILE_BOX_TL         TILE_BOX
+#define TILE_GOAL_TL        TILE_GOAL
+#define TILE_BOXGOAL_TL     TILE_BOXGOAL
+#define TILE_PLAYER_TL      TILE_PLAYER
+#define TILE_PLAYERGOAL_TL  TILE_PLAYERGOAL
 
 /*
   Initialize custom graphics mode with 16x16 tile character set

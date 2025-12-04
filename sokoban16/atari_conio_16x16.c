@@ -29,10 +29,13 @@ void my_put_tile_16x16(byte tx, byte ty, byte tile_tl) {
         SCREEN_MEM[offset_br] = 0;  // Space
     } else {
         // Write all 4 characters that make up the tile
-        SCREEN_MEM[offset_tl] = tile_tl;      // Top-left
-        SCREEN_MEM[offset_tr] = tile_tl + 1;  // Top-right
-        SCREEN_MEM[offset_bl] = tile_tl + 2;  // Bottom-left
-        SCREEN_MEM[offset_br] = tile_tl + 3;  // Bottom-right
+        // tile_tl is the base tile code (e.g., TILE_WALL)
+        // The 4 corners are: tile_tl+TILE_TL, +TILE_TR, +TILE_BL, +TILE_BR
+        // Since TILE_TL=0, TILE_TR=1, TILE_BL=2, TILE_BR=3, this simplifies to:
+        SCREEN_MEM[offset_tl] = tile_tl + TILE_TL;  // Top-left (tile_tl+0)
+        SCREEN_MEM[offset_tr] = tile_tl + TILE_TR;  // Top-right (tile_tl+1)
+        SCREEN_MEM[offset_bl] = tile_tl + TILE_BL;  // Bottom-left (tile_tl+2)
+        SCREEN_MEM[offset_br] = tile_tl + TILE_BR;  // Bottom-right (tile_tl+3)
     }
 }
 
