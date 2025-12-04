@@ -34,21 +34,14 @@ typedef unsigned short word;
 #define TILE_BL  2  // Bottom-Left
 #define TILE_BR  3  // Bottom-Right
 
-// Base tile codes (each tile occupies 4 consecutive character codes)
-#define TILE_WALL        0x40  // Wall tile (uses characters 0x40-0x43)
-#define TILE_BOX         0x44  // Box tile (uses characters 0x44-0x47)
-#define TILE_GOAL        0x48  // Goal tile (uses characters 0x48-0x4B)
-#define TILE_BOXGOAL     0x4C  // Box on Goal tile (uses characters 0x4C-0x4F)
-#define TILE_PLAYER      0x50  // Player tile (uses characters 0x50-0x53)
-#define TILE_PLAYERGOAL  0x54  // Player on Goal tile (uses characters 0x54-0x57)
-
-// Legacy compatibility - old _TL definitions point to base tile codes
-#define TILE_WALL_TL        TILE_WALL
-#define TILE_BOX_TL         TILE_BOX
-#define TILE_GOAL_TL        TILE_GOAL
-#define TILE_BOXGOAL_TL     TILE_BOXGOAL
-#define TILE_PLAYER_TL      TILE_PLAYER
-#define TILE_PLAYERGOAL_TL  TILE_PLAYERGOAL
+// Base screen codes for 16x16 tiles (each tile occupies 4 consecutive codes)
+// These are SCREEN CODES written to screen memory
+#define SC_WALL        0x40  // Wall tile (uses characters 0x40-0x43)
+#define SC_BOX         0x44  // Box tile (uses characters 0x44-0x47)
+#define SC_GOAL        0x48  // Goal tile (uses characters 0x48-0x4B)
+#define SC_BOXGOAL     0x4C  // Box on Goal tile (uses characters 0x4C-0x4F)
+#define SC_PLAYER      0x50  // Player tile (uses characters 0x50-0x53)
+#define SC_PLAYERGOAL  0x54  // Player on Goal tile (uses characters 0x54-0x57)
 
 /*
   Initialize custom graphics mode with 16x16 tile character set

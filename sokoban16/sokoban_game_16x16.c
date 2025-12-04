@@ -63,25 +63,25 @@ void draw_level_16x16(void) {
         for (c = 0; c < TILE_COLS; ++c) {
             t = level[r][c];
             
-            // Map game tiles to 16x16 character tiles
+            // Map game tiles to 16x16 screen codes
             if (t == TILE_WALL) {
-                my_put_tile_16x16(c, r, TILE_WALL_TL);
+                my_put_tile_16x16(c, r, SC_WALL);
             } else if (t == TILE_BOX) {
-                my_put_tile_16x16(c, r, TILE_BOX_TL);
+                my_put_tile_16x16(c, r, SC_BOX);
             } else if (t == TILE_GOAL) {
-                my_put_tile_16x16(c, r, TILE_GOAL_TL);
+                my_put_tile_16x16(c, r, SC_GOAL);
             } else if (t == TILE_BOX_ON_GOAL) {
-                my_put_tile_16x16(c, r, TILE_BOXGOAL_TL);
+                my_put_tile_16x16(c, r, SC_BOXGOAL);
             }
             // Empty tiles are already cleared
         }
     }
-    
+
     // Draw the player
     if (level[player_y][player_x] == TILE_GOAL) {
-        my_put_tile_16x16(player_x, player_y, TILE_PLAYERGOAL_TL);
+        my_put_tile_16x16(player_x, player_y, SC_PLAYERGOAL);
     } else {
-        my_put_tile_16x16(player_x, player_y, TILE_PLAYER_TL);
+        my_put_tile_16x16(player_x, player_y, SC_PLAYER);
     }
 }
 
@@ -134,39 +134,39 @@ void try_move_player_16x16(signed char dx, signed char dy) {
         if (tt == TILE_BOX_ON_GOAL) {
             level[ty][tx] = TILE_GOAL;
             boxes_on_goals--;
-            my_put_tile_16x16(tx, ty, TILE_GOAL_TL);
+            my_put_tile_16x16(tx, ty, SC_GOAL);
         } else {
             level[ty][tx] = TILE_EMPTY;
             my_put_tile_16x16(tx, ty, 0);  // Empty tile
         }
-        
+
         // Place box at new position
         if (bt == TILE_GOAL) {
             level[by][bx] = TILE_BOX_ON_GOAL;
             boxes_on_goals++;
-            my_put_tile_16x16(bx, by, TILE_BOXGOAL_TL);
+            my_put_tile_16x16(bx, by, SC_BOXGOAL);
         } else {
             level[by][bx] = TILE_BOX;
-            my_put_tile_16x16(bx, by, TILE_BOX_TL);
+            my_put_tile_16x16(bx, by, SC_BOX);
         }
     }
-    
+
     // Clear player's old position
     if (level[player_y][player_x] == TILE_GOAL) {
-        my_put_tile_16x16(player_x, player_y, TILE_GOAL_TL);
+        my_put_tile_16x16(player_x, player_y, SC_GOAL);
     } else {
         my_put_tile_16x16(player_x, player_y, 0);  // Empty tile
     }
-    
+
     // Move player to new position
     player_x = tx;
     player_y = ty;
-    
+
     // Draw player at new position
     if (level[player_y][player_x] == TILE_GOAL) {
-        my_put_tile_16x16(player_x, player_y, TILE_PLAYERGOAL_TL);
+        my_put_tile_16x16(player_x, player_y, SC_PLAYERGOAL);
     } else {
-        my_put_tile_16x16(player_x, player_y, TILE_PLAYER_TL);
+        my_put_tile_16x16(player_x, player_y, SC_PLAYER);
     }
     
     // Update move counter and status

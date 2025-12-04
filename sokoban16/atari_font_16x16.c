@@ -134,22 +134,22 @@ void setup_graphics_16x16(void) {
     
     // Install 16x16 tile graphics
     // Wall (0x40-0x43)
-    memcpy(CHARSET_MEM + (TILE_WALL_TL * 8), &custom_graphics_16x16[0], 32);
-    
+    memcpy(CHARSET_MEM + (SC_WALL * 8), &custom_graphics_16x16[0], 32);
+
     // Box (0x44-0x47)
-    memcpy(CHARSET_MEM + (TILE_BOX_TL * 8), &custom_graphics_16x16[32], 32);
-    
+    memcpy(CHARSET_MEM + (SC_BOX * 8), &custom_graphics_16x16[32], 32);
+
     // Goal (0x48-0x4B)
-    memcpy(CHARSET_MEM + (TILE_GOAL_TL * 8), &custom_graphics_16x16[64], 32);
-    
+    memcpy(CHARSET_MEM + (SC_GOAL * 8), &custom_graphics_16x16[64], 32);
+
     // Box on Goal (0x4C-0x4F)
-    memcpy(CHARSET_MEM + (TILE_BOXGOAL_TL * 8), &custom_graphics_16x16[96], 32);
-    
+    memcpy(CHARSET_MEM + (SC_BOXGOAL * 8), &custom_graphics_16x16[96], 32);
+
     // Player Standing (0x50-0x53)
-    memcpy(CHARSET_MEM + (TILE_PLAYER_TL * 8), &custom_graphics_16x16[128], 32);
-    
+    memcpy(CHARSET_MEM + (SC_PLAYER * 8), &custom_graphics_16x16[128], 32);
+
     // Player on Goal Standing (0x54-0x57)
-    memcpy(CHARSET_MEM + (TILE_PLAYERGOAL_TL * 8), &custom_graphics_16x16[160], 32);
+    memcpy(CHARSET_MEM + (SC_PLAYERGOAL * 8), &custom_graphics_16x16[160], 32);
     
     // Set colors
     POKE(709, 0);   // Background
@@ -164,8 +164,8 @@ void setup_graphics_16x16(void) {
 
 void animate_player_16x16(void) {
     // Get pointers to player character locations in the character set
-    byte* player_char_data = CHARSET_MEM + (TILE_PLAYER_TL * 8);
-    byte* player_goal_char_data = CHARSET_MEM + (TILE_PLAYERGOAL_TL * 8);
+    byte* player_char_data = CHARSET_MEM + (SC_PLAYER * 8);
+    byte* player_goal_char_data = CHARSET_MEM + (SC_PLAYERGOAL * 8);
     
     if (anim_state == 1) {  // Walking animation
         if (frame_counter < 4) {

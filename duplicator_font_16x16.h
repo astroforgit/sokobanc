@@ -60,39 +60,7 @@
 #define SC_LINE_G         0x78  // Line G tile (screen codes 0x78-0x7B)
 #define SC_LINE_H         0x7C  // Line H tile (screen codes 0x7C-0x7F)
 
-// Legacy compatibility - old TILE_*_TL definitions point to base screen codes
-#define TILE_WALL_TL           SC_WALL
-#define TILE_PLAYER_TL         SC_PLAYER
-#define TILE_CRATE_TL          SC_CRATE
-#define TILE_KEY_TL            SC_KEY
-#define TILE_DOOR_TL           SC_DOOR
-#define TILE_ENEMY_TL          SC_ENEMY
-#define TILE_HOLE_A_TL         SC_HOLE_A
-#define TILE_HOLE_B_TL         SC_HOLE_B
-#define TILE_PLATE_A_TL        SC_PLATE_A
-#define TILE_PLATE_B_TL        SC_PLATE_B
-#define TILE_GATE_A_TL         SC_GATE_A
-#define TILE_GATE_B_TL         SC_GATE_B
-#define TILE_EXIT_A_TL         SC_EXIT_A
-#define TILE_EXIT_B_TL         SC_EXIT_B
-#define TILE_EXIT_C_TL         SC_EXIT_C
-#define TILE_FLOOR_TL          SC_FLOOR
-#define TILE_GATE_A_OPEN_TL    SC_GATE_A_OPEN
-#define TILE_GATE_B_OPEN_TL    SC_GATE_B_OPEN
-#define TILE_DOOR_OPEN_TL      SC_DOOR_OPEN
-#define TILE_HOLE_A_FILL_TL    SC_HOLE_A_FILL
-#define TILE_HOLE_B_FILL_TL    SC_HOLE_B_FILL
-#define TILE_WALL_LINE_A_TL    SC_WALL_LINE_A
-#define TILE_WALL_LINE_B_TL    SC_WALL_LINE_B
-#define TILE_WALL_LINE_G_TL    SC_WALL_LINE_G
-#define TILE_LINE_A_TL         SC_LINE_A
-#define TILE_LINE_B_TL         SC_LINE_B
-#define TILE_LINE_C_TL         SC_LINE_C
-#define TILE_LINE_D_TL         SC_LINE_D
-#define TILE_LINE_E_TL         SC_LINE_E
-#define TILE_LINE_F_TL         SC_LINE_F
-#define TILE_LINE_G_TL         SC_LINE_G
-#define TILE_LINE_H_TL         SC_LINE_H
+
 
 #endif // DUPLICATOR_FONT_16X16_H
 

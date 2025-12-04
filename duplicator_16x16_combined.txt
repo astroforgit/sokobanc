@@ -45,389 +45,7 @@ typedef unsigned short word;
 #include "duplicator_font_16x16.h"      // Character code definitions
 
 #include "duplicator_game.h"
-
-// Level data from duplicator.txt
-// Note: 'z' = holeA and Player, 'y' = holeB and enemy, 'p' = Player
-const char* level_1[] = {
-    "########:########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "#######...#...###",
-    "#######.p.#.e.###",
-    "#######...#...###",
-    "############.####",
-    "############.####"
-};
-
-const char* level_2[] = {
-    "#################",
-    "#################",
-    "###...#...#...###",
-    "###.!2%2?...b.###",
-    "###...#...#.1.###",
-    "####.#######$####",
-    "####.##...##$####",
-    "####........g...@",
-    "#######...#######",
-    "########.########",
-    "########p########"
-};
-
-const char* level_3[] = {
-    "#################",
-    "#################",
-    "###...#...#...###",
-    "###.!2%2?...b.###",
-    "###...#...#.1.###",
-    "####.#######$####",
-    "###.......##$####",
-    "p.......c2h.g...@",
-    "###.......#######",
-    "#################",
-    "#################"
-};
-
-const char* level_4[] = {
-    "############.####",
-    "############.####",
-    "###...#...#...###",
-    "###.!2%2?.#......",
-    "###...#...#...###",
-    "####.###.########",
-    "###...#...d.d.###",
-    "p.....#.k.d.d...@",
-    "###...#...d.d.###",
-    "#################",
-    "#################"
-};
-
-const char* level_5[] = {
-    "########@########",
-    "########.########",
-    "##6222cg2%%%223##",
-    "##1....g.###..1##",
-    "##1..#######..1##",
-    "##1?2%%%%%%%2!1##",
-    "##1..#######..1##",
-    "p.1..#######..1##",
-    "##1....h......1##",
-    "##52222hb222224##",
-    "#################"
-};
-
-const char* level_6[] = {
-    "########@########",
-    "########g########",
-    "###622%24.#...###",
-    "###1..#.......###",
-    "###1..#...#...###",
-    "###$!%%%2%%%?####",
-    "###1..#...#...###",
-    "###5b.#...#.*.###",
-    "###...#...#...###",
-    "########.########",
-    "########p########"
-};
-
-const char* level_7[] = {
-    "###@#############",
-    "###.#############",
-    "###.d...d..*!k.##",
-    "###.d...d6224..##",
-    "#########$####.##",
-    "###......?.*.#.##",
-    "###............##",
-    "###............##",
-    "###............##",
-    "########.########",
-    "########p########"
-};
-
-const char* level_8[] = {
-    "#################",
-    "##...##...##...##",
-    "##.!....k......##",
-    "##.1.##...##...##",
-    "###$####.####.###",
-    "###$####.####.###",
-    "##.1.##...##...##",
-    "##.?.##.e......d@",
-    "##...##...##...##",
-    "###.#############",
-    "###p#############"
-};
-
-const char* level_9[] = {
-    "#################",
-    "##.....###.....##",
-    "##......*...e..##",
-    "##.....###.....##",
-    "##......*...e..##",
-    "##.....###.....##",
-    "##......*...e..##",
-    "p......###......@",
-    "#################",
-    "#################",
-    "#################"
-};
-
-const char* level_10[] = {
-    "#################",
-    "#######...h2223.@",
-    "#######.!.####$##",
-    "#######.1.####$##",
-    "########$#####$##",
-    "#####...1....e5c#",
-    "#####.##$##.#####",
-    "p..bg...?...#####",
-    "#################",
-    "#################",
-    "#################"
-};
-
-const char* level_11[] = {
-    "########@########",
-    "p..hh23..########",
-    "#..###$##########",
-    "#..?2%&!.########",
-    "#....#$..########",
-    "######c..########",
-    "#################",
-    ".................",
-    "#################",
-    ".................",
-    "#################"
-};
-
-const char* level_12[] = {
-    "#################",
-    "#################",
-    "#####......######",
-    "##..g....*6?...b#",
-    "##*##.....1####h#",
-    "##*#######$####1@",
-    "##*##622227%%%%h#",
-    "##.ch4...*5!....#",
-    "##.##......######",
-    "##.##############",
-    "##p##############"
-};
-
-const char* level_13[] = {
-    "#############@###",
-    "####e.....###.###",
-    "####.###..###.###",
-    "#b..!222362g..###",
-    "#$##.###11#######",
-    "p5222%%%74#######",
-    "##.*....?...#####",
-    "##...############",
-    "##.*.############",
-    "##...############",
-    "#################"
-};
-
-const char* level_14[] = {
-    "#################",
-    "#.........#######",
-    "#eke......#######",
-    "#.........#######",
-    "#...###...#######",
-    "#...###...#######",
-    "#...###....bg.d.#",
-    "#.........###.#.#",
-    "#.......!2%%?.#.#",
-    "#.........###.#.@",
-    "#############p###"
-};
-
-const char* level_15[] = {
-    "#################",
-    "#.....!.?...ed.d#",
-    "#.....524....d.d#",
-    "#............d.d#",
-    "#............d.d#",
-    "#.e..........d.d#",
-    "#............d.d@",
-    "#............d.d#",
-    "######.k.########",
-    "p...ch...########",
-    "#################"
-};
-
-const char* level_16[] = {
-    "#################",
-    "############..d.@",
-    "############..d##",
-    "###6222%223##g###",
-    "###1...#.#!##g%b#",
-    "###1...#.#....#.#",
-    "p..1...h........#",
-    "###?.c2h.....k..#",
-    "###############.#",
-    "###############e#",
-    "#################"
-};
-
-const char* level_17[] = {
-    "#################",
-    "p.ch....?...62g.@",
-    "####6%%%7%%%4####",
-    "####1###53#######",
-    "####1#...1##.####",
-    "####1...e522!####",
-    "####1##....#.####",
-    "####$##.*###.####",
-    "####1###*###.####",
-    "#b224........####",
-    "#################"
-};
-
-const char* level_18[] = {
-    "#############@###",
-    "p.ch.....?236g###",
-    "#####****.*11.###",
-    "#####......11.###",
-    "#####......11.###",
-    "#####......11.###",
-    "#####......11.###",
-    "#####......11.###",
-    "#####......57!###",
-    "#####eeeee..5b###",
-    "#################"
-};
-
-const char* level_19[] = {
-    "#################",
-    "#################",
-    "#################",
-    "#################",
-    "#################",
-    "#################",
-    "#################",
-    ";....g.....!hc###",
-    "#####$#######.###",
-    ";....gb....?#.###",
-    "#############p###"
-};
-
-const char* level_20[] = {
-    "########.########",
-    "...hh23..########",
-    "#..###$##########",
-    "#..?2%&!.########",
-    "#....#$..########",
-    "######c..########",
-    "#################",
-    ";...............p",
-    "#################",
-    ";...............p",
-    "#################"
-};
-
-const char* level_21[] = {
-    "#################",
-    "####........#####",
-    "####........#####",
-    ";.##........#####",
-    "#.##....##.*#####",
-    "#.......##..#####",
-    "####.ee.##..#####",
-    "##########......p",
-    "##########..#####",
-    "##########......p",
-    "#################"
-};
-
-const char* level_22[] = {
-    "#################",
-    "##.............##",
-    "#####.#####.#####",
-    ";...............p",
-    "#################",
-    "##.....?d......##",
-    "#######5%3#######",
-    "..k.k.d.d1..d....",
-    "#####.#.#!#.#####",
-    "##......#......##",
-    "#################"
-};
-
-const char* level_23[] = {
-    "############@####",
-    "############.####",
-    "###...#...#...###",
-    "###.!2%2?.#.....p",
-    "###...#...#...###",
-    "####.###.########",
-    "###...#...d.d.###",
-    "......#.k.d.d....",
-    "###...#...d.d.###",
-    "#################",
-    "#################"
-};
-
-const char* level_24[] = {
-    "############@####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############.####",
-    "############p####"
-};
-
-const char* level_25[] = {
-    "########@########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "########.########",
-    "#######...#...###",
-    "#######.?.#.!e###",
-    "#######...#...###",
-    "############.####",
-    "############p####"
-};
-
-// Array of level pointers
-const char** levels[] = {
-    level_1,
-    level_2,
-    level_3,
-    level_4,
-    level_5,
-    level_6,
-    level_7,
-    level_8,
-    level_9,
-    level_10,
-    level_11,
-    level_12,
-    level_13,
-    level_14,
-    level_15,
-    level_16,
-    level_17,
-    level_18,
-    level_19,
-    level_20,
-    level_21,
-    level_22,
-    level_23,
-    level_24,
-    level_25
-};
-
-#define NUM_LEVELS 25
+#include "duplicator_levels_16x16.h"    // Level definitions
 
 // Graphics setup function for 16x16 mode
 void setup_duplicator_graphics(void) {
@@ -588,8 +206,10 @@ void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {
     word offset_br = (word)(char_y + 1) * CHAR_COLS + char_x + 1; // Bottom-right
 
     // Write 4 DIFFERENT consecutive characters to create a 16x16 tile
-    // tile_char is the top-left character code
-    // The other 3 are consecutive: tile_char+1, tile_char+2, tile_char+3
+    // tile_char is the base tile code (e.g., TILE_WALL)
+    // The 4 corners are: tile_char+TILE_TL, +TILE_TR, +TILE_BL, +TILE_BR
+    // Since TILE_TL=0, TILE_TR=1, TILE_BL=2, TILE_BR=3, this simplifies to:
+    // tile_char+0, tile_char+1, tile_char+2, tile_char+3
     if (tile_char == 0) {
         // Empty space - write zeros
         SCREEN_MEM[offset_tl] = 0;
@@ -597,10 +217,10 @@ void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {
         SCREEN_MEM[offset_bl] = 0;
         SCREEN_MEM[offset_br] = 0;
     } else {
-        SCREEN_MEM[offset_tl] = tile_char;      // Top-left
-        SCREEN_MEM[offset_tr] = tile_char + 1;  // Top-right
-        SCREEN_MEM[offset_bl] = tile_char + 2;  // Bottom-left
-        SCREEN_MEM[offset_br] = tile_char + 3;  // Bottom-right
+        SCREEN_MEM[offset_tl] = tile_char + TILE_TL;  // Top-left (tile_char+0)
+        SCREEN_MEM[offset_tr] = tile_char + TILE_TR;  // Top-right (tile_char+1)
+        SCREEN_MEM[offset_bl] = tile_char + TILE_BL;  // Bottom-left (tile_char+2)
+        SCREEN_MEM[offset_br] = tile_char + TILE_BR;  // Bottom-right (tile_char+3)
     }
 }
 
@@ -657,6 +277,7 @@ void wait_vblank(void) {
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "duplicator_font_16x16.h"  // For TILE_TL, TILE_TR, TILE_BL, TILE_BR
 
 // Data types
 typedef unsigned char byte;
@@ -702,43 +323,44 @@ void wait_vblank(void);
 
 typedef unsigned char byte;
 
-// Map game tile characters to 16x16 tile codes
+// Map game tile characters to 16x16 screen codes
+// This converts logical game tiles ('#', 'p', etc.) to screen memory codes
 byte map_tile_to_16x16(byte tile) {
     switch (tile) {
-        case '#':  return TILE_WALL_TL;
-        case 'p':  return TILE_PLAYER_TL;
-        case '*':  return TILE_CRATE_TL;
-        case 'k':  return TILE_KEY_TL;
-        case 'd':  return TILE_DOOR_TL;
-        case 'e':  return TILE_ENEMY_TL;
-        case '?':  return TILE_HOLE_A_TL;
-        case '!':  return TILE_HOLE_B_TL;
-        case 'b':  return TILE_PLATE_A_TL;  // Plate A graphics
-        case 'c':  return TILE_PLATE_A_TL;  // Plate B uses same graphics as Plate A
-        case 'g':  return TILE_GATE_A_TL;
-        case 'h':  return TILE_GATE_B_TL;
-        case '@':  return TILE_EXIT_A_TL;
-        case ':':  return TILE_EXIT_B_TL;
-        case ';':  return TILE_EXIT_C_TL;
-        case '.':  return TILE_FLOOR_TL;
-        case 'G':  return TILE_GATE_A_OPEN_TL;
-        case 'H':  return TILE_GATE_B_OPEN_TL;
-        case 'D':  return TILE_DOOR_OPEN_TL;
-        case '[':  return TILE_HOLE_A_FILL_TL;
-        case ']':  return TILE_HOLE_B_FILL_TL;
+        case '#':  return SC_WALL;
+        case 'p':  return SC_PLAYER;
+        case '*':  return SC_CRATE;
+        case 'k':  return SC_KEY;
+        case 'd':  return SC_DOOR;
+        case 'e':  return SC_ENEMY;
+        case '?':  return SC_HOLE_A;
+        case '!':  return SC_HOLE_B;
+        case 'b':  return SC_PLATE_A;  // Plate A graphics
+        case 'c':  return SC_PLATE_A;  // Plate B uses same graphics as Plate A
+        case 'g':  return SC_GATE_A;
+        case 'h':  return SC_GATE_B;
+        case '@':  return SC_EXIT_A;
+        case ':':  return SC_EXIT_B;
+        case ';':  return SC_EXIT_C;
+        case '.':  return SC_FLOOR;
+        case 'G':  return SC_GATE_A_OPEN;
+        case 'H':  return SC_GATE_B_OPEN;
+        case 'D':  return SC_DOOR_OPEN;
+        case '[':  return SC_HOLE_A_FILL;
+        case ']':  return SC_HOLE_B_FILL;
         // Wall lines
-        case '$':  return TILE_WALL_LINE_A_TL;
-        case '%':  return TILE_WALL_LINE_B_TL;
-        case '&':  return TILE_WALL_LINE_G_TL;
+        case '$':  return SC_WALL_LINE_A;
+        case '%':  return SC_WALL_LINE_B;
+        case '&':  return SC_WALL_LINE_G;
         // Lines
-        case '1':  return TILE_LINE_A_TL;
-        case '2':  return TILE_LINE_B_TL;
-        case '3':  return TILE_LINE_C_TL;
-        case '4':  return TILE_LINE_D_TL;
-        case '5':  return TILE_LINE_E_TL;
-        case '6':  return TILE_LINE_F_TL;
-        case '7':  return TILE_LINE_G_TL;
-        case '8':  return TILE_LINE_H_TL;
+        case '1':  return SC_LINE_A;
+        case '2':  return SC_LINE_B;
+        case '3':  return SC_LINE_C;
+        case '4':  return SC_LINE_D;
+        case '5':  return SC_LINE_E;
+        case '6':  return SC_LINE_F;
+        case '7':  return SC_LINE_G;
+        case '8':  return SC_LINE_H;
         case ' ':  return 0;  // Empty space
         default:   return 0;  // Unknown - treat as empty
     }
@@ -765,203 +387,54 @@ byte map_tile_to_16x16(byte tile) {
 #ifndef DUPLICATOR_FONT_16X16_H
 #define DUPLICATOR_FONT_16X16_H
 
-// 16x16 Tile Character Mappings
-// Each tile uses 4 consecutive characters
+// 16x16 Tile Screen Code Mappings
+// Each tile uses 4 consecutive screen codes (TL, TR, BL, BR)
+// These are SCREEN CODES written to screen memory, NOT game tile characters
+// Game tile characters ('#', 'p', etc.) are defined in duplicator_game.h
 // Using internal screen codes (not ATASCII)
-// Screen codes 0x00-0x3F map to character set 0x20-0x5F
-// We'll use screen codes starting from 0x00
 
-// Wall tile (screen codes 0x00-0x03, charset 0x20-0x23)
-#define TILE_WALL_TL      0x00
-#define TILE_WALL_TR      0x01
-#define TILE_WALL_BL      0x02
-#define TILE_WALL_BR      0x03
+// Tile corner offsets - add these to the base screen code
+#define TILE_TL  0  // Top-Left corner offset
+#define TILE_TR  1  // Top-Right corner offset
+#define TILE_BL  2  // Bottom-Left corner offset
+#define TILE_BR  3  // Bottom-Right corner offset
 
-// Player tile (screen codes 0x04-0x07, charset 0x24-0x27)
-#define TILE_PLAYER_TL    0x04
-#define TILE_PLAYER_TR    0x05
-#define TILE_PLAYER_BL    0x06
-#define TILE_PLAYER_BR    0x07
+// Base screen codes for 16x16 tiles (each tile occupies 4 consecutive codes)
+// These are what gets written to screen memory after mapping from game characters
+#define SC_WALL           0x00  // Wall tile (screen codes 0x00-0x03)
+#define SC_PLAYER         0x04  // Player tile (screen codes 0x04-0x07)
+#define SC_CRATE          0x08  // Crate tile (screen codes 0x08-0x0B)
+#define SC_KEY            0x0C  // Key tile (screen codes 0x0C-0x0F)
+#define SC_DOOR           0x10  // Door tile (screen codes 0x10-0x13)
+#define SC_ENEMY          0x14  // Enemy tile (screen codes 0x14-0x17)
+#define SC_HOLE_A         0x18  // Hole A tile (screen codes 0x18-0x1B)
+#define SC_HOLE_B         0x1C  // Hole B tile (screen codes 0x1C-0x1F)
+#define SC_PLATE_A        0x20  // Plate A tile (screen codes 0x20-0x23)
+#define SC_PLATE_B        0x24  // Plate B tile (screen codes 0x24-0x27)
+#define SC_GATE_A         0x28  // Gate A tile (screen codes 0x28-0x2B)
+#define SC_GATE_B         0x2C  // Gate B tile (screen codes 0x2C-0x2F)
+#define SC_EXIT_A         0x30  // Exit A tile (screen codes 0x30-0x33)
+#define SC_EXIT_B         0x34  // Exit B tile (screen codes 0x34-0x37)
+#define SC_EXIT_C         0x38  // Exit C tile (screen codes 0x38-0x3B)
+#define SC_FLOOR          0x3C  // Floor tile (screen codes 0x3C-0x3F)
+#define SC_GATE_A_OPEN    0x40  // Gate A Open tile (screen codes 0x40-0x43)
+#define SC_GATE_B_OPEN    0x44  // Gate B Open tile (screen codes 0x44-0x47)
+#define SC_DOOR_OPEN      0x48  // Door Open tile (screen codes 0x48-0x4B)
+#define SC_HOLE_A_FILL    0x4C  // Hole A Filled tile (screen codes 0x4C-0x4F)
+#define SC_HOLE_B_FILL    0x50  // Hole B Filled tile (screen codes 0x50-0x53)
+#define SC_WALL_LINE_A    0x54  // Wall Line A tile (screen codes 0x54-0x57)
+#define SC_WALL_LINE_B    0x58  // Wall Line B tile (screen codes 0x58-0x5B)
+#define SC_WALL_LINE_G    0x5C  // Wall Line G tile (screen codes 0x5C-0x5F)
+#define SC_LINE_A         0x60  // Line A tile (screen codes 0x60-0x63)
+#define SC_LINE_B         0x64  // Line B tile (screen codes 0x64-0x67)
+#define SC_LINE_C         0x68  // Line C tile (screen codes 0x68-0x6B)
+#define SC_LINE_D         0x6C  // Line D tile (screen codes 0x6C-0x6F)
+#define SC_LINE_E         0x70  // Line E tile (screen codes 0x70-0x73)
+#define SC_LINE_F         0x74  // Line F tile (screen codes 0x74-0x77)
+#define SC_LINE_G         0x78  // Line G tile (screen codes 0x78-0x7B)
+#define SC_LINE_H         0x7C  // Line H tile (screen codes 0x7C-0x7F)
 
-// Crate tile (screen codes 0x08-0x0B, charset 0x28-0x2B)
-#define TILE_CRATE_TL     0x08
-#define TILE_CRATE_TR     0x09
-#define TILE_CRATE_BL     0x0A
-#define TILE_CRATE_BR     0x0B
 
-// Key tile (screen codes 0x0C-0x0F, charset 0x2C-0x2F)
-#define TILE_KEY_TL       0x0C
-#define TILE_KEY_TR       0x0D
-#define TILE_KEY_BL       0x0E
-#define TILE_KEY_BR       0x0F
-
-// Door tile (screen codes 0x10-0x13, charset 0x30-0x33)
-#define TILE_DOOR_TL      0x10
-#define TILE_DOOR_TR      0x11
-#define TILE_DOOR_BL      0x12
-#define TILE_DOOR_BR      0x13
-
-// Enemy tile (screen codes 0x14-0x17, charset 0x34-0x37)
-#define TILE_ENEMY_TL     0x14
-#define TILE_ENEMY_TR     0x15
-#define TILE_ENEMY_BL     0x16
-#define TILE_ENEMY_BR     0x17
-
-// Hole A tile (screen codes 0x18-0x1B, charset 0x38-0x3B)
-#define TILE_HOLE_A_TL    0x18
-#define TILE_HOLE_A_TR    0x19
-#define TILE_HOLE_A_BL    0x1A
-#define TILE_HOLE_A_BR    0x1B
-
-// Hole B tile (screen codes 0x1C-0x1F, charset 0x3C-0x3F)
-#define TILE_HOLE_B_TL    0x1C
-#define TILE_HOLE_B_TR    0x1D
-#define TILE_HOLE_B_BL    0x1E
-#define TILE_HOLE_B_BR    0x1F
-
-// Plate A tile (screen codes 0x20-0x23, charset 0x40-0x43)
-#define TILE_PLATE_A_TL   0x20
-#define TILE_PLATE_A_TR   0x21
-#define TILE_PLATE_A_BL   0x22
-#define TILE_PLATE_A_BR   0x23
-
-// Plate B tile (screen codes 0x24-0x27, charset 0x44-0x47)
-#define TILE_PLATE_B_TL   0x24
-#define TILE_PLATE_B_TR   0x25
-#define TILE_PLATE_B_BL   0x26
-#define TILE_PLATE_B_BR   0x27
-
-// Gate A tile (screen codes 0x28-0x2B, charset 0x48-0x4B)
-#define TILE_GATE_A_TL    0x28
-#define TILE_GATE_A_TR    0x29
-#define TILE_GATE_A_BL    0x2A
-#define TILE_GATE_A_BR    0x2B
-
-// Gate B tile (screen codes 0x2C-0x2F, charset 0x4C-0x4F)
-#define TILE_GATE_B_TL    0x2C
-#define TILE_GATE_B_TR    0x2D
-#define TILE_GATE_B_BL    0x2E
-#define TILE_GATE_B_BR    0x2F
-
-// Exit A tile (screen codes 0x30-0x33, charset 0x50-0x53)
-#define TILE_EXIT_A_TL    0x30
-#define TILE_EXIT_A_TR    0x31
-#define TILE_EXIT_A_BL    0x32
-#define TILE_EXIT_A_BR    0x33
-
-// Exit B tile (screen codes 0x34-0x37, charset 0x54-0x57)
-#define TILE_EXIT_B_TL    0x34
-#define TILE_EXIT_B_TR    0x35
-#define TILE_EXIT_B_BL    0x36
-#define TILE_EXIT_B_BR    0x37
-
-// Exit C tile (screen codes 0x38-0x3B, charset 0x58-0x5B)
-#define TILE_EXIT_C_TL    0x38
-#define TILE_EXIT_C_TR    0x39
-#define TILE_EXIT_C_BL    0x3A
-#define TILE_EXIT_C_BR    0x3B
-
-// Floor tile (screen codes 0x3C-0x3F, charset 0x5C-0x5F)
-#define TILE_FLOOR_TL     0x3C
-#define TILE_FLOOR_TR     0x3D
-#define TILE_FLOOR_BL     0x3E
-#define TILE_FLOOR_BR     0x3F
-
-// Gate A Open tile (screen codes 0x40-0x43, charset 0x00-0x03 inverse)
-#define TILE_GATE_A_OPEN_TL  0x40
-#define TILE_GATE_A_OPEN_TR  0x41
-#define TILE_GATE_A_OPEN_BL  0x42
-#define TILE_GATE_A_OPEN_BR  0x43
-
-// Gate B Open tile (screen codes 0x44-0x47, charset 0x04-0x07 inverse)
-#define TILE_GATE_B_OPEN_TL  0x44
-#define TILE_GATE_B_OPEN_TR  0x45
-#define TILE_GATE_B_OPEN_BL  0x46
-#define TILE_GATE_B_OPEN_BR  0x47
-
-// Door Open tile (screen codes 0x48-0x4B, charset 0x08-0x0B inverse)
-#define TILE_DOOR_OPEN_TL    0x48
-#define TILE_DOOR_OPEN_TR    0x49
-#define TILE_DOOR_OPEN_BL    0x4A
-#define TILE_DOOR_OPEN_BR    0x4B
-
-// Hole A Filled tile (screen codes 0x4C-0x4F, charset 0x0C-0x0F inverse)
-#define TILE_HOLE_A_FILL_TL  0x4C
-#define TILE_HOLE_A_FILL_TR  0x4D
-#define TILE_HOLE_A_FILL_BL  0x4E
-#define TILE_HOLE_A_FILL_BR  0x4F
-
-// Hole B Filled tile (screen codes 0x50-0x53, charset 0x10-0x13 inverse)
-#define TILE_HOLE_B_FILL_TL  0x50
-#define TILE_HOLE_B_FILL_TR  0x51
-#define TILE_HOLE_B_FILL_BL  0x52
-#define TILE_HOLE_B_FILL_BR  0x53
-
-// Wall Line A tile (screen codes 0x54-0x57)
-#define TILE_WALL_LINE_A_TL  0x54
-#define TILE_WALL_LINE_A_TR  0x55
-#define TILE_WALL_LINE_A_BL  0x56
-#define TILE_WALL_LINE_A_BR  0x57
-
-// Wall Line B tile (screen codes 0x58-0x5B)
-#define TILE_WALL_LINE_B_TL  0x58
-#define TILE_WALL_LINE_B_TR  0x59
-#define TILE_WALL_LINE_B_BL  0x5A
-#define TILE_WALL_LINE_B_BR  0x5B
-
-// Wall Line G tile (screen codes 0x5C-0x5F)
-#define TILE_WALL_LINE_G_TL  0x5C
-#define TILE_WALL_LINE_G_TR  0x5D
-#define TILE_WALL_LINE_G_BL  0x5E
-#define TILE_WALL_LINE_G_BR  0x5F
-
-// Line A tile (screen codes 0x60-0x63)
-#define TILE_LINE_A_TL       0x60
-#define TILE_LINE_A_TR       0x61
-#define TILE_LINE_A_BL       0x62
-#define TILE_LINE_A_BR       0x63
-
-// Line B tile (screen codes 0x64-0x67)
-#define TILE_LINE_B_TL       0x64
-#define TILE_LINE_B_TR       0x65
-#define TILE_LINE_B_BL       0x66
-#define TILE_LINE_B_BR       0x67
-
-// Line C tile (screen codes 0x68-0x6B)
-#define TILE_LINE_C_TL       0x68
-#define TILE_LINE_C_TR       0x69
-#define TILE_LINE_C_BL       0x6A
-#define TILE_LINE_C_BR       0x6B
-
-// Line D tile (screen codes 0x6C-0x6F)
-#define TILE_LINE_D_TL       0x6C
-#define TILE_LINE_D_TR       0x6D
-#define TILE_LINE_D_BL       0x6E
-#define TILE_LINE_D_BR       0x6F
-
-// Line E tile (screen codes 0x70-0x73)
-#define TILE_LINE_E_TL       0x70
-#define TILE_LINE_E_TR       0x71
-#define TILE_LINE_E_BL       0x72
-#define TILE_LINE_E_BR       0x73
-
-// Line F tile (screen codes 0x74-0x77)
-#define TILE_LINE_F_TL       0x74
-#define TILE_LINE_F_TR       0x75
-#define TILE_LINE_F_BL       0x76
-#define TILE_LINE_F_BR       0x77
-
-// Line G tile (screen codes 0x78-0x7B)
-#define TILE_LINE_G_TL       0x78
-#define TILE_LINE_G_TR       0x79
-#define TILE_LINE_G_BL       0x7A
-#define TILE_LINE_G_BR       0x7B
-
-// Line H tile (screen codes 0x7C-0x7F)
-#define TILE_LINE_H_TL       0x7C
-#define TILE_LINE_H_TR       0x7D
-#define TILE_LINE_H_BL       0x7E
-#define TILE_LINE_H_BR       0x7F
 
 #endif // DUPLICATOR_FONT_16X16_H
 
@@ -2585,188 +2058,6 @@ void move_enemies(void);
 void set_tile_and_draw(byte x, byte y, char tile);
 
 #endif // DUPLICATOR_GAME_H
-
-
-
-/* -----------------------------------------------------------------------
- * File: scale_font.js
- * ----------------------------------------------------------------------- */
-
-#!/usr/bin/env node
-
-/**
- * scale_font.js - Scale 8x8 font data to 16x16 for Atari 8-bit
- * 
- * Usage: node scale_font.js
- * 
- * Reads duplicator_font.h and generates duplicator_graphics_16x16.h
- * with pre-scaled 16x16 tile data (4 characters per tile, 32 bytes each)
- */
-
-const fs = require('fs');
-const path = require('path');
-
-// Read the input font file
-const inputFile = path.join(__dirname, 'duplicator_font.h');
-const fontData = fs.readFileSync(inputFile, 'utf8');
-
-// Extract the duplicator_graphics array
-const arrayMatch = fontData.match(/static unsigned char duplicator_graphics\[\] = \{([\s\S]*?)\};/);
-if (!arrayMatch) {
-    console.error('Could not find duplicator_graphics array in input file');
-    process.exit(1);
-}
-
-// Parse the byte values - remove comments first
-let arrayContent = arrayMatch[1];
-// Remove single-line comments
-arrayContent = arrayContent.replace(/\/\/.*$/gm, '');
-// Remove multi-line comments
-arrayContent = arrayContent.replace(/\/\*[\s\S]*?\*\//g, '');
-
-const bytes = [];
-const byteMatches = arrayContent.matchAll(/0[xb][0-9A-Fa-f]+|\d+/g);
-for (const match of byteMatches) {
-    let value = match[0];
-    if (value.startsWith('0b')) {
-        bytes.push(parseInt(value.substring(2), 2));
-    } else if (value.startsWith('0x')) {
-        bytes.push(parseInt(value.substring(2), 16));
-    } else {
-        bytes.push(parseInt(value, 10));
-    }
-}
-
-console.log(`Found ${bytes.length} bytes in duplicator_graphics array`);
-console.log(`This represents ${bytes.length / 8} tiles (8 bytes each)`);
-
-/**
- * Scale one 8x8 tile (8 bytes) to 16x16 (32 bytes = 4 chars)
- * Each pixel becomes 2x2 pixels
- */
-function scale8x8to16x16(src8x8) {
-    const tl = new Array(8).fill(0);  // Top-left char
-    const tr = new Array(8).fill(0);  // Top-right char
-    const bl = new Array(8).fill(0);  // Bottom-left char
-    const br = new Array(8).fill(0);  // Bottom-right char
-
-    // Process each row of the 8x8 source
-    for (let row = 0; row < 8; row++) {
-        const srcByte = src8x8[row];
-
-        // Scale horizontally: each bit becomes 2 bits
-        // Bits 7-4 go to left half, bits 3-0 go to right half
-        let leftHalf = 0;
-        let rightHalf = 0;
-
-        // Process each bit in the source byte
-        for (let bit = 0; bit < 8; bit++) {
-            if (srcByte & (1 << (7 - bit))) {
-                // Pixel is set - set 2 bits in output
-                if (bit < 4) {
-                    // Left half of source -> left char (bits 7-4 become bits 7-0)
-                    leftHalf |= (3 << (6 - bit * 2));
-                } else {
-                    // Right half of source -> right char (bits 3-0 become bits 7-0)
-                    rightHalf |= (3 << (6 - (bit - 4) * 2));
-                }
-            }
-        }
-
-        // Each source row becomes 2 destination rows (vertical doubling)
-        if (row < 4) {
-            // Top half -> top-left and top-right chars
-            tl[row * 2] = leftHalf;
-            tl[row * 2 + 1] = leftHalf;
-            tr[row * 2] = rightHalf;
-            tr[row * 2 + 1] = rightHalf;
-        } else {
-            // Bottom half -> bottom-left and bottom-right chars
-            bl[(row - 4) * 2] = leftHalf;
-            bl[(row - 4) * 2 + 1] = leftHalf;
-            br[(row - 4) * 2] = rightHalf;
-            br[(row - 4) * 2 + 1] = rightHalf;
-        }
-    }
-
-    // Combine all 4 chars into one array
-    return [...tl, ...tr, ...bl, ...br];
-}
-
-// Tile names and their offsets in the original array
-// Order matches the character codes in duplicator_font_16x16.h
-// Using screen codes 0x00-0x7F (not charset codes)
-const tiles = [
-    { name: 'Wall', offset: 8, charCode: 0x00 },
-    { name: 'Player', offset: 0, charCode: 0x04 },
-    { name: 'Crate', offset: 16, charCode: 0x08 },
-    { name: 'Key', offset: 24, charCode: 0x0C },
-    { name: 'Door', offset: 32, charCode: 0x10 },
-    { name: 'Enemy', offset: 40, charCode: 0x14 },
-    { name: 'Hole A', offset: 48, charCode: 0x18 },
-    { name: 'Hole B', offset: 56, charCode: 0x1C },
-    { name: 'Plate A', offset: 64, charCode: 0x20 },
-    { name: 'Plate B', offset: 72, charCode: 0x24 },
-    { name: 'Gate A', offset: 80, charCode: 0x28 },
-    { name: 'Gate B', offset: 88, charCode: 0x2C },
-    { name: 'Exit A', offset: 96, charCode: 0x30 },
-    { name: 'Exit B', offset: 104, charCode: 0x34 },
-    { name: 'Exit C', offset: 208, charCode: 0x38 },
-    { name: 'Floor', offset: 112, charCode: 0x3C },
-    { name: 'Gate A Open', offset: 216, charCode: 0x40 },
-    { name: 'Gate B Open', offset: 224, charCode: 0x44 },
-    { name: 'Door Open', offset: 232, charCode: 0x48 },
-    { name: 'Hole A Filled', offset: 240, charCode: 0x4C },
-    { name: 'Hole B Filled', offset: 248, charCode: 0x50 },
-    { name: 'Wall Line A', offset: 120, charCode: 0x54 },
-    { name: 'Wall Line B', offset: 128, charCode: 0x58 },
-    { name: 'Wall Line G', offset: 136, charCode: 0x5C },
-    { name: 'Line A', offset: 144, charCode: 0x60 },
-    { name: 'Line B', offset: 152, charCode: 0x64 },
-    { name: 'Line C', offset: 160, charCode: 0x68 },
-    { name: 'Line D', offset: 168, charCode: 0x6C },
-    { name: 'Line E', offset: 176, charCode: 0x70 },
-    { name: 'Line F', offset: 184, charCode: 0x74 },
-    { name: 'Line G', offset: 192, charCode: 0x78 },
-    { name: 'Line H', offset: 200, charCode: 0x7C }
-];
-
-// Generate output
-let output = `/* duplicator_graphics_16x16.h - Pre-scaled 16x16 graphics */\n`;
-output += `/* Generated by scale_font.js - DO NOT EDIT MANUALLY */\n\n`;
-output += `#ifndef DUPLICATOR_GRAPHICS_16X16_H\n`;
-output += `#define DUPLICATOR_GRAPHICS_16X16_H\n\n`;
-output += `/* Each tile is 32 bytes (4 characters x 8 bytes) */\n`;
-output += `/* Format: TL (8 bytes), TR (8 bytes), BL (8 bytes), BR (8 bytes) */\n\n`;
-output += `static unsigned char duplicator_graphics_16x16[] = {\n`;
-
-for (const tile of tiles) {
-    const src = bytes.slice(tile.offset, tile.offset + 8);
-    const scaled = scale8x8to16x16(src);
-
-    const charCodeHex = '0x' + tile.charCode.toString(16).toUpperCase();
-    output += `    /* ${tile.name} (char ${charCodeHex}-${charCodeHex.slice(0, -1)}${(tile.charCode + 3).toString(16).toUpperCase()}) - 32 bytes */\n`;
-    
-    // Output in groups of 8 bytes (one character)
-    for (let i = 0; i < 32; i += 8) {
-        const label = i === 0 ? 'TL' : i === 8 ? 'TR' : i === 16 ? 'BL' : 'BR';
-        output += `    /* ${label} */ `;
-        output += scaled.slice(i, i + 8).map(b => `0x${b.toString(16).toUpperCase().padStart(2, '0')}`).join(',');
-        output += ',\n';
-    }
-    output += '\n';
-}
-
-output += `};\n\n`;
-output += `#endif /* DUPLICATOR_GRAPHICS_16X16_H */\n`;
-
-// Write output file
-const outputFile = path.join(__dirname, 'duplicator_graphics_16x16.h');
-fs.writeFileSync(outputFile, output, 'utf8');
-
-console.log(`\nGenerated ${outputFile}`);
-console.log(`Total tiles: ${tiles.length}`);
-console.log(`Total bytes: ${tiles.length * 32}`);
 
 
 
