@@ -418,7 +418,24 @@ typedef unsigned char byte;
 // TRANSLATION LAYER - Mapping function
 // ============================================================================
 // Converts game tile characters (TILE_*) to screen codes for rendering
-static inline byte map_tile_to_16x16(byte tile) {
+// Function declaration (implementation in duplicator_tile_map_16x16.c)
+byte map_tile_to_16x16(byte tile);
+
+#endif // DUPLICATOR_TILES_16X16_H
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_tile_map_16x16.c
+ * ----------------------------------------------------------------------- */
+
+/* duplicator_tile_map_16x16.c - Tile character mapping for 16x16 mode */
+
+#include "duplicator_tiles_16x16.h"
+
+// Map game tile characters to 16x16 screen codes
+// This converts logical game tiles (TILE_WALL, TILE_PLAYER, etc.) to screen memory codes (WALL, PLAYER, etc.)
+byte map_tile_to_16x16(byte tile) {
     switch (tile) {
         case TILE_WALL:        return WALL;
         case TILE_PLAYER:      return PLAYER;
@@ -456,24 +473,6 @@ static inline byte map_tile_to_16x16(byte tile) {
         default:               return 0;  // Unknown - treat as empty
     }
 }
-
-#endif // DUPLICATOR_TILES_16X16_H
-
-
-
-/* -----------------------------------------------------------------------
- * File: duplicator_tile_map_16x16.c
- * ----------------------------------------------------------------------- */
-
-/* duplicator_tile_map_16x16.c - Legacy compatibility file
- *
- * The map_tile_to_16x16() function has been moved to duplicator_tiles_16x16.h
- * as a static inline function. This file is kept for backward compatibility.
- */
-
-#include "duplicator_tiles_16x16.h"
-
-// The map_tile_to_16x16() function is now defined in duplicator_tiles_16x16.h
 
 
 

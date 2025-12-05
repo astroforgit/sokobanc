@@ -478,12 +478,11 @@
             }
             txt += `\n`;
 
-            // Translation layer - mapping function
+            // Translation layer - mapping function declaration
             txt += `// TRANSLATION LAYER - Mapping function\n`;
-            txt += `static inline byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
-            tiles.forEach(t => txt += `        case TILE_${t.name}: return ${t.name};\n`);
-            txt += `        case TILE_EMPTY: return 0;  // Empty space\n`;
-            txt += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n\n`;
+            txt += `// Converts game tile characters (TILE_*) to screen codes for rendering\n`;
+            txt += `// Function declaration (implementation in ${gameName}_tile_map_16x16.c)\n`;
+            txt += `byte map_tile_to_16x16(byte tile);\n\n`;
             txt += `#endif\n`;
         }
         else if(currentCodeTab === 'font') {
@@ -494,10 +493,15 @@
             txt += `#endif\n`;
         }
         else if(currentCodeTab === 'tilemap') {
-            // Legacy compatibility - just includes tiles file
-            txt += `/* ${gameName}_tile_map_16x16.c - Legacy compatibility file */\n\n`;
+            // Generate the tile mapping function implementation
+            txt += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
             txt += `#include "${gameName}_tiles_16x16.h"\n\n`;
-            txt += `// The map_tile_to_16x16() function is now defined in ${gameName}_tiles_16x16.h\n`;
+            txt += `// Map game tile characters to 16x16 screen codes\n`;
+            txt += `// This converts logical game tiles (TILE_*) to screen memory codes\n`;
+            txt += `byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
+            tiles.forEach(t => txt += `        case TILE_${t.name}: return ${t.name};\n`);
+            txt += `        case TILE_EMPTY: return 0;  // Empty space\n`;
+            txt += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n`;
         }
         outputEl.value = txt;
     }
@@ -545,12 +549,11 @@
         }
         out += `\n`;
 
-        // Translation layer - mapping function
+        // Translation layer - mapping function declaration
         out += `// TRANSLATION LAYER - Mapping function\n`;
-        out += `static inline byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
-        tiles.forEach(t => out += `        case TILE_${t.name}: return ${t.name};\n`);
-        out += `        case TILE_EMPTY: return 0;  // Empty space\n`;
-        out += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n\n`;
+        out += `// Converts game tile characters (TILE_*) to screen codes for rendering\n`;
+        out += `// Function declaration (implementation in ${gameName}_tile_map_16x16.c)\n`;
+        out += `byte map_tile_to_16x16(byte tile);\n\n`;
         out += `#endif\n`;
 
         // 2. GRAPHICS_16X16.H
@@ -568,11 +571,16 @@
         out += `#include "${gameName}_tiles_16x16.h"\n\n`;
         out += `#endif\n`;
 
-        // 4. TILE_MAP.C (Legacy compatibility)
+        // 4. TILE_MAP.C (Function implementation)
         out += separator(`${gameName}_tile_map_16x16.c`);
-        out += `/* ${gameName}_tile_map_16x16.c - Legacy compatibility file */\n\n`;
+        out += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
         out += `#include "${gameName}_tiles_16x16.h"\n\n`;
-        out += `// The map_tile_to_16x16() function is now defined in ${gameName}_tiles_16x16.h\n`;
+        out += `// Map game tile characters to 16x16 screen codes\n`;
+        out += `// This converts logical game tiles (TILE_*) to screen memory codes\n`;
+        out += `byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
+        tiles.forEach(t => out += `        case TILE_${t.name}: return ${t.name};\n`);
+        out += `        case TILE_EMPTY: return 0;  // Empty space\n`;
+        out += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n`;
 
         // 5. LEVELS_16X16.H
         out += separator(`${gameName}_levels_16x16.h`);
