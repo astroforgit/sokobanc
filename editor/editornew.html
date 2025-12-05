@@ -431,7 +431,7 @@
                 txt += `};\n\n`;
             });
             txt += `const char** levels[] = {\n    ` + arrayNames.join(',\n    ') + `\n};\n\n`;
-            txt += `#define NUM_LEVELS ${levels.length}\n\n`;
+            txt += `const byte NUM_LEVELS = ${levels.length};\n\n`;
             txt += `#endif\n`;
         }
         else if(currentCodeTab === 'graphics') {
@@ -581,7 +581,7 @@
             out += `};\n\n`;
         });
         out += `const char** levels[] = {\n    ${lvlNames.join(',\n    ')}\n};\n\n`;
-        out += `#define NUM_LEVELS ${levels.length}\n\n`;
+        out += `const byte NUM_LEVELS = ${levels.length};\n\n`;
         out += `#endif\n`;
 
         // 5. CONIO_16X16.H
@@ -674,10 +674,12 @@
         out += separator(`${gameName}_game.c`);
         out += `/* ${gameName}_game.c - Game state implementation */\n\n`;
         out += `#include "${gameName}_game.h"\n`;
-        out += `#include "${gameName}_conio_16x16.h"\n`;
-        out += `#include "${gameName}_levels_16x16.h"\n\n`;
+        out += `#include "${gameName}_conio_16x16.h"\n\n`;
         out += `// Static game state\n`;
         out += `static GameState game_state;\n\n`;
+        out += `// External level data (defined in levels header, included by main)\n`;
+        out += `extern const char** levels[];\n`;
+        out += `extern const byte NUM_LEVELS;\n\n`;
         out += `GameState* get_game_state(void) {\n`;
         out += `    return &game_state;\n`;
         out += `}\n\n`;

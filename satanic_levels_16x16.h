@@ -18,7 +18,7 @@ const char** levels[] = {
     level_1
 };
 
-#define NUM_LEVELS 1
+const byte NUM_LEVELS = 1;
 
 #endif
 
