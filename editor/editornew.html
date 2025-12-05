@@ -674,12 +674,10 @@
         out += separator(`${gameName}_game.c`);
         out += `/* ${gameName}_game.c - Game state implementation */\n\n`;
         out += `#include "${gameName}_game.h"\n`;
-        out += `#include "${gameName}_conio_16x16.h"\n\n`;
+        out += `#include "${gameName}_conio_16x16.h"\n`;
+        out += `#include "${gameName}_levels_16x16.h"\n\n`;
         out += `// Static game state\n`;
         out += `static GameState game_state;\n\n`;
-        out += `// External level data\n`;
-        out += `extern const char** levels[];\n`;
-        out += `extern const byte NUM_LEVELS;\n\n`;
         out += `GameState* get_game_state(void) {\n`;
         out += `    return &game_state;\n`;
         out += `}\n\n`;
