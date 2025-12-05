@@ -2,10 +2,13 @@
 
 #include "satanic_game.h"
 #include "satanic_conio_16x16.h"
-#include "satanic_levels_16x16.h"
 
 // Static game state
 static GameState game_state;
+
+// External level data (defined in levels header, included by main)
+extern const char** levels[];
+extern const byte NUM_LEVELS;
 
 GameState* get_game_state(void) {
     return &game_state;
