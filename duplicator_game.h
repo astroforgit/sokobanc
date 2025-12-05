@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "duplicator_tiles_16x16.h"
 
 // Data types for clarity
 typedef unsigned char byte;
@@ -20,25 +21,8 @@ typedef unsigned short word;
 #define MAX_LEVEL_HEIGHT 11  // Exact height of levels
 #define SCREEN_TOP_MARGIN 2  // Number of lines reserved for title/UI at top
 
-// Tile types
-#define TILE_EMPTY      ' '
-#define TILE_WALL       '#'
-#define TILE_PLAYER     'p'
-#define TILE_CRATE      '*'
-#define TILE_KEY        'k'
-#define TILE_DOOR       'd'
-#define TILE_DOOR_OPEN  'D'
-#define TILE_ENEMY      'e'
-#define TILE_HOLE_A     '?'
-#define TILE_HOLE_B     '!'
-#define TILE_PLATE_A    'b'
-#define TILE_PLATE_B    'c'
-#define TILE_GATE_A     'g'
-#define TILE_GATE_B     'h'
-#define TILE_EXIT_A     '@'
-#define TILE_EXIT_B     ':'
-#define TILE_EXIT_C     ';'
-#define TILE_FLOOR      '.'
+// Tile definitions moved to duplicator_tiles_16x16.h
+// (includes TILE_* game chars, screen codes, and mapping function)
 
 // Tile categories (bit flags)
 #define TILE_CAT_PASSABLE    0x01  // Can walk through

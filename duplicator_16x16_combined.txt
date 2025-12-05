@@ -314,93 +314,73 @@ void wait_vblank(void);
 
 
 /* -----------------------------------------------------------------------
- * File: duplicator_tile_map_16x16.c
+ * File: duplicator_tiles_16x16.h
  * ----------------------------------------------------------------------- */
 
-/* duplicator_tile_map_16x16.c - Tile character mapping for 16x16 mode */
+/* duplicator_tiles_16x16.h - Complete tile definitions for 16x16 mode
+ * 
+ * This file contains:
+ * 1. Game logic tile character definitions (TILE_*)
+ * 2. Screen code definitions for graphics (WALL, PLAYER, etc.)
+ * 3. Tile mapping function to convert game chars to screen codes
+ */
 
-#include "duplicator_font_16x16.h"
+#ifndef DUPLICATOR_TILES_16X16_H
+#define DUPLICATOR_TILES_16X16_H
 
 typedef unsigned char byte;
 
-// Map game tile characters to 16x16 screen codes
-// This converts logical game tiles ('#', 'p', etc.) to screen memory codes
-byte map_tile_to_16x16(byte tile) {
-    switch (tile) {
-        case '#':  return WALL;
-        case 'p':  return PLAYER;
-        case '*':  return CRATE;
-        case 'k':  return KEY;
-        case 'd':  return DOOR;
-        case 'e':  return ENEMY;
-        case '?':  return HOLE_A;
-        case '!':  return HOLE_B;
-        case 'b':  return PLATE_A;  // Plate A graphics
-        case 'c':  return PLATE_A;  // Plate B uses same graphics as Plate A
-        case 'g':  return GATE_A;
-        case 'h':  return GATE_B;
-        case '@':  return EXIT_A;
-        case ':':  return EXIT_B;
-        case ';':  return EXIT_C;
-        case '.':  return FLOOR;
-        case 'G':  return GATE_A_OPEN;
-        case 'H':  return GATE_B_OPEN;
-        case 'D':  return DOOR_OPEN;
-        case '[':  return HOLE_A_FILL;
-        case ']':  return HOLE_B_FILL;
-        // Wall lines
-        case '$':  return WALL_LINE_A;
-        case '%':  return WALL_LINE_B;
-        case '&':  return WALL_LINE_G;
-        // Lines
-        case '1':  return LINE_A;
-        case '2':  return LINE_B;
-        case '3':  return LINE_C;
-        case '4':  return LINE_D;
-        case '5':  return LINE_E;
-        case '6':  return LINE_F;
-        case '7':  return LINE_G;
-        case '8':  return LINE_H;
-        case ' ':  return 0;  // Empty space
-        default:   return 0;  // Unknown - treat as empty
-    }
-}
-
-
-
-/* -----------------------------------------------------------------------
- * File: duplicator_font_16x16.h
- * ----------------------------------------------------------------------- */
-
-/*
-  duplicator_font_16x16.h - 16x16 tile graphics for Duplicator game
-  
-  Each 16x16 tile uses 4 consecutive character codes (32 bytes total):
-  - Top-Left (8 bytes)
-  - Top-Right (8 bytes)
-  - Bottom-Left (8 bytes)
-  - Bottom-Right (8 bytes)
-  
-  Graphics are scaled from 8x8 originals by doubling each pixel.
-*/
-
-#ifndef DUPLICATOR_FONT_16X16_H
-#define DUPLICATOR_FONT_16X16_H
-
-// 16x16 Tile Screen Code Mappings
-// Each tile uses 4 consecutive screen codes (TL, TR, BL, BR)
-// These are SCREEN CODES written to screen memory, NOT game tile characters
-// Game tile characters ('#', 'p', etc.) are defined in duplicator_game.h
-// Using internal screen codes (not ATASCII)
-
-// Tile corner offsets - add these to the base screen code
+// ============================================================================
+// TILE CORNER OFFSETS
+// ============================================================================
+// Add these to any base screen code to get the 4 corners of a 16x16 tile
 #define TILE_TL  0  // Top-Left corner offset
 #define TILE_TR  1  // Top-Right corner offset
 #define TILE_BL  2  // Bottom-Left corner offset
 #define TILE_BR  3  // Bottom-Right corner offset
 
-// Base screen codes for 16x16 tiles (each tile occupies 4 consecutive codes)
-// These are what gets written to screen memory after mapping from game characters
+// ============================================================================
+// GAME LOGIC LAYER - Tile character definitions (TILE_*)
+// ============================================================================
+// These are the characters used in level data and game logic
+#define TILE_EMPTY       ' '
+#define TILE_WALL        '#'
+#define TILE_PLAYER      'p'
+#define TILE_CRATE       '*'
+#define TILE_KEY         'k'
+#define TILE_DOOR        'd'
+#define TILE_DOOR_OPEN   'D'
+#define TILE_ENEMY       'e'
+#define TILE_HOLE_A      '?'
+#define TILE_HOLE_B      '!'
+#define TILE_PLATE_A     'b'
+#define TILE_PLATE_B     'c'
+#define TILE_GATE_A      'g'
+#define TILE_GATE_B      'h'
+#define TILE_GATE_A_OPEN 'G'
+#define TILE_GATE_B_OPEN 'H'
+#define TILE_EXIT_A      '@'
+#define TILE_EXIT_B      ':'
+#define TILE_EXIT_C      ';'
+#define TILE_FLOOR       '.'
+#define TILE_HOLE_A_FILL '['
+#define TILE_HOLE_B_FILL ']'
+#define TILE_WALL_LINE_A '$'
+#define TILE_WALL_LINE_B '%'
+#define TILE_WALL_LINE_G '&'
+#define TILE_LINE_A      '1'
+#define TILE_LINE_B      '2'
+#define TILE_LINE_C      '3'
+#define TILE_LINE_D      '4'
+#define TILE_LINE_E      '5'
+#define TILE_LINE_F      '6'
+#define TILE_LINE_G      '7'
+#define TILE_LINE_H      '8'
+
+// ============================================================================
+// GRAPHICS LAYER - Screen code definitions
+// ============================================================================
+// These are the codes written to screen memory (each tile uses 4 consecutive codes)
 #define WALL           0x00  // Wall tile (screen codes 0x00-0x03)
 #define PLAYER         0x04  // Player tile (screen codes 0x04-0x07)
 #define CRATE          0x08  // Crate tile (screen codes 0x08-0x0B)
@@ -434,7 +414,83 @@ byte map_tile_to_16x16(byte tile) {
 #define LINE_G         0x78  // Line G tile (screen codes 0x78-0x7B)
 #define LINE_H         0x7C  // Line H tile (screen codes 0x7C-0x7F)
 
+// ============================================================================
+// TRANSLATION LAYER - Mapping function
+// ============================================================================
+// Converts game tile characters (TILE_*) to screen codes for rendering
+static inline byte map_tile_to_16x16(byte tile) {
+    switch (tile) {
+        case TILE_WALL:        return WALL;
+        case TILE_PLAYER:      return PLAYER;
+        case TILE_CRATE:       return CRATE;
+        case TILE_KEY:         return KEY;
+        case TILE_DOOR:        return DOOR;
+        case TILE_ENEMY:       return ENEMY;
+        case TILE_HOLE_A:      return HOLE_A;
+        case TILE_HOLE_B:      return HOLE_B;
+        case TILE_PLATE_A:     return PLATE_A;
+        case TILE_PLATE_B:     return PLATE_A;  // Plate B uses same graphics as Plate A
+        case TILE_GATE_A:      return GATE_A;
+        case TILE_GATE_B:      return GATE_B;
+        case TILE_EXIT_A:      return EXIT_A;
+        case TILE_EXIT_B:      return EXIT_B;
+        case TILE_EXIT_C:      return EXIT_C;
+        case TILE_FLOOR:       return FLOOR;
+        case TILE_GATE_A_OPEN: return GATE_A_OPEN;
+        case TILE_GATE_B_OPEN: return GATE_B_OPEN;
+        case TILE_DOOR_OPEN:   return DOOR_OPEN;
+        case TILE_HOLE_A_FILL: return HOLE_A_FILL;
+        case TILE_HOLE_B_FILL: return HOLE_B_FILL;
+        case TILE_WALL_LINE_A: return WALL_LINE_A;
+        case TILE_WALL_LINE_B: return WALL_LINE_B;
+        case TILE_WALL_LINE_G: return WALL_LINE_G;
+        case TILE_LINE_A:      return LINE_A;
+        case TILE_LINE_B:      return LINE_B;
+        case TILE_LINE_C:      return LINE_C;
+        case TILE_LINE_D:      return LINE_D;
+        case TILE_LINE_E:      return LINE_E;
+        case TILE_LINE_F:      return LINE_F;
+        case TILE_LINE_G:      return LINE_G;
+        case TILE_LINE_H:      return LINE_H;
+        case TILE_EMPTY:       return 0;  // Empty space
+        default:               return 0;  // Unknown - treat as empty
+    }
+}
 
+#endif // DUPLICATOR_TILES_16X16_H
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_tile_map_16x16.c
+ * ----------------------------------------------------------------------- */
+
+/* duplicator_tile_map_16x16.c - Legacy compatibility file
+ *
+ * The map_tile_to_16x16() function has been moved to duplicator_tiles_16x16.h
+ * as a static inline function. This file is kept for backward compatibility.
+ */
+
+#include "duplicator_tiles_16x16.h"
+
+// The map_tile_to_16x16() function is now defined in duplicator_tiles_16x16.h
+
+
+
+/* -----------------------------------------------------------------------
+ * File: duplicator_font_16x16.h
+ * ----------------------------------------------------------------------- */
+
+/* duplicator_font_16x16.h - Legacy compatibility header
+ *
+ * All tile definitions have been moved to duplicator_tiles_16x16.h
+ * This file is kept for backward compatibility.
+ */
+
+#ifndef DUPLICATOR_FONT_16X16_H
+#define DUPLICATOR_FONT_16X16_H
+
+#include "duplicator_tiles_16x16.h"
 
 #endif // DUPLICATOR_FONT_16X16_H
 
@@ -1803,6 +1859,7 @@ GameState* get_game_state(void) {
 
 #include <stdlib.h>
 #include <string.h>
+#include "duplicator_tiles_16x16.h"
 
 // Data types for clarity
 typedef unsigned char byte;
@@ -1813,25 +1870,8 @@ typedef unsigned short word;
 #define MAX_LEVEL_HEIGHT 11  // Exact height of levels
 #define SCREEN_TOP_MARGIN 2  // Number of lines reserved for title/UI at top
 
-// Tile types
-#define TILE_EMPTY      ' '
-#define TILE_WALL       '#'
-#define TILE_PLAYER     'p'
-#define TILE_CRATE      '*'
-#define TILE_KEY        'k'
-#define TILE_DOOR       'd'
-#define TILE_DOOR_OPEN  'D'
-#define TILE_ENEMY      'e'
-#define TILE_HOLE_A     '?'
-#define TILE_HOLE_B     '!'
-#define TILE_PLATE_A    'b'
-#define TILE_PLATE_B    'c'
-#define TILE_GATE_A     'g'
-#define TILE_GATE_B     'h'
-#define TILE_EXIT_A     '@'
-#define TILE_EXIT_B     ':'
-#define TILE_EXIT_C     ';'
-#define TILE_FLOOR      '.'
+// Tile definitions moved to duplicator_tiles_16x16.h
+// (includes TILE_* game chars, screen codes, and mapping function)
 
 // Tile categories (bit flags)
 #define TILE_CAT_PASSABLE    0x01  // Can walk through
