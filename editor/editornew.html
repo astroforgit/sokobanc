@@ -730,6 +730,10 @@
         // 9. MAIN_16X16.C (Simple player movement using game state)
         out += separator(`${gameName}_16x16.c`);
         out += `// Use RAM-based configuration\n#define CFGFILE atari-xex.cfg\n\n`;
+        out += `// Link the implementation files\n`;
+        out += `//#link "${gameName}_conio_16x16.c"\n`;
+        out += `//#link "${gameName}_tile_map_16x16.c"\n`;
+        out += `//#link "${gameName}_game.c"\n\n`;
         out += `#include <stdlib.h>\n#include <string.h>\n#include <stdio.h>\n#include <peekpoke.h>\n#include <conio.h>\n#include <joystick.h>\n\n`;
         out += `typedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
         out += `// Memory definitions\n#define CHARSET_MEM ((byte*)0x7000)\n#define DLIST_MEM   ((byte*)0x8000)\n`;

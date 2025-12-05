@@ -1,6 +1,11 @@
 // Use RAM-based configuration
 #define CFGFILE atari-xex.cfg
 
+// Link the implementation files
+//#link "satanic_conio_16x16.c"
+//#link "satanic_tile_map_16x16.c"
+//#link "satanic_game.c"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
