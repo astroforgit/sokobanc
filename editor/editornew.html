@@ -179,10 +179,9 @@
             <div class="tabs">
                 <div class="tab active" onclick="switchCodeTab('full')">Full Package</div>
                 <div class="tab" onclick="switchCodeTab('tiles')">tiles_16x16.h ⭐</div>
-                <div class="tab" onclick="switchCodeTab('levels')">levels_16x16.h</div>
-                <div class="tab" onclick="switchCodeTab('graphics')">graphics_16x16.h</div>
-                <div class="tab" onclick="switchCodeTab('font')">font_16x16.h</div>
                 <div class="tab" onclick="switchCodeTab('tilemap')">tile_map_16x16.c</div>
+                <div class="tab" onclick="switchCodeTab('graphics')">graphics_16x16.h</div>
+                <div class="tab" onclick="switchCodeTab('levels')">levels_16x16.h</div>
             </div>
             <textarea id="output" readonly></textarea>
             <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy Code to Clipboard</button>
@@ -485,13 +484,6 @@
             txt += `byte map_tile_to_16x16(byte tile);\n\n`;
             txt += `#endif\n`;
         }
-        else if(currentCodeTab === 'font') {
-            // Legacy compatibility - just includes tiles file
-            txt += `/* ${gameName}_font_16x16.h - Legacy compatibility header */\n\n`;
-            txt += `#ifndef ${capsName}_FONT_16X16_H\n#define ${capsName}_FONT_16X16_H\n\n`;
-            txt += `#include "${gameName}_tiles_16x16.h"\n\n`;
-            txt += `#endif\n`;
-        }
         else if(currentCodeTab === 'tilemap') {
             // Generate the tile mapping function implementation
             txt += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
@@ -556,22 +548,7 @@
         out += `byte map_tile_to_16x16(byte tile);\n\n`;
         out += `#endif\n`;
 
-        // 2. GRAPHICS_16X16.H
-        out += separator(`${gameName}_graphics_16x16.h`);
-        out += `#ifndef ${capsName}_GRAPHICS_16X16_H\n#define ${capsName}_GRAPHICS_16X16_H\n\n`;
-        out += `// 16x16 tile graphics data\n// Each tile is 32 bytes (4 characters × 8 bytes each)\n`;
-        out += `static unsigned char ${gameName}_graphics_16x16[] = {\n`;
-        tiles.forEach(t => out += `    /* ${t.name} (${t.key}) */\n    ${generateHexArray(t.data).join(',')},\n`);
-        out += `};\n#endif\n`;
-
-        // 3. FONT.H (Legacy compatibility)
-        out += separator(`${gameName}_font_16x16.h`);
-        out += `/* ${gameName}_font_16x16.h - Legacy compatibility header */\n\n`;
-        out += `#ifndef ${capsName}_FONT_16X16_H\n#define ${capsName}_FONT_16X16_H\n\n`;
-        out += `#include "${gameName}_tiles_16x16.h"\n\n`;
-        out += `#endif\n`;
-
-        // 4. TILE_MAP.C (Function implementation)
+        // 2. TILE_MAP.C (Function implementation)
         out += separator(`${gameName}_tile_map_16x16.c`);
         out += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
         out += `#include "${gameName}_tiles_16x16.h"\n\n`;
@@ -582,7 +559,15 @@
         out += `        case TILE_EMPTY: return 0;  // Empty space\n`;
         out += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n`;
 
-        // 5. LEVELS_16X16.H
+        // 3. GRAPHICS_16X16.H
+        out += separator(`${gameName}_graphics_16x16.h`);
+        out += `#ifndef ${capsName}_GRAPHICS_16X16_H\n#define ${capsName}_GRAPHICS_16X16_H\n\n`;
+        out += `// 16x16 tile graphics data\n// Each tile is 32 bytes (4 characters × 8 bytes each)\n`;
+        out += `static unsigned char ${gameName}_graphics_16x16[] = {\n`;
+        tiles.forEach(t => out += `    /* ${t.name} (${t.key}) */\n    ${generateHexArray(t.data).join(',')},\n`);
+        out += `};\n#endif\n`;
+
+        // 4. LEVELS_16X16.H
         out += separator(`${gameName}_levels_16x16.h`);
         out += `#ifndef ${capsName}_LEVELS_16X16_H\n#define ${capsName}_LEVELS_16X16_H\n\n`;
         let lvlNames = [];

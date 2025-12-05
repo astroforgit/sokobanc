@@ -16,10 +16,10 @@ FILES=(
     "duplicator_conio_16x16.h"
     "duplicator_tiles_16x16.h"
     "duplicator_tile_map_16x16.c"
-    "duplicator_font_16x16.h"
     "duplicator_graphics_16x16.h"
     "duplicator_game_16x16.c"
     "duplicator_game.h"
+    "duplicator_levels_16x16.h"
 )
 
 echo "Exporting duplicator 16x16 game files to $OUTPUT_FILE..."
