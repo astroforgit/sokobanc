@@ -734,9 +734,11 @@
         out += `typedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
         out += `// Memory definitions\n#define CHARSET_MEM ((byte*)0x7000)\n#define DLIST_MEM   ((byte*)0x8000)\n`;
         out += `#define SCREEN_MEM  ((byte*)0x9000)\n\n`;
-        out += `#include "${gameName}_game.h"\n`;
+        out += `// Include tiles first (needed by other headers)\n`;
+        out += `#include "${gameName}_tiles_16x16.h"\n`;
         out += `#include "${gameName}_conio_16x16.h"\n`;
         out += `#include "${gameName}_graphics_16x16.h"\n`;
+        out += `#include "${gameName}_game.h"\n`;
         out += `#include "${gameName}_levels_16x16.h"\n\n`;
         out += `// Graphics setup\nvoid setup_graphics(void) {\n`;
         out += `    word charset_addr = (word)CHARSET_MEM;\n    word dlist_addr = (word)DLIST_MEM;\n`;

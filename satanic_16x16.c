@@ -16,9 +16,11 @@ typedef unsigned short word;
 #define DLIST_MEM   ((byte*)0x8000)
 #define SCREEN_MEM  ((byte*)0x9000)
 
-#include "satanic_game.h"
+// Include tiles first (needed by other headers)
+#include "satanic_tiles_16x16.h"
 #include "satanic_conio_16x16.h"
 #include "satanic_graphics_16x16.h"
+#include "satanic_game.h"
 #include "satanic_levels_16x16.h"
 
 // Graphics setup
