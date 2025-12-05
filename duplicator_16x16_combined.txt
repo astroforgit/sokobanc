@@ -41,8 +41,8 @@ typedef unsigned short word;
 // Now include the game files
 // NOTE: duplicator_conio_16x16.h provides my_cputcxy, so we DON'T include atari_conio.h
 // The DUPLICATOR_16X16_MODE macro prevents duplicator_game.c from including atari_conio.h
+#include "duplicator_tiles_16x16.h"     // Complete tile definitions (TILE_*, screen codes, mapping)
 #include "duplicator_graphics_16x16.h"  // Pre-scaled 16x16 graphics
-#include "duplicator_font_16x16.h"      // Character code definitions
 
 #include "duplicator_game.h"
 #include "duplicator_levels_16x16.h"    // Level definitions
