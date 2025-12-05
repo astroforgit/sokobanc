@@ -16,14 +16,10 @@ typedef unsigned short word;
 #define DLIST_MEM   ((byte*)0x8000)
 #define SCREEN_MEM  ((byte*)0x9000)
 
+#include "satanic_game.h"
 #include "satanic_conio_16x16.h"
 #include "satanic_graphics_16x16.h"
 #include "satanic_levels_16x16.h"
-
-// Game state
-byte player_x, player_y;
-byte current_level = 0;
-char level_map[12][20];
 
 // Graphics setup
 void setup_graphics(void) {
@@ -49,48 +45,19 @@ void setup_graphics(void) {
     POKE(752, 1);
 }
 
-void load_level(byte level_num) {
-    byte x, y;
-    const char** level_data = levels[level_num];
-    my_clrscr_16x16();
-
-    for (y = 0; y < 11; y++) {
-        for (x = 0; x < 17; x++) {
-            char tile = level_data[y][x];
-            if (tile == 'p') {
-                player_x = x; player_y = y;
-                level_map[y][x] = ' ';
-            } else {
-                level_map[y][x] = tile;
-                my_cputcxy_16x16(x, y, map_tile_to_16x16(tile));
-            }
-        }
-    }
-    my_cputcxy_16x16(player_x, player_y, map_tile_to_16x16('p'));
-}
-
-void try_move(signed char dx, signed char dy) {
-    byte new_x = player_x + dx;
-    byte new_y = player_y + dy;
-    char tile = level_map[new_y][new_x];
-
-    if (tile != '#') {
-        my_cputcxy_16x16(player_x, player_y, map_tile_to_16x16(level_map[player_y][player_x]));
-        player_x = new_x; player_y = new_y;
-        my_cputcxy_16x16(player_x, player_y, map_tile_to_16x16('p'));
-        if (tile == '@') {
-            current_level++;
-            if (current_level >= NUM_LEVELS) current_level = 0;
-            load_level(current_level);
-        }
-    }
-}
-
 void main(void) {
     byte joy, last_joy = 0;
+    GameState* state;
+
     joy_install(joy_static_stddrv);
     setup_graphics();
-    load_level(current_level);
+    init_game_state();
+
+    // Get game state pointer
+    state = get_game_state();
+
+    // Load first level
+    load_level(state->current_level);
 
     while (1) {
         joy = joy_read(0);
