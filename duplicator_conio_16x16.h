@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "duplicator_font_16x16.h"  // For TILE_TL, TILE_TR, TILE_BL, TILE_BR
+#include "duplicator_tiles_16x16.h"  // For TILE_TL, TILE_TR, TILE_BL, TILE_BR and tile definitions
 
 // Data types
 typedef unsigned char byte;
