@@ -20,11 +20,13 @@ typedef unsigned char byte;
 // GAME LOGIC LAYER - Tile character definitions (TILE_*)
 #define TILE_WALL '#'
 #define TILE_PLAYER 'p'
+#define TILE_FLOOR '.'
 #define TILE_EMPTY ' '
 
 // GRAPHICS LAYER - Screen code definitions
 #define WALL 0x00  // WALL tile (screen codes 0x00-0x03)
 #define PLAYER 0x04  // PLAYER tile (screen codes 0x04-0x07)
+#define FLOOR 0x08  // FLOOR tile (screen codes 0x08-0x0B)
 
 // TRANSLATION LAYER - Mapping function
 // Converts game tile characters (TILE_*) to screen codes for rendering

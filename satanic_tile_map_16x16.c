@@ -8,6 +8,7 @@ byte map_tile_to_16x16(byte tile) {
     switch (tile) {
         case TILE_WALL: return WALL;
         case TILE_PLAYER: return PLAYER;
+        case TILE_FLOOR: return FLOOR;
         case TILE_EMPTY: return 0;  // Empty space
         default: return 0;   // Unknown - treat as empty
     }
