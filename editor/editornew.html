@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atari 16x16 Game Studio</title>
+    <title>Atari 16x16 Game Studio v3 (PuzzleScript Edition)</title>
     <style>
         :root {
             --bg: #1e1e1e;
@@ -16,6 +16,7 @@
             --danger: #e74c3c;
             --success: #27ae60;
             --warning: #f39c12;
+            --ps-color: #ff9f43;
         }
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -33,7 +34,7 @@
         .view.active { display: flex; animation: fadeIn 0.2s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; width: 100%; max-width: 1100px; }
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 0; width: 100%; max-width: 1100px; display:flex; justify-content:space-between; align-items:center; }
 
         /* --- SIDEBAR --- */
         nav {
@@ -51,7 +52,7 @@
 
         /* --- EDITOR --- */
         .editor-container { display: flex; gap: 40px; align-items: flex-start; margin-top: 20px; }
-        .grid-wrapper { width: 400px; height: 400px; background: #000; border: 4px solid var(--panel); }
+        .grid-wrapper { width: 400px; height: 400px; background: #000; border: 4px solid var(--panel); position: relative; }
         .grid-container { display: grid; grid-template-columns: repeat(16, 1fr); grid-template-rows: repeat(16, 1fr); width: 100%; height: 100%; gap: 1px; background: #444; }
         .pixel { background: #000; cursor: crosshair; }
         .pixel.active { background: #fff; }
@@ -59,15 +60,19 @@
         .pixel:nth-child(n+129):nth-child(-n+144) { border-top: 2px solid var(--grid-line); }
         .editor-controls { width: 300px; background: var(--panel); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
 
+        /* Checkbox styling */
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; background: #222; padding: 10px; border-radius: 4px;}
+        input[type="checkbox"] { transform: scale(1.5); accent-color: var(--accent); }
+
         /* --- MAP --- */
         .map-layout { display: flex; gap: 20px; width: 100%; max-width: 1200px; height: 100%; }
         .map-sidebar { width: 200px; display: flex; flex-direction: column; gap: 10px; background: var(--panel); padding: 10px; border-radius: 8px; height: fit-content; max-height: 80vh; overflow-y: auto; }
         .palette-item { display: flex; align-items: center; gap: 10px; padding: 5px; background: #333; cursor: pointer; border-radius: 4px; border: 2px solid transparent; }
         .palette-item.active { border-color: var(--accent); background: #222; }
         .palette-preview { width: 32px; height: 32px; image-rendering: pixelated; border: 1px solid #000; }
-        .map-workspace { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; }
-        .map-toolbar { display: flex; gap: 10px; background: var(--panel); padding: 10px; border-radius: 8px; width: 100%; justify-content: center; align-items: center; }
-        .map-grid-container { display: grid; background: #000; gap: 1px; border: 4px solid #555; }
+        .map-workspace { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; align-items: center; overflow: auto; }
+        .map-toolbar { display: flex; gap: 10px; background: var(--panel); padding: 10px; border-radius: 8px; width: 100%; justify-content: center; align-items: center; position: sticky; top: 0; z-index: 5;}
+        .map-grid-container { display: grid; background: #000; gap: 1px; border: 4px solid #555; margin-bottom: 50px; }
         .map-cell { width: 32px; height: 32px; background: #222; image-rendering: pixelated; cursor: crosshair; display: flex; align-items: center; justify-content: center; color: #555; font-size: 10px; font-family: monospace; background-size: cover; }
 
         /* --- UI --- */
@@ -80,6 +85,8 @@
         button.secondary { background: #444; }
         button.danger { background: var(--danger); }
         button.success { background: var(--success); }
+        button.ps-btn { background: var(--ps-color); color: #111;}
+        button.ps-btn:hover { background: #e67e22; }
         button.icon-btn { width: auto; padding: 8px 15px; margin: 0; }
         .mini-btn { font-size: 0.75em; padding: 4px 8px; width: auto; margin: 0; border-radius: 3px; }
 
@@ -91,6 +98,7 @@
         .tile-info { flex-grow: 1; }
         .tile-name { font-weight: bold; font-size: 1.1em; margin-bottom: 4px; }
         .tile-key { font-family: monospace; color: var(--accent); background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .tile-attr { font-size: 0.8em; color: #aaa; margin-left: 5px; }
         .card-actions { display: flex; flex-direction: column; gap: 5px; margin-left: 10px; }
         .import-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; width: 100%; }
         .candidate-card { border: 1px solid #444; padding: 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; background: #222; border-radius: 4px; }
@@ -103,6 +111,14 @@
         .tab { padding: 12px 25px; background: var(--panel); cursor: pointer; border: 1px solid var(--border); border-bottom: none; color: #aaa; border-radius: 6px 6px 0 0; }
         .tab.active { background: #111; color: var(--accent); font-weight: bold; border-bottom: 1px solid #111; }
         textarea { flex-grow: 1; background: #111; color: #0f0; font-family: 'Consolas', monospace; border: 1px solid var(--border); padding: 20px; resize: none; white-space: pre; font-size: 0.9em; }
+
+        /* --- PROJECT IO --- */
+        .project-io { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 900px; background: #252525; padding: 15px; border-radius: 6px; align-items: center; }
+        .project-io h3 { margin: 0; margin-right: 20px; color: #fff; font-size: 1em;}
+
+        /* --- PUZZLESCRIPT --- */
+        #psInput { width: 100%; height: 300px; font-family: 'Consolas', monospace; font-size: 0.85em; background: #111; color: #ccc; border: 1px solid #444; padding: 15px; }
+        .ps-info { margin-bottom: 15px; background: #2a2a2a; padding: 15px; border-left: 4px solid var(--ps-color); font-size: 0.9em; line-height: 1.5; }
 
         #feedbackToast { position: fixed; top: 20px; right: 20px; background: var(--success); color: white; padding: 10px 20px; border-radius: 4px; transform: translateY(-100px); transition: 0.3s; z-index: 1000; font-weight: bold; }
         #feedbackToast.show { transform: translateY(0); }
@@ -120,8 +136,14 @@
             <div class="grid-wrapper"><div class="grid-container" id="grid"></div></div>
             <div class="editor-controls">
                 <div class="form-group"><label>Variable Name</label><input type="text" id="tileName" placeholder="PLAYER"></div>
-                <div class="form-group"><label>Map Key</label><input type="text" id="tileKey" placeholder="p" maxlength="1" style="text-align: center; font-size: 1.5em;"></div>
-                <div style="height: 20px;"></div>
+                <div class="form-group"><label>Map Key (Char)</label><input type="text" id="tileKey" placeholder="p" maxlength="1" style="text-align: center; font-size: 1.5em;"></div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="tileSolid">
+                    <label for="tileSolid" style="margin:0; cursor:pointer;">Is Solid (Wall)</label>
+                </div>
+
+                <div style="height: 10px;"></div>
                 <button onclick="addOrUpdateTile()" id="saveBtn">Save / Update</button>
                 <button class="secondary" onclick="createNewTile()">Clear / New</button>
                 <button class="secondary" onclick="invertColors()">Invert Colors</button>
@@ -150,7 +172,9 @@
                     <label style="margin:0;">H:</label><input type="number" id="levelHeight" value="11" style="width: 50px;" onchange="resizeLevel()">
                 </div>
                 <div id="mapGrid" class="map-grid-container"></div>
-                <p style="color: #666; font-size: 0.9em;">Left Click: Paint | Right Click: Erase</p>
+                <p style="color: #666; font-size: 0.9em;">
+                    Left Click: Paint | Right Click: Erase | <strong>Alt + Click: Pick Tile</strong>
+                </p>
             </div>
         </div>
     </div>
@@ -165,24 +189,51 @@
         <div id="candidatesList" class="import-grid"></div>
     </div>
 
-    <!-- VIEW 5: EXPORT -->
+    <!-- VIEW 5: PUZZLESCRIPT IMPORT -->
+    <div id="view-ps" class="view">
+        <h2 style="border-color: var(--ps-color);">PuzzleScript Import</h2>
+        <div style="width: 100%; max-width: 900px;">
+            <div class="ps-info">
+                <strong>Instructions:</strong> Paste the content of your PuzzleScript file (e.g., duplicator.txt) below.<br>
+                The importer will:<br>
+                1. Extract 5x5 sprites and scale them 3x to fit 16x16 tiles.<br>
+                2. Parse the Legend to assign keys.<br>
+                3. Import all Levels automatically.
+            </div>
+            <div class="form-group">
+                <textarea id="psInput" placeholder="Paste PuzzleScript code here..."></textarea>
+            </div>
+            <button class="ps-btn" onclick="parsePuzzleScript()">PARSE & IMPORT ENTIRE GAME</button>
+        </div>
+    </div>
+
+    <!-- VIEW 6: EXPORT -->
     <div id="view-export" class="view">
         <h2>Export Game Code</h2>
+
+        <!-- PROJECT IO SECTION -->
+        <div class="project-io">
+            <h3>Project Files</h3>
+            <button class="secondary" onclick="saveProject()" style="width:auto;">💾 Save Project (JSON)</button>
+            <button class="secondary" onclick="document.getElementById('loadProjectInput').click()" style="width:auto;">📂 Load Project</button>
+            <input type="file" id="loadProjectInput" style="display:none" accept=".json" onchange="loadProject(event)">
+        </div>
+
         <div class="editor-controls" style="width: 100%; max-width: 900px; margin-bottom: 20px; flex-direction: row; display: flex; align-items: flex-end; gap: 20px;">
             <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
                 <label>Game Name (Filename prefix)</label>
                 <input type="text" id="gameName" value="duplicator" placeholder="mygame">
             </div>
-            <button class="success" style="width: auto; margin: 0;" onclick="exportFullGame()">EXPORT FULL GAME PACKAGE</button>
+            <button class="success" style="width: auto; margin: 0;" onclick="exportFullGame()">GENERATE C CODE</button>
         </div>
 
         <div class="code-container">
             <div class="tabs">
                 <div class="tab active" onclick="switchCodeTab('full')">Full Package</div>
-                <div class="tab" onclick="switchCodeTab('tiles')">tiles_16x16.h ⭐</div>
-                <div class="tab" onclick="switchCodeTab('tilemap')">tile_map_16x16.c</div>
-                <div class="tab" onclick="switchCodeTab('graphics')">graphics_16x16.h</div>
-                <div class="tab" onclick="switchCodeTab('levels')">levels_16x16.h</div>
+                <div class="tab" onclick="switchCodeTab('tiles')">tiles_16x16.h</div>
+                <div class="tab" onclick="switchCodeTab('tilemap')">tile_map.c</div>
+                <div class="tab" onclick="switchCodeTab('graphics')">graphics.h</div>
+                <div class="tab" onclick="switchCodeTab('levels')">levels.h</div>
             </div>
             <textarea id="output" readonly></textarea>
             <button onclick="copyToClipboard()" style="margin-top: 10px;">Copy Code to Clipboard</button>
@@ -194,8 +245,9 @@
     <div class="nav-btn active" onclick="switchView('editor')"><span>✎</span>Draw</div>
     <div class="nav-btn" onclick="switchView('list')"><span>☰</span>List</div>
     <div class="nav-btn" onclick="switchView('map')"><span>▦</span>Map</div>
-    <div class="nav-btn" onclick="switchView('import')"><span>⭳</span>Import</div>
-    <div class="nav-btn" onclick="switchView('export')"><span>⬇</span>Export</div>
+    <div class="nav-btn" onclick="switchView('import')"><span>⭳</span>Img</div>
+    <div class="nav-btn" onclick="switchView('ps')" style="color: var(--ps-color);"><span>P</span>Puzzle</div>
+    <div class="nav-btn" onclick="switchView('export')"><span>⬇</span>Exp</div>
 </nav>
 
 <script>
@@ -218,6 +270,7 @@
     const outputEl = document.getElementById('output');
     const nameInput = document.getElementById('tileName');
     const keyInput = document.getElementById('tileKey');
+    const solidInput = document.getElementById('tileSolid');
     const saveBtn = document.getElementById('saveBtn');
     const toast = document.getElementById('feedbackToast');
     const mapGridEl = document.getElementById('mapGrid');
@@ -227,6 +280,7 @@
     const lvlH = document.getElementById('levelHeight');
     const candidatesListEl = document.getElementById('candidatesList');
     const gameNameInput = document.getElementById('gameName');
+    const psInput = document.getElementById('psInput');
 
     // --- Init ---
     window.onload = function() {
@@ -268,14 +322,19 @@
         Array.from(gridEl.children).forEach((div, i) => { div.className = currentGrid[i] ? 'pixel active' : 'pixel'; });
     }
     function createNewTile() {
-        currentGrid.fill(0); nameInput.value = ''; keyInput.value = ''; editingIndex = -1;
+        currentGrid.fill(0); nameInput.value = ''; keyInput.value = '';
+        solidInput.checked = false;
+        editingIndex = -1;
         saveBtn.innerText = "Add New Tile"; renderEditorGrid();
     }
     function addOrUpdateTile() {
         const name = nameInput.value.toUpperCase().replace(/[^A-Z0-9_]/g, '');
         const key = keyInput.value;
         if(!name || !key) { showToast("Name and Key required", "warn"); return; }
-        const tileObj = { name: name, key: key, data: [...currentGrid] };
+
+        const isSolid = solidInput.checked;
+        const tileObj = { name: name, key: key, solid: isSolid, data: [...currentGrid] };
+
         if(editingIndex > -1) { tiles[editingIndex] = tileObj; showToast("Updated!"); }
         else { tiles.push(tileObj); editingIndex = tiles.length - 1; showToast("Added!"); }
         setTimeout(() => saveBtn.innerText = "Save / Update", 1000);
@@ -283,15 +342,12 @@
     function loadTile(index) {
         editingIndex = index; const t = tiles[index]; currentGrid = [...t.data];
         nameInput.value = t.name; keyInput.value = t.key;
+        solidInput.checked = !!t.solid;
         renderEditorGrid(); saveBtn.innerText = "Save / Update"; switchView('editor');
     }
-
     function invertColors() {
-        for(let i = 0; i < currentGrid.length; i++) {
-            currentGrid[i] = currentGrid[i] ? 0 : 1;
-        }
-        renderEditorGrid();
-        showToast("Colors Inverted!");
+        for(let i = 0; i < currentGrid.length; i++) { currentGrid[i] = currentGrid[i] ? 0 : 1; }
+        renderEditorGrid(); showToast("Colors Inverted!");
     }
 
     // --- List & Clipboard ---
@@ -310,7 +366,7 @@
             const cvs = document.createElement('canvas'); cvs.width = 16; cvs.height = 16; cvs.className = 'tile-preview';
             drawTileToCanvas(t.data, cvs);
             const info = document.createElement('div'); info.className = 'tile-info';
-            info.innerHTML = `<div class="tile-name">${t.name}</div><div class="tile-key">${t.key}</div>`;
+            info.innerHTML = `<div class="tile-name">${t.name} ${t.solid ? '<span class="tile-attr">[SOLID]</span>' : ''}</div><div class="tile-key">${t.key}</div>`;
             const actions = document.createElement('div'); actions.className = 'card-actions';
             const pasteBtn = document.createElement('button'); pasteBtn.className = 'mini-btn warning'; pasteBtn.innerText = 'Paste Img'; pasteBtn.onclick = (e) => pasteGridToTile(e, i);
             const delBtn = document.createElement('button'); delBtn.className = 'mini-btn danger'; delBtn.innerText = 'Del'; delBtn.onclick = (e) => deleteTile(e, i);
@@ -318,7 +374,232 @@
         });
     }
 
-    // --- Import ---
+    // --- PUZZLESCRIPT PARSER ---
+    function parsePuzzleScript() {
+        const text = psInput.value;
+        if(!text.trim()) { showToast("Paste code first", "warn"); return; }
+
+        if(!confirm("This will clear current tiles and levels. Continue?")) return;
+
+        try {
+            tiles = [];
+            levels = [];
+            const lines = text.split(/\r?\n/);
+            let section = "";
+
+            // Temporary storage
+            const rawObjects = []; // { name, colors, gridLines: [] }
+            const legendMap = {};  // char -> name
+            let levelBuffer = [];
+
+            let currentObj = null;
+
+            for(let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                // Section Headers
+                if(line.startsWith("========")) {
+                    // Peek next line to see section name
+                    let nextLine = lines[i+1] ? lines[i+1].trim().toUpperCase() : "";
+                    if(nextLine.includes("OBJECTS")) { section = "OBJECTS"; i++; continue; }
+                    if(nextLine.includes("LEGEND")) { section = "LEGEND"; i++; continue; }
+                    if(nextLine.includes("LEVELS")) { section = "LEVELS"; i++; continue; }
+                    if(nextLine.includes("SOUNDS") || nextLine.includes("COLLISION") || nextLine.includes("RULES") || nextLine.includes("WIN")) { section = "OTHER"; i++; continue; }
+                    // Fallback if header is on same line or differently formatted
+                }
+                if(line.toUpperCase() === "OBJECTS") { section = "OBJECTS"; continue; }
+                if(line.toUpperCase() === "LEGEND") { section = "LEGEND"; continue; }
+                if(line.toUpperCase() === "LEVELS") { section = "LEVELS"; continue; }
+
+                if(!line) {
+                    // Blank line in LEVELS triggers new level push
+                    if(section === "LEVELS" && levelBuffer.length > 0) {
+                        finalizeLevel(levelBuffer);
+                        levelBuffer = [];
+                    }
+                    // Blank line in OBJECTS finishes current object
+                    if(section === "OBJECTS" && currentObj) {
+                        rawObjects.push(currentObj);
+                        currentObj = null;
+                    }
+                    continue;
+                }
+
+                // PARSE OBJECTS
+                if(section === "OBJECTS") {
+                    // Skip comments
+                    if(line.startsWith("(")) continue;
+
+                    if(!currentObj) {
+                        // Start new object. Line is Name
+                        // Remove comments from name line
+                        let name = line.split(/[ (#]/)[0].trim();
+                        currentObj = { name: name, colors: [], grid: [] };
+                    } else if(currentObj.colors.length === 0 && (line.startsWith("#") || isColorName(line))) {
+                        // Colors line
+                        currentObj.colors = line.split(/\s+/);
+                    } else {
+                        // Grid line (should be . or 0-9)
+                        if(line.length === 5 && /[\.0-9a-zA-Z]+/.test(line)) {
+                            currentObj.grid.push(line);
+                        } else {
+                            // If we hit something weird, maybe end object
+                            rawObjects.push(currentObj);
+                            currentObj = null;
+                            i--; // Re-process this line
+                        }
+                    }
+                }
+
+                // PARSE LEGEND
+                if(section === "LEGEND") {
+                    if(line.includes("=")) {
+                        let parts = line.split("=");
+                        let key = parts[0].trim();
+                        let val = parts[1].trim().split(/\s+/)[0]; // Take first word (ignore 'or' logic for now)
+                        if(key.length === 1) {
+                            legendMap[key] = val; // Map 'P' -> 'Player'
+                        }
+                    }
+                }
+
+                // PARSE LEVELS
+                if(section === "LEVELS") {
+                    if(line.length > 0) levelBuffer.push(line);
+                }
+            }
+
+            // Catch trailing level
+            if(levelBuffer.length > 0) finalizeLevel(levelBuffer);
+            // Catch trailing object
+            if(currentObj) rawObjects.push(currentObj);
+
+            // --- CONVERT TO EDITOR FORMAT ---
+
+            // 1. Create Tiles
+            const objToKeyMap = {};
+            // Reverse Legend Map to find keys for objects
+            for(let k in legendMap) {
+                objToKeyMap[legendMap[k].toUpperCase()] = k;
+            }
+
+            rawObjects.forEach(obj => {
+                const name = obj.name.toUpperCase();
+                // Find a key. If explicit in legend, use it. Else first char.
+                let key = objToKeyMap[name] || name[0];
+
+                // Ensure key uniqueness (primitive collision resolve)
+                while(tiles.find(t => t.key === key)) {
+                    // Try next char or random
+                    key = String.fromCharCode(key.charCodeAt(0)+1);
+                }
+
+                // Convert 5x5 to 16x16 (Scale 3x)
+                const tileData = new Array(256).fill(0);
+
+                if(obj.grid.length === 5) {
+                    // We have a sprite
+                    for(let y=0; y<5; y++) {
+                        for(let x=0; x<5; x++) {
+                            const char = obj.grid[y][x];
+                            // Logic: '.' is usually background (0). Numbers/Chars are FG (1).
+                            const isPixel = (char !== '.');
+
+                            if(isPixel) {
+                                // Scale 3x3 block
+                                for(let dy=0; dy<3; dy++) {
+                                    for(let dx=0; dx<3; dx++) {
+                                        // Center offset: (16 - 15)/2 = 0.5 -> round to 0 or 1. Let's do offset 0.
+                                        // 5 * 3 = 15.
+                                        let ty = (y*3) + dy;
+                                        let tx = (x*3) + dx;
+                                        if(ty < 16 && tx < 16) {
+                                            tileData[ty*16 + tx] = 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // No grid? Likely a solid color block defined just by header
+                    // Fill whole block
+                    tileData.fill(1);
+                }
+
+                // Add to tiles
+                tiles.push({
+                    name: name,
+                    key: key,
+                    solid: name.includes("WALL") || name.includes("DOOR") || name.includes("LOCK"), // Simple heuristic
+                    data: tileData
+                });
+
+                // Update reverse map for level parsing
+                objToKeyMap[name] = key;
+            });
+
+            // 2. Normalize Levels (Map keys might map to keys we just created)
+            // The level data uses characters. We need to check if those chars exist in our tiles.
+            // If they don't, we might need dummy tiles or map them to ' '.
+
+            // Re-process imported levels to match internal structure
+            levels.forEach(lvl => {
+                const newRowData = [];
+                for(let i=0; i<lvl.data.length; i++) {
+                    const char = lvl.data[i];
+                    // Check if this char maps to a known object in Legend
+                    let objName = legendMap[char];
+                    if(objName) {
+                        // If mapped, find the key we assigned to that object
+                        let internalKey = objToKeyMap[objName.toUpperCase()];
+                        newRowData.push(internalKey || ' ');
+                    } else if(tiles.find(t => t.key === char)) {
+                        // Char is directly a key (sometimes happens)
+                        newRowData.push(char);
+                    } else {
+                        newRowData.push(' ');
+                    }
+                }
+                lvl.data = newRowData;
+            });
+
+            // Update UI
+            showToast(`Imported ${tiles.length} tiles & ${levels.length} levels`);
+            switchView('list');
+
+        } catch(e) {
+            console.error(e);
+            showToast("Parse Error: " + e.message, "warn");
+        }
+    }
+
+    function finalizeLevel(lines) {
+        if(lines.length === 0) return;
+        const h = lines.length;
+        const w = lines[0].length;
+        let data = [];
+        for(let row of lines) {
+            // Pad row if needed
+            let r = row;
+            if(r.length < w) r = r.padEnd(w, ' ');
+            data.push(...r.split(''));
+        }
+        levels.push({
+            name: `level_${levels.length+1}`,
+            width: w,
+            height: h,
+            data: data
+        });
+    }
+
+    function isColorName(str) {
+        const colors = ['black','white','grey','gray','red','green','blue','orange','yellow','brown','purple','pink'];
+        return colors.some(c => str.toLowerCase().includes(c));
+    }
+
+
+    // --- Import PNG (Existing) ---
     function handleFileSelect(evt) {
         const file = evt.target.files[0]; if(!file) return;
         const reader = new FileReader();
@@ -361,7 +642,7 @@
             const div = document.createElement('div'); div.className = `palette-item ${selectedPaletteKey === t.key ? 'active' : ''}`;
             div.onclick = () => { selectedPaletteKey = t.key; renderPalette(); };
             const cvs = document.createElement('canvas'); cvs.width = 16; cvs.height = 16; cvs.className = 'palette-preview'; drawTileToCanvas(t.data, cvs);
-            const span = document.createElement('span'); span.innerText = `${t.name} (${t.key})`;
+            const span = document.createElement('span'); span.innerText = `${t.name}`;
             div.append(cvs, span); mapPaletteEl.appendChild(div);
         });
     }
@@ -388,7 +669,20 @@
             const cell = document.createElement('div'); cell.className = 'map-cell';
             const tile = tiles.find(t => t.key === k);
             if(tile) { const cvs = document.createElement('canvas'); cvs.width=16; cvs.height=16; drawTileToCanvas(tile.data, cvs); cell.style.backgroundImage = `url(${cvs.toDataURL()})`; } else if(k !== ' ') cell.innerText = k;
-            cell.onmousedown = (e) => { isPaintingMap = true; if(e.button === 2) applyPaint(i, ' '); else applyPaint(i, selectedPaletteKey); };
+
+            // Mouse Events
+            cell.onmousedown = (e) => {
+                if(e.altKey) {
+                    // Eyedropper
+                    e.preventDefault();
+                    selectedPaletteKey = k;
+                    renderPalette();
+                    showToast("Picked: " + k);
+                } else {
+                    isPaintingMap = true;
+                    if(e.button === 2) applyPaint(i, ' '); else applyPaint(i, selectedPaletteKey);
+                }
+            };
             cell.onmouseenter = (e) => { if(isPaintingMap) applyPaint(i, selectedPaletteKey); };
             cell.oncontextmenu = (e) => e.preventDefault();
             mapGridEl.appendChild(cell);
@@ -399,6 +693,52 @@
         const cell = mapGridEl.children[i]; const tile = tiles.find(t => t.key === k);
         if(tile) { const cvs = document.createElement('canvas'); cvs.width=16; cvs.height=16; drawTileToCanvas(tile.data, cvs); cell.style.backgroundImage = `url(${cvs.toDataURL()})`; cell.innerText=''; }
         else { cell.style.backgroundImage=''; cell.innerText = k===' '?'':k; }
+    }
+
+    // --- JSON PROJECT SAVE/LOAD ---
+    function saveProject() {
+        const projectData = {
+            gameName: gameNameInput.value,
+            tiles: tiles,
+            levels: levels
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
+        const anchor = document.createElement('a');
+        anchor.setAttribute("href", dataStr);
+        anchor.setAttribute("download", (gameNameInput.value || "game") + ".json");
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        showToast("Project Saved!");
+    }
+
+    function loadProject(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.tiles && data.levels) {
+                    tiles = data.tiles;
+                    levels = data.levels;
+                    if(data.gameName) gameNameInput.value = data.gameName;
+
+                    // Reset View
+                    currentLevelIndex = 0;
+                    updateLevelSelect();
+                    renderList();
+                    initMapEditor();
+                    showToast("Project Loaded!");
+                } else {
+                    showToast("Invalid Project File", "warn");
+                }
+            } catch(err) {
+                showToast("Error parsing JSON", "warn");
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
     }
 
     // --- Export ---
@@ -451,58 +791,33 @@
             txt += `};\n#endif\n`;
         }
         else if(currentCodeTab === 'tiles') {
-            // Generate the complete tiles_16x16.h file with everything
-            txt += `/* ${gameName}_tiles_16x16.h - Complete tile definitions for 16x16 mode\n`;
-            txt += ` * \n`;
-            txt += ` * This file contains:\n`;
-            txt += ` * 1. Game logic tile character definitions (TILE_*)\n`;
-            txt += ` * 2. Screen code definitions for graphics (WALL, PLAYER, etc.)\n`;
-            txt += ` * 3. Tile mapping function to convert game chars to screen codes\n`;
-            txt += ` */\n\n`;
+            txt += `/* ${gameName}_tiles_16x16.h */\n`;
             txt += `#ifndef ${capsName}_TILES_16X16_H\n#define ${capsName}_TILES_16X16_H\n\n`;
             txt += `typedef unsigned char byte;\n\n`;
-
-            // Corner offsets
-            txt += `// Tile corner offsets\n`;
-            txt += `#define TILE_TL  0  // Top-Left corner offset\n`;
-            txt += `#define TILE_TR  1  // Top-Right corner offset\n`;
-            txt += `#define TILE_BL  2  // Bottom-Left corner offset\n`;
-            txt += `#define TILE_BR  3  // Bottom-Right corner offset\n\n`;
-
-            // Game logic layer - TILE_* definitions
-            txt += `// GAME LOGIC LAYER - Tile character definitions (TILE_*)\n`;
+            txt += `#define TILE_TL 0\n#define TILE_TR 1\n#define TILE_BL 2\n#define TILE_BR 3\n\n`;
             tiles.forEach(t => txt += `#define TILE_${t.name} '${t.key}'\n`);
             txt += `#define TILE_EMPTY ' '\n\n`;
-
-            // Graphics layer - screen codes
-            txt += `// GRAPHICS LAYER - Screen code definitions\n`;
             if(tiles.length > 0) {
-                txt += `#define ${tiles[0].name} 0x00  // ${tiles[0].name} tile (screen codes 0x00-0x03)\n`;
+                txt += `#define ${tiles[0].name} 0x00\n`;
                 for(let i=1; i<tiles.length; i++) {
                     const code = (i * 4).toString(16).toUpperCase().padStart(2, '0');
-                    const endCode = ((i * 4) + 3).toString(16).toUpperCase().padStart(2, '0');
-                    txt += `#define ${tiles[i].name} 0x${code}  // ${tiles[i].name} tile (screen codes 0x${code}-0x${endCode})\n`;
+                    txt += `#define ${tiles[i].name} 0x${code}\n`;
                 }
             }
-            txt += `\n`;
-
-            // Translation layer - mapping function declaration
-            txt += `// TRANSLATION LAYER - Mapping function\n`;
-            txt += `// Converts game tile characters (TILE_*) to screen codes for rendering\n`;
-            txt += `// Function declaration (implementation in ${gameName}_tile_map_16x16.c)\n`;
-            txt += `byte map_tile_to_16x16(byte tile);\n\n`;
+            txt += `\nbyte map_tile_to_16x16(byte tile);\nbyte is_tile_solid(byte tile);\n\n`;
             txt += `#endif\n`;
         }
         else if(currentCodeTab === 'tilemap') {
-            // Generate the tile mapping function implementation
-            txt += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
-            txt += `#include "${gameName}_tiles_16x16.h"\n\n`;
-            txt += `// Map game tile characters to 16x16 screen codes\n`;
-            txt += `// This converts logical game tiles (TILE_*) to screen memory codes\n`;
+            txt += `/* ${gameName}_tile_map_16x16.c */\n\n#include "${gameName}_tiles_16x16.h"\n\n`;
             txt += `byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
             tiles.forEach(t => txt += `        case TILE_${t.name}: return ${t.name};\n`);
-            txt += `        case TILE_EMPTY: return 0;  // Empty space\n`;
-            txt += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n`;
+            txt += `        default: return 0;\n    }\n}\n\n`;
+
+            txt += `byte is_tile_solid(byte tile) {\n    switch (tile) {\n`;
+            tiles.forEach(t => {
+                if(t.solid) txt += `        case TILE_${t.name}: return 1;\n`;
+            });
+            txt += `        default: return 0;\n    }\n}\n`;
         }
         outputEl.value = txt;
     }
@@ -511,69 +826,40 @@
         const gameName = gameNameInput.value.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || "game";
         const capsName = gameName.toUpperCase();
         let out = "";
-
         const separator = (fname) => `\n/* -----------------------------------------------------------------------\n * File: ${fname}\n * ----------------------------------------------------------------------- */\n`;
 
-        // 1. TILES_16X16.H (Complete tile definitions - NEW!)
+        // 1. TILES_16X16.H
         out += separator(`${gameName}_tiles_16x16.h`);
-        out += `/* ${gameName}_tiles_16x16.h - Complete tile definitions for 16x16 mode\n`;
-        out += ` * \n`;
-        out += ` * This file contains:\n`;
-        out += ` * 1. Game logic tile character definitions (TILE_*)\n`;
-        out += ` * 2. Screen code definitions for graphics (WALL, PLAYER, etc.)\n`;
-        out += ` * 3. Tile mapping function to convert game chars to screen codes\n`;
-        out += ` */\n\n`;
         out += `#ifndef ${capsName}_TILES_16X16_H\n#define ${capsName}_TILES_16X16_H\n\n`;
-        out += `typedef unsigned char byte;\n\n`;
-
-        // Corner offsets
-        out += `// Tile corner offsets\n`;
-        out += `#define TILE_TL  0  // Top-Left corner offset\n`;
-        out += `#define TILE_TR  1  // Top-Right corner offset\n`;
-        out += `#define TILE_BL  2  // Bottom-Left corner offset\n`;
-        out += `#define TILE_BR  3  // Bottom-Right corner offset\n\n`;
-
-        // Game logic layer - TILE_* definitions
-        out += `// GAME LOGIC LAYER - Tile character definitions (TILE_*)\n`;
+        out += `typedef unsigned char byte;\n\n#define TILE_TL 0\n#define TILE_TR 1\n#define TILE_BL 2\n#define TILE_BR 3\n\n`;
         tiles.forEach(t => out += `#define TILE_${t.name} '${t.key}'\n`);
         out += `#define TILE_EMPTY ' '\n\n`;
-
-        // Graphics layer - screen codes
-        out += `// GRAPHICS LAYER - Screen code definitions\n`;
         if(tiles.length > 0) {
-            out += `#define ${tiles[0].name} 0x00  // ${tiles[0].name} tile (screen codes 0x00-0x03)\n`;
+            out += `#define ${tiles[0].name} 0x00\n`;
             for(let i=1; i<tiles.length; i++) {
                 const code = (i * 4).toString(16).toUpperCase().padStart(2, '0');
-                const endCode = ((i * 4) + 3).toString(16).toUpperCase().padStart(2, '0');
-                out += `#define ${tiles[i].name} 0x${code}  // ${tiles[i].name} tile (screen codes 0x${code}-0x${endCode})\n`;
+                out += `#define ${tiles[i].name} 0x${code}\n`;
             }
         }
-        out += `\n`;
+        out += `\nbyte map_tile_to_16x16(byte tile);\nbyte is_tile_solid(byte tile);\n\n#endif\n`;
 
-        // Translation layer - mapping function declaration
-        out += `// TRANSLATION LAYER - Mapping function\n`;
-        out += `// Converts game tile characters (TILE_*) to screen codes for rendering\n`;
-        out += `// Function declaration (implementation in ${gameName}_tile_map_16x16.c)\n`;
-        out += `byte map_tile_to_16x16(byte tile);\n\n`;
-        out += `#endif\n`;
-
-        // 2. TILE_MAP.C (Function implementation)
+        // 2. TILE_MAP.C
         out += separator(`${gameName}_tile_map_16x16.c`);
-        out += `/* ${gameName}_tile_map_16x16.c - Tile character mapping for 16x16 mode */\n\n`;
         out += `#include "${gameName}_tiles_16x16.h"\n\n`;
-        out += `// Map game tile characters to 16x16 screen codes\n`;
-        out += `// This converts logical game tiles (TILE_*) to screen memory codes\n`;
         out += `byte map_tile_to_16x16(byte tile) {\n    switch (tile) {\n`;
         tiles.forEach(t => out += `        case TILE_${t.name}: return ${t.name};\n`);
-        out += `        case TILE_EMPTY: return 0;  // Empty space\n`;
-        out += `        default: return 0;   // Unknown - treat as empty\n    }\n}\n`;
+        out += `        default: return 0;\n    }\n}\n\n`;
+        out += `byte is_tile_solid(byte tile) {\n    switch (tile) {\n`;
+        tiles.forEach(t => {
+            if(t.solid) out += `        case TILE_${t.name}: return 1;\n`;
+        });
+        out += `        default: return 0;\n    }\n}\n`;
 
         // 3. GRAPHICS_16X16.H
         out += separator(`${gameName}_graphics_16x16.h`);
         out += `#ifndef ${capsName}_GRAPHICS_16X16_H\n#define ${capsName}_GRAPHICS_16X16_H\n\n`;
-        out += `// 16x16 tile graphics data\n// Each tile is 32 bytes (4 characters × 8 bytes each)\n`;
         out += `static unsigned char ${gameName}_graphics_16x16[] = {\n`;
-        tiles.forEach(t => out += `    /* ${t.name} (${t.key}) */\n    ${generateHexArray(t.data).join(',')},\n`);
+        tiles.forEach(t => out += `    /* ${t.name} */\n    ${generateHexArray(t.data).join(',')},\n`);
         out += `};\n#endif\n`;
 
         // 4. LEVELS_16X16.H
@@ -590,220 +876,91 @@
             out += `};\n\n`;
         });
         out += `const char** levels[] = {\n    ${lvlNames.join(',\n    ')}\n};\n\n`;
-        out += `const byte NUM_LEVELS = ${levels.length};\n\n`;
-        out += `#endif\n`;
+        out += `const byte NUM_LEVELS = ${levels.length};\n\n#endif\n`;
 
         // 5. CONIO_16X16.H
         out += separator(`${gameName}_conio_16x16.h`);
         out += `#ifndef ${capsName}_CONIO_16X16_H\n#define ${capsName}_CONIO_16X16_H\n\n`;
-        out += `#include <stdlib.h>\n#include <string.h>\n#include <stdio.h>\n`;
-        out += `#include "${gameName}_tiles_16x16.h"  // For TILE_TL, TILE_TR, TILE_BL, TILE_BR and tile definitions\n\n`;
-        out += `// Data types\ntypedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
-        out += `// Screen dimensions for 16x16 tiles\n#define CHAR_COLS 40\n#define CHAR_ROWS 24\n`;
-        out += `#define TILE_COLS 20\n#define TILE_ROWS 12\n\n`;
-        out += `// Memory locations\n#define SCREEN_MEM  ((byte*)0x9000)\n\n`;
-        out += `// Function prototypes for 16x16 mode\n`;
-        out += `void my_clrscr_16x16(void);\n`;
-        out += `void my_cputcxy_16x16(byte tx, byte ty, byte tile_char);\n`;
-        out += `void wait_vblank_16x16(void);\n\n`;
-        out += `// Tile mapping function\nbyte map_tile_to_16x16(byte tile);\n\n`;
-        out += `#endif\n`;
+        out += `#include <stdlib.h>\n#include <string.h>\n#include <stdio.h>\n#include "${gameName}_tiles_16x16.h"\n\n`;
+        out += `typedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
+        out += `#define CHAR_COLS 40\n#define CHAR_ROWS 24\n#define SCREEN_MEM  ((byte*)0x9000)\n\n`;
+        out += `void my_clrscr_16x16(void);\nvoid my_cputcxy_16x16(byte tx, byte ty, byte tile_char);\nvoid wait_vblank_16x16(void);\n\n#endif\n`;
 
         // 6. CONIO_16X16.C
         out += separator(`${gameName}_conio_16x16.c`);
         out += `#include "${gameName}_conio_16x16.h"\n\n`;
         out += `void my_clrscr_16x16(void) {\n    memset(SCREEN_MEM, 0, CHAR_COLS * CHAR_ROWS);\n}\n\n`;
-        out += `void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {\n`;
-        out += `    byte char_x = tx * 2;\n    byte char_y = ty * 2;\n\n`;
+        out += `void my_cputcxy_16x16(byte tx, byte ty, byte tile_char) {\n    byte char_x = tx * 2; byte char_y = ty * 2;\n`;
         out += `    word offset_tl = (word)char_y * CHAR_COLS + char_x;\n`;
-        out += `    word offset_tr = (word)char_y * CHAR_COLS + char_x + 1;\n`;
-        out += `    word offset_bl = (word)(char_y + 1) * CHAR_COLS + char_x;\n`;
-        out += `    word offset_br = (word)(char_y + 1) * CHAR_COLS + char_x + 1;\n\n`;
-        out += `    if (tile_char == 0) {\n`;
-        out += `        SCREEN_MEM[offset_tl] = 0;\n        SCREEN_MEM[offset_tr] = 0;\n`;
-        out += `        SCREEN_MEM[offset_bl] = 0;\n        SCREEN_MEM[offset_br] = 0;\n`;
-        out += `    } else {\n`;
-        out += `        SCREEN_MEM[offset_tl] = tile_char + TILE_TL;\n`;
-        out += `        SCREEN_MEM[offset_tr] = tile_char + TILE_TR;\n`;
-        out += `        SCREEN_MEM[offset_bl] = tile_char + TILE_BL;\n`;
-        out += `        SCREEN_MEM[offset_br] = tile_char + TILE_BR;\n`;
-        out += `    }\n}\n\n`;
-        out += `void wait_vblank_16x16(void) {\n`;
-        out += `    asm("lda $14");\n    __wait:\n    asm("cmp $14");\n    asm("beq %g", __wait);\n}\n`;
+        out += `    if (tile_char == 0) {\n        SCREEN_MEM[offset_tl] = 0; SCREEN_MEM[offset_tl+1] = 0;\n`;
+        out += `        SCREEN_MEM[offset_tl+CHAR_COLS] = 0; SCREEN_MEM[offset_tl+CHAR_COLS+1] = 0;\n    } else {\n`;
+        out += `        SCREEN_MEM[offset_tl] = tile_char + TILE_TL;\n        SCREEN_MEM[offset_tl+1] = tile_char + TILE_TR;\n`;
+        out += `        SCREEN_MEM[offset_tl+CHAR_COLS] = tile_char + TILE_BL;\n        SCREEN_MEM[offset_tl+CHAR_COLS+1] = tile_char + TILE_BR;\n    }\n}\n\n`;
+        out += `void wait_vblank_16x16(void) {\n    asm("lda $14");\n    __wait:\n    asm("cmp $14");\n    asm("beq %g", __wait);\n}\n`;
 
-        // 7. GAME.H (Game state and logic header)
+        // 7. GAME.H
         out += separator(`${gameName}_game.h`);
-        out += `/* ${gameName}_game.h - Game state and logic\n`;
-        out += ` * \n`;
-        out += ` * This file defines the game state structure and provides\n`;
-        out += ` * an interface for accessing and managing game state.\n`;
-        out += ` */\n\n`;
         out += `#ifndef ${capsName}_GAME_H\n#define ${capsName}_GAME_H\n\n`;
-        out += `#include <stdlib.h>\n#include <string.h>\n`;
-        out += `#include "${gameName}_tiles_16x16.h"\n\n`;
-        out += `// Data types\ntypedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
-        out += `// Game constants\n`;
-        out += `#define MAX_LEVEL_WIDTH 20\n`;
-        out += `#define MAX_LEVEL_HEIGHT 12\n\n`;
-        out += `// Game state structure\n`;
-        out += `typedef struct {\n`;
-        out += `    byte player_x;\n`;
-        out += `    byte player_y;\n`;
-        out += `    byte current_level;\n`;
-        out += `    byte level_width;\n`;
-        out += `    byte level_height;\n`;
-        out += `    char level_map[MAX_LEVEL_HEIGHT][MAX_LEVEL_WIDTH];\n`;
-        out += `} GameState;\n\n`;
-        out += `/*\n`;
-        out += ` * Get the current game state\n`;
-        out += ` * \n`;
-        out += ` * @return Pointer to the game state structure\n`;
-        out += ` */\n`;
-        out += `GameState* get_game_state(void);\n\n`;
-        out += `/*\n`;
-        out += ` * Initialize game state\n`;
-        out += ` */\n`;
-        out += `void init_game_state(void);\n\n`;
-        out += `/*\n`;
-        out += ` * Load a level into game state\n`;
-        out += ` * \n`;
-        out += ` * @param level_num - Level number to load\n`;
-        out += ` */\n`;
-        out += `void load_level(byte level_num);\n\n`;
-        out += `/*\n`;
-        out += ` * Try to move the player\n`;
-        out += ` * \n`;
-        out += ` * @param dx - Horizontal movement (-1, 0, or 1)\n`;
-        out += ` * @param dy - Vertical movement (-1, 0, or 1)\n`;
-        out += ` */\n`;
-        out += `void try_move(signed char dx, signed char dy);\n\n`;
-        out += `#endif // ${capsName}_GAME_H\n`;
+        out += `#include "${gameName}_tiles_16x16.h"\n\ntypedef struct {\n    byte player_x; byte player_y;\n    byte current_level; byte level_width; byte level_height;\n    char level_map[24][40];\n} GameState;\n\n`;
+        out += `GameState* get_game_state(void);\nvoid init_game_state(void);\nvoid load_level(byte level_num);\nvoid try_move(signed char dx, signed char dy);\n\n#endif\n`;
 
-        // 8. GAME.C (Game state implementation)
+        // 8. GAME.C
         out += separator(`${gameName}_game.c`);
-        out += `/* ${gameName}_game.c - Game state implementation */\n\n`;
-        out += `#include "${gameName}_game.h"\n`;
-        out += `#include "${gameName}_conio_16x16.h"\n\n`;
-        out += `// Static game state\n`;
-        out += `static GameState game_state;\n\n`;
-        out += `// External level data (defined in levels header, included by main)\n`;
-        out += `extern const char** levels[];\n`;
-        out += `extern const byte NUM_LEVELS;\n\n`;
-        out += `GameState* get_game_state(void) {\n`;
-        out += `    return &game_state;\n`;
-        out += `}\n\n`;
-        out += `void init_game_state(void) {\n`;
-        out += `    memset(&game_state, 0, sizeof(GameState));\n`;
-        out += `    game_state.current_level = 0;\n`;
-        out += `}\n\n`;
-        out += `void load_level(byte level_num) {\n`;
-        out += `    byte x, y;\n`;
-        out += `    const char** level_data = levels[level_num];\n`;
-        out += `    my_clrscr_16x16();\n\n`;
-        out += `    game_state.current_level = level_num;\n`;
-        out += `    game_state.level_width = 17;  // Adjust based on your levels\n`;
-        out += `    game_state.level_height = 11; // Adjust based on your levels\n\n`;
-        out += `    for (y = 0; y < game_state.level_height; y++) {\n`;
-        out += `        for (x = 0; x < game_state.level_width; x++) {\n`;
-        out += `            char tile = level_data[y][x];\n`;
-        out += `            if (tile == 'p') {\n`;
-        out += `                game_state.player_x = x;\n`;
-        out += `                game_state.player_y = y;\n`;
-        out += `                game_state.level_map[y][x] = ' ';\n`;
-        out += `            } else {\n`;
-        out += `                game_state.level_map[y][x] = tile;\n`;
-        out += `                my_cputcxy_16x16(x, y, map_tile_to_16x16(tile));\n`;
-        out += `            }\n`;
-        out += `        }\n`;
-        out += `    }\n`;
-        out += `    my_cputcxy_16x16(game_state.player_x, game_state.player_y, map_tile_to_16x16('p'));\n`;
-        out += `}\n\n`;
-        out += `void try_move(signed char dx, signed char dy) {\n`;
-        out += `    byte new_x = game_state.player_x + dx;\n`;
-        out += `    byte new_y = game_state.player_y + dy;\n`;
-        out += `    char tile = game_state.level_map[new_y][new_x];\n\n`;
-        out += `    if (tile != '#') {\n`;
-        out += `        my_cputcxy_16x16(game_state.player_x, game_state.player_y, \n`;
-        out += `                         map_tile_to_16x16(game_state.level_map[game_state.player_y][game_state.player_x]));\n`;
-        out += `        game_state.player_x = new_x;\n`;
-        out += `        game_state.player_y = new_y;\n`;
-        out += `        my_cputcxy_16x16(game_state.player_x, game_state.player_y, map_tile_to_16x16('p'));\n`;
-        out += `        if (tile == '@') {\n`;
-        out += `            game_state.current_level++;\n`;
-        out += `            if (game_state.current_level >= NUM_LEVELS) game_state.current_level = 0;\n`;
-        out += `            load_level(game_state.current_level);\n`;
-        out += `        }\n`;
-        out += `    }\n`;
-        out += `}\n`;
+        out += `#include "${gameName}_game.h"\n#include "${gameName}_conio_16x16.h"\n\n`;
+        out += `static GameState game_state;\nextern const char** levels[];\nextern const byte NUM_LEVELS;\n\n`;
+        out += `GameState* get_game_state(void) { return &game_state; }\n`;
+        out += `void init_game_state(void) { memset(&game_state, 0, sizeof(GameState)); }\n\n`;
+        out += `void load_level(byte level_num) {\n    byte x, y;\n    const char** level_data = levels[level_num];\n    my_clrscr_16x16();\n`;
+        out += `    game_state.current_level = level_num;\n    game_state.level_width = 17;\n    game_state.level_height = 11;\n\n`;
+        out += `    for (y = 0; y < game_state.level_height; y++) {\n        for (x = 0; x < game_state.level_width; x++) {\n`;
+        out += `            char tile = level_data[y][x];\n            if (tile == 'p' || tile == 'P') {\n`;
+        out += `                game_state.player_x = x; game_state.player_y = y;\n                game_state.level_map[y][x] = ' ';\n            } else {\n`;
+        out += `                game_state.level_map[y][x] = tile;\n                my_cputcxy_16x16(x, y, map_tile_to_16x16(tile));\n            }\n        }\n    }\n    my_cputcxy_16x16(game_state.player_x, game_state.player_y, map_tile_to_16x16('p'));\n}\n\n`;
 
-        // 9. MAIN_16X16.C (Simple player movement using game state)
+        // --- UPDATED COLLISION LOGIC ---
+        out += `void try_move(signed char dx, signed char dy) {\n    byte new_x = game_state.player_x + dx;\n    byte new_y = game_state.player_y + dy;\n    char tile = game_state.level_map[new_y][new_x];\n\n`;
+        out += `    // Use the generated Solid Check instead of hardcoded '#'\n    if (!is_tile_solid(tile)) {\n`;
+        out += `        my_cputcxy_16x16(game_state.player_x, game_state.player_y, \n            map_tile_to_16x16(game_state.level_map[game_state.player_y][game_state.player_x]));\n`;
+        out += `        game_state.player_x = new_x; game_state.player_y = new_y;\n`;
+        out += `        my_cputcxy_16x16(game_state.player_x, game_state.player_y, map_tile_to_16x16('p'));\n`;
+        out += `        if (tile == '@') {\n            game_state.current_level++;\n            if (game_state.current_level >= NUM_LEVELS) game_state.current_level = 0;\n            load_level(game_state.current_level);\n        }\n    }\n}\n`;
+
+        // 9. MAIN_16X16.C
         out += separator(`${gameName}_16x16.c`);
-        out += `// Use RAM-based configuration\n#define CFGFILE atari-xex.cfg\n\n`;
-        out += `// Link the implementation files\n`;
-        out += `//#link "${gameName}_conio_16x16.c"\n`;
-        out += `//#link "${gameName}_tile_map_16x16.c"\n`;
-        out += `//#link "${gameName}_game.c"\n\n`;
-        out += `#include <stdlib.h>\n#include <string.h>\n#include <stdio.h>\n#include <peekpoke.h>\n#include <conio.h>\n#include <joystick.h>\n\n`;
-        out += `typedef unsigned char byte;\ntypedef unsigned short word;\n\n`;
-        out += `// Memory definitions\n#define CHARSET_MEM ((byte*)0x7000)\n#define DLIST_MEM   ((byte*)0x8000)\n`;
-        out += `#define SCREEN_MEM  ((byte*)0x9000)\n\n`;
-        out += `// Include tiles first (needed by other headers)\n`;
-        out += `#include "${gameName}_tiles_16x16.h"\n`;
-        out += `#include "${gameName}_conio_16x16.h"\n`;
-        out += `#include "${gameName}_graphics_16x16.h"\n`;
-        out += `#include "${gameName}_game.h"\n`;
-        out += `#include "${gameName}_levels_16x16.h"\n\n`;
-        out += `// Graphics setup\nvoid setup_graphics(void) {\n`;
-        out += `    word charset_addr = (word)CHARSET_MEM;\n    word dlist_addr = (word)DLIST_MEM;\n`;
-        out += `    word screen_addr = (word)SCREEN_MEM;\n    byte i;\n\n`;
-        out += `    // Create custom display list\n    DLIST_MEM[0] = 0x70; DLIST_MEM[1] = 0x70; DLIST_MEM[2] = 0x70;\n`;
-        out += `    DLIST_MEM[3] = 0x42;\n    DLIST_MEM[4] = (byte)screen_addr;\n    DLIST_MEM[5] = (byte)(screen_addr >> 8);\n`;
-        out += `    for (i = 0; i < 23; ++i) DLIST_MEM[6 + i] = 0x02;\n`;
-        out += `    DLIST_MEM[29] = 0x41;\n    DLIST_MEM[30] = (byte)dlist_addr;\n    DLIST_MEM[31] = (byte)(dlist_addr >> 8);\n\n`;
-        out += `    POKE(756, (byte)(charset_addr >> 8));\n`;
-        out += `    memcpy(CHARSET_MEM, ${gameName}_graphics_16x16, sizeof(${gameName}_graphics_16x16));\n`;
-        out += `    POKE(709, 0); POKE(710, 14);\n    POKEW(560, dlist_addr);\n    POKE(752, 1);\n}\n\n`;
-        out += `void main(void) {\n`;
-        out += `    byte joy, last_joy = 0;\n`;
-        out += `    GameState* state;\n\n`;
-        out += `    joy_install(joy_static_stddrv);\n`;
-        out += `    setup_graphics();\n`;
-        out += `    init_game_state();\n\n`;
-        out += `    // Get game state pointer\n`;
-        out += `    state = get_game_state();\n\n`;
-        out += `    // Load first level\n`;
-        out += `    load_level(state->current_level);\n\n`;
-        out += `    while (1) {\n`;
-        out += `        joy = joy_read(0);\n`;
-        out += `        if (joy && !last_joy) {\n`;
-        out += `            if (JOY_UP(joy)) try_move(0, -1);\n`;
-        out += `            else if (JOY_DOWN(joy)) try_move(0, 1);\n`;
-        out += `            else if (JOY_LEFT(joy)) try_move(-1, 0);\n`;
-        out += `            else if (JOY_RIGHT(joy)) try_move(1, 0);\n`;
-        out += `        }\n`;
-        out += `        last_joy = joy;\n`;
-        out += `        wait_vblank_16x16();\n`;
-        out += `    }\n}\n`;
+        out += `#define CFGFILE atari-xex.cfg\n\n#include <stdlib.h>\n#include <string.h>\n#include <peekpoke.h>\n#include <joystick.h>\n`;
+        out += `#include "${gameName}_game.h"\n#include "${gameName}_conio_16x16.h"\n#include "${gameName}_graphics_16x16.h"\n#include "${gameName}_levels_16x16.h"\n\n`;
+        out += `#define CHARSET_MEM ((byte*)0x7000)\n#define DLIST_MEM   ((byte*)0x8000)\n\n`;
+        out += `void setup_graphics(void) {\n    word dlist = (word)DLIST_MEM; word scr = (word)SCREEN_MEM;\n`;
+        out += `    DLIST_MEM[0]=0x70;DLIST_MEM[1]=0x70;DLIST_MEM[2]=0x70;DLIST_MEM[3]=0x42;\n`;
+        out += `    DLIST_MEM[4]=(byte)scr;DLIST_MEM[5]=(byte)(scr>>8);\n`;
+        out += `    for(byte i=0;i<23;++i)DLIST_MEM[6+i]=0x02;\n    DLIST_MEM[29]=0x41;DLIST_MEM[30]=(byte)dlist;DLIST_MEM[31]=(byte)(dlist>>8);\n`;
+        out += `    POKE(756,(byte)((word)CHARSET_MEM>>8));\n    memcpy(CHARSET_MEM, ${gameName}_graphics_16x16, sizeof(${gameName}_graphics_16x16));\n`;
+        out += `    POKE(709,0);POKE(710,14);POKEW(560,dlist);POKE(752,1);\n}\n\n`;
+        out += `void main(void) {\n    byte joy, last_joy=0; joy_install(joy_static_stddrv);\n    setup_graphics(); init_game_state();\n    load_level(get_game_state()->current_level);\n`;
+        out += `    while(1) { joy=joy_read(0); if(joy && !last_joy) {\n`;
+        out += `        if(JOY_UP(joy)) try_move(0,-1); else if(JOY_DOWN(joy)) try_move(0,1);\n`;
+        out += `        else if(JOY_LEFT(joy)) try_move(-1,0); else if(JOY_RIGHT(joy)) try_move(1,0);\n`;
+        out += `    } last_joy=joy; wait_vblank_16x16(); }\n}\n`;
 
         outputEl.value = out;
     }
 
     // --- Data Loaders ---
     function importInitialData() {
-        // (Shortened for brevity - reuse previous raw data logic)
+        // Basic starter tiles
         const raw=[0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x0,0x0,0xF,0xF,0xF,0xF,0x3F,0x3F,0x0,0x0,0xC0,0xC0,0xC0,0xC0,0xF0,0xF0,0xF,0xF,0xC,0xC,0x0,0x0,0x0,0x0,0xC0,0xC0,0xC0,0xC0,0x0,0x0,0x0,0x0];
-        const metas=[{n:"WALL",k:"#"},{n:"PLAYER",k:"p"}];
-        // Only loading 2 basic tiles to show it works, user can use Import tab for rest
+        const metas=[{n:"WALL",k:"#",s:true},{n:"PLAYER",k:"p",s:false}];
         metas.forEach((m, i) => {
             const grid = new Array(256).fill(0);
             const bytes = raw.slice(i*32, i*32+32);
             const proc = (b, rS, cS) => { for(let r=0;r<8;r++) for(let bit=0;bit<8;bit++) if(b[r]&(1<<(7-bit))) grid[(rS+r)*16+cS+bit]=1; };
             proc(bytes.slice(0,8),0,0); proc(bytes.slice(8,16),0,8); proc(bytes.slice(16,24),8,0); proc(bytes.slice(24,32),8,8);
-            tiles.push({name:m.n, key:m.k, data:grid});
+            tiles.push({name:m.n, key:m.k, solid:m.s, data:grid});
         });
     }
     function importInitialLevels() {
-        levels.push({ name: "level_1", width: 10, height: 10, data: "##########"+"#........#"+"#........#"+"#...p....#"+"#........#"+"#......@.#"+"#........#"+"#........#"+"#........#"+"##########".split('').map(c=>c) });
+        // Levels are now initially empty.
+        // The Map Editor view will auto-create a clean level if the list is empty when accessed.
     }
 </script>
 </body>
