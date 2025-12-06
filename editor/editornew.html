@@ -124,6 +124,7 @@
                 <div style="height: 20px;"></div>
                 <button onclick="addOrUpdateTile()" id="saveBtn">Save / Update</button>
                 <button class="secondary" onclick="createNewTile()">Clear / New</button>
+                <button class="secondary" onclick="invertColors()">Invert Colors</button>
             </div>
         </div>
     </div>
@@ -283,6 +284,14 @@
         editingIndex = index; const t = tiles[index]; currentGrid = [...t.data];
         nameInput.value = t.name; keyInput.value = t.key;
         renderEditorGrid(); saveBtn.innerText = "Save / Update"; switchView('editor');
+    }
+
+    function invertColors() {
+        for(let i = 0; i < currentGrid.length; i++) {
+            currentGrid[i] = currentGrid[i] ? 0 : 1;
+        }
+        renderEditorGrid();
+        showToast("Colors Inverted!");
     }
 
     // --- List & Clipboard ---
